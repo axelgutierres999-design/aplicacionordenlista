@@ -17,18 +17,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function cargarDatosPerfil() {
-    // Cargar datos reales desde la tabla 'perfiles_clientes'
-    const { data, error } = await db
-        .from('perfiles_clientes')
-        .select('*')
-        .eq('id', currentUser.id)
-        .single();
-
-    if (error) {
-        console.error("Error cargando perfil", error);
-        return;
-    }
-
+  // ... dentro de cargarDatosPerfil ...
+if (error) {
+    console.log("No se encontró fila en perfiles_clientes, usando datos de Auth");
+    if(nombreElem) nombreElem.innerText = currentUser.user_metadata.nombre || "Usuario";
+    if(correoElem) correoElem.innerText = currentUser.email;
+    if(fotoElem) fotoElem.src = "https://picsum.photos/200";
+    return;
+}
     const nombreElem = document.getElementById('user-name');
     const correoElem = document.getElementById('user-email');
     const fotoElem = document.getElementById('profile-display');
