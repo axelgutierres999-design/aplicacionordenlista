@@ -138,12 +138,12 @@
   <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
   <script>
-    // 1. INICIALIZAR SUPABASE GLOBALMENTE
-    const supabaseUrl = 'TU_SUPABASE_URL';https://cpveuexgxwxjejurtwro.supabase.co;
-    const supabaseKey = 'TU_SUPABASE_ANON_KEY'; eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc";
-    window.supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-    window.db = window.supabase;
+// 1. INICIALIZAR SUPABASE GLOBALMENTE
+const supabaseUrl = 'https://cpveuexgxwxjejurtwro.supabase.co'; 
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc';
 
+window.supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+window.db = window.supabase;
     // 2. LÓGICA UI MENU LATERAL
     function toggleMenu() {
         const sidebar = document.getElementById('sidebar');
