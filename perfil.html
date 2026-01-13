@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Mi Perfil</title>
+    <link rel="stylesheet" href="css/style.css"> 
+    
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
+    <script>
+        const supabaseUrl = 'TU_SUPABASE_URL';"https://cpveuexgxwxjejurtwro.supabase.co";
+        const supabaseKey = 'TU_SUPABASE_ANON_KEY';"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc";
+
+        // Hacemos que 'supabase' y 'db' estén disponibles para user.js
+        window.supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        window.db = window.supabase;
+    </script>
+
+    <style>
+        /* Estilos Neumórficos para Perfil */
+        :root {
+            --bg-color: #eef0f3;
+            --shadow-light: #ffffff;
+            --shadow-dark: #caced1;
+            --text-main: #333;
+        }
+
+        body { background: var(--bg-color); font-family: sans-serif; margin: 0; }
+
+        .profile-card {
+            background: var(--bg-color);
+            margin: 20px;
+            padding: 30px 20px;
+            border-radius: 30px;
+            text-align: center;
+            box-shadow: 10px 10px 20px var(--shadow-dark), -10px -10px 20px var(--shadow-light);
+        }
+
+        .img-container {
+            position: relative;
+            width: 110px;
+            margin: 0 auto 15px;
+            cursor: pointer;
+        }
+
+        .profile-img {
+            width: 110px; height: 110px;
+            border-radius: 35px;
+            object-fit: cover;
+            box-shadow: 5px 5px 15px var(--shadow-dark), -5px -5px 15px var(--shadow-light);
+            border: 3px solid #eef0f3;
+        }
+
+        .btn-change-photo { 
+            position: absolute; bottom: -5px; right: -5px;
+            background: #000; color: white;
+            border-radius: 12px; width: 35px; height: 35px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 3px 3px 8px rgba(0,0,0,0.2); font-size: 16px;
+        }
+
+        .profile-menu { padding: 0 20px; }
+
+        .menu-item { 
+            background: var(--bg-color); padding: 18px;
+            border-radius: 20px; margin-bottom: 15px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light);
+            cursor: pointer; transition: 0.2s;
+        }
+
+        .menu-item:active {
+            box-shadow: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light);
+            transform: scale(0.98);
+        }
+
+        .item-info span { display: block; font-weight: 700; color: var(--text-main); }
+        .item-info small { color: #777; font-size: 12px; }
+
+        .btn-logout {
+            background: #ff4757; color: white; border: none;
+            width: 100%; padding: 18px; border-radius: 20px;
+            font-weight: 700; margin-top: 10px;
+            box-shadow: 5px 5px 15px var(--shadow-dark); cursor: pointer;
+        }
+        
+        .header-detalle { display: flex; align-items: center; padding: 20px; }
+        .btn-back { background: none; border: none; font-size: 24px; cursor: pointer; color: #333; }
+    </style>
+</head>
+<body style="overflow-y: auto;">
+
+    <header class="header-detalle">
+        <button class="btn-back" onclick="window.location.href='index.html'">←</button>
+        <h2 style="font-size: 18px; width: 100%; text-align: center; margin-right: 45px; margin-top:0; margin-bottom:0;">Configuración</h2>
+    </header>
+
+    <div class="profile-card">
+        <div class="img-container" onclick="document.getElementById('input-file').click()">
+            <img src="https://picsum.photos/200" id="profile-display" class="profile-img">
+            <div class="btn-change-photo">📷</div>
+        </div>
+        <input type="file" id="input-file" accept="image/*" style="display:none">
+        
+        <h1 id="user-name" style="font-size: 22px; margin-top: 10px; color: #000;">Cargando...</h1>
+        <p id="user-email" style="color: #777; font-size: 14px; margin:0;">...</p>
+    </div>
+
+    <div class="profile-menu">
+        <h3 style="font-size: 11px; color: #999; margin: 0 0 15px 5px; text-transform: uppercase; letter-spacing: 1px;">Cuenta</h3>
+        
+        <div class="menu-item" onclick="editarNombre()">
+            <div class="item-info">
+                <span>Nombre de Usuario</span>
+                <small>Toca para editar</small>
+            </div>
+            <span>❯</span>
+        </div>
+
+        <div class="menu-item" onclick="editarCorreo()">
+            <div class="item-info">
+                <span>Correo Electrónico</span>
+                <small>Seguridad de cuenta</small>
+            </div>
+            <span>❯</span>
+        </div>
+        
+        <button class="btn-logout" onclick="cerrarSesion()">Cerrar Sesión</button>
+    </div>
+
+    <script src="js/user.js"></script>
+</body>
+</html>

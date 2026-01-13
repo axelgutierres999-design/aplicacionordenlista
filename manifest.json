@@ -1,0 +1,16 @@
+{
+  "name": "Café App Neumorphic",
+  "short_name": "CaféApp",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#e0e0e0",
+  "theme_color": "#8d806a",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Bienvenido - Registro Premium</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            background: var(--bg-color, #eef0f3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            font-family: sans-serif;
+        }
+
+        .registro-card {
+            width: 100%;
+            max-width: 400px;
+            padding: 40px 30px;
+            background: #eef0f3;
+            border-radius: 40px;
+            text-align: center;
+            box-shadow: 20px 20px 60px #caced1, -20px -20px 60px #ffffff;
+        }
+
+        .logo-container {
+            width: 80px;
+            height: 80px;
+            background: #eef0f3;
+            margin: 0 auto 20px;
+            border-radius: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            box-shadow: 8px 8px 16px #caced1, -8px -8px 16px #ffffff;
+        }
+
+        h1 { color: #000; font-size: 26px; margin-bottom: 10px; font-weight: 800; }
+        p { color: #888; font-size: 14px; margin-bottom: 30px; }
+
+        .input-group { margin-bottom: 20px; text-align: left; }
+        .input-group label {
+            display: block; margin-left: 15px; margin-bottom: 8px;
+            font-size: 12px; font-weight: 700; color: #555;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        input {
+            width: 100%; padding: 18px 20px; border-radius: 18px;
+            border: none; background: #eef0f3; color: #333;
+            font-size: 16px; outline: none; box-sizing: border-box;
+            box-shadow: inset 6px 6px 12px #caced1, inset -6px -6px 12px #ffffff;
+            transition: 0.3s;
+        }
+
+        input:focus { background: #e6e8eb; }
+
+        .btn-registrar {
+            width: 100%; background: #000; color: white;
+            border: none; padding: 18px; border-radius: 18px;
+            font-weight: 700; font-size: 16px; margin-top: 20px;
+            cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+        }
+
+        .btn-registrar:active { transform: scale(0.96); }
+        .footer-text { margin-top: 25px; font-size: 12px; color: #888; }
+        .login-link { margin-top: 15px; font-size: 14px; color: #000; cursor: pointer; text-decoration: underline;}
+    </style>
+</head>
+<body>
+
+    <div class="registro-card">
+        <div class="logo-container">🍴</div>
+        <h1>Bienvenido</h1>
+        <p>Crea tu cuenta VIP para explorar los mejores sabores.</p>
+        
+        <div class="input-group">
+            <label>Nombre</label>
+            <input type="text" id="reg-nombre" placeholder="Ej. Juan Pérez">
+        </div>
+
+        <div class="input-group">
+            <label>Email</label>
+            <input type="email" id="reg-correo" placeholder="tu@correo.com">
+        </div>
+
+        <div class="input-group">
+            <label>Contraseña</label>
+            <input type="password" id="reg-pass" placeholder="Mínimo 6 caracteres">
+        </div>
+        
+        <button class="btn-registrar" onclick="registrarUsuario()">Crear Cuenta</button>
+
+        <p class="footer-text">Al continuar, aceptas nuestros términos.</p>
+    </div>
+
+    <script>
+        // 2. Inicializar Supabase
+        const supabaseUrl = 'TU_SUPABASE_URL';"https://cpveuexgxwxjejurtwro.supabase.co";
+        const supabaseKey = 'TU_SUPABASE_ANON_KEY';"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc";
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        // Hacerlo global para debug si es necesario
+        window.db = supabase;
+
+        async function registrarUsuario() {
+            const nombre = document.getElementById('reg-nombre').value;
+            const correo = document.getElementById('reg-correo').value;
+            const pass = document.getElementById('reg-pass').value;
+
+            if (nombre.trim().length < 3) return alert("Nombre muy corto");
+            if (!correo.includes('@')) return alert("Correo inválido");
+            if (pass.length < 6) return alert("La contraseña debe tener al menos 6 caracteres");
+
+            const btn = document.querySelector('.btn-registrar');
+            btn.textContent = "Registrando...";
+            btn.disabled = true;
+
+            try {
+                // Registro en Supabase Auth
+                // Pasamos el nombre en 'data' para que el Trigger SQL lo guarde en la tabla perfiles
+                const { data, error } = await supabase.auth.signUp({
+                    email: correo,
+                    password: pass,
+                    options: {
+                        data: {
+                            nombre: nombre
+                        }
+                    }
+                });
+
+                if (error) throw error;
+
+                alert("¡Cuenta creada! Bienvenido.");
+                
+                // Animación de salida
+                document.querySelector('.registro-card').style.transform = "scale(0.9)";
+                document.querySelector('.registro-card').style.opacity = "0";
+                document.querySelector('.registro-card').style.transition = "0.4s";
+
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 400);
+
+            } catch (err) {
+                alert("Error: " + err.message);
+                btn.textContent = "Intentar de nuevo";
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

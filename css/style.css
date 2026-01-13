@@ -1,0 +1,437 @@
+/* --- 1. VARIABLES: NEUMORFISMO CLARO & ACCENT NEGRO --- */
+:root {
+    --bg-color: #f0f0f3;        /* Fondo principal */
+    --surface: #f0f0f3;         /* Color de las bases */
+    --primary: #000000;         /* Negro puro para acciones principales */
+    --accent: #e0e0e0;          /* Gris suave para detalles */
+    --shadow-dark: #aeaec0;     /* Sombra profunda para relieve */
+    --shadow-light: #ffffff;    /* Brillo blanco para relieve */
+    --text-main: #333333;       /* Texto principal casi negro */
+    --text-dim: #888888;        /* Texto secundario gris */
+}
+
+/* --- 2. RESET Y BASES --- */
+* {
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--bg-color);
+    height: 100vh; 
+    display: flex; 
+    flex-direction: column; 
+    overflow: hidden; 
+    color: var(--text-main);
+}
+
+/* --- 3. SISTEMA DE VISTAS --- */
+.view {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%; 
+    background-color: var(--bg-color);
+    z-index: 10;
+    overflow-y: auto; /* Permite scroll vertical en el contenido */
+    overflow-x: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.view.hidden {
+    opacity: 0;
+    transform: translateY(20px);
+    pointer-events: none;
+    visibility: hidden;
+}
+
+/* --- 4. ANIMACIONES --- */
+@keyframes floating {
+    0% { transform: rotate(-45deg) translateY(0px); }
+    50% { transform: rotate(-45deg) translateY(-8px); }
+    100% { transform: rotate(-45deg) translateY(0px); }
+}
+
+@keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- 5. SPLASH SCREEN --- */
+#splash-screen {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: var(--bg-color);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 10000;
+}
+
+.splash-logo {
+    width: 120px; height: 120px;
+    border-radius: 35px; 
+    background: var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 12px 12px 24px var(--shadow-dark), 
+                -12px -12px 24px var(--shadow-light);
+}
+
+/* --- 6. HEADER Y BARRA SUPERIOR --- */
+.header {
+    background: var(--bg-color);
+    padding-top: 50px; /* Espacio para status bar */
+    position: relative;
+    z-index: 20;
+}
+
+.top-bar {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 0 20px;
+    margin-bottom: 20px;
+}
+
+.menu-icon {
+    font-size: 24px;
+    color: var(--primary);
+    cursor: pointer;
+    background: var(--surface);
+    width: 45px; height: 45px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+}
+
+.search-container {
+    flex: 1;
+    background: var(--bg-color); 
+    border-radius: 15px;
+    display: flex; align-items: center; 
+    padding: 12px 18px; 
+    /* Efecto Hundido (Inset Neumorphism) */
+    box-shadow: inset 4px 4px 8px var(--shadow-dark), 
+                inset -4px -4px 8px var(--shadow-light);
+}
+
+.search-container input { 
+    background: none; border: none; color: var(--text-main); 
+    width: 100%; outline: none; font-size: 15px; margin-left: 10px;
+}
+
+/* --- 7. FILTROS HORIZONTALES (Carrusel) --- */
+.filter-wrapper {
+    width: 100%;
+    overflow-x: auto; /* Habilita el scroll horizontal */
+    overflow-y: hidden;
+    white-space: nowrap;
+    padding: 10px 20px 25px 20px; /* Padding bottom extra para la sombra */
+    -webkit-overflow-scrolling: touch;
+    
+    /* Ocultar barra de scroll visualmente */
+    scrollbar-width: none; /* Firefox */
+}
+.filter-wrapper::-webkit-scrollbar { display: none; /* Chrome/Safari */ }
+
+.filter-chips {
+    display: inline-flex;
+    gap: 15px;
+}
+
+.chip {
+    padding: 10px 24px; 
+    background: var(--surface); 
+    border: none; border-radius: 20px; 
+    font-size: 14px; font-weight: 600; color: var(--text-dim); 
+    /* Sombra externa (Elevado) */
+    box-shadow: 6px 6px 12px var(--shadow-dark), 
+                -6px -6px 12px var(--shadow-light);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex-shrink: 0; /* Evita que se aplasten */
+}
+
+.chip.active {
+    background: var(--primary);
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 4px 10px 20px rgba(0,0,0,0.3);
+}
+
+/* --- 8. MAPA Y MARCADORES --- */
+#map-container { 
+    height: calc(100% - 160px); /* Ajuste según altura header */
+    width: 100%; 
+    position: relative; 
+}
+#map { width: 100%; height: 100%; z-index: 1; border-radius: 30px 30px 0 0; overflow: hidden; }
+
+/* Icono flotante en el mapa */
+.custom-marker-container div {
+    animation: floating 3s ease-in-out infinite;
+}
+
+/* --- 9. BOTONES DE ACCIÓN --- */
+.btn-ver-mas, .btn-ver-detalle-negro, .btn-toggle-fav {
+    background: var(--primary);
+    color: #ffffff;
+    border: none;
+    padding: 16px; 
+    border-radius: 16px; 
+    font-weight: 600; font-size: 14px;
+    letter-spacing: 0.5px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2); /* Sombra difusa negra */
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.btn-ver-mas:active { transform: scale(0.97); }
+
+.btn-back {
+    width: 45px; height: 45px;
+    border-radius: 12px;
+    background: var(--surface);
+    border: none;
+    font-size: 20px;
+    box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+}
+
+/* --- 10. NAVEGACIÓN INFERIOR (BOTONES ISLA) --- */
+.bottom-nav { 
+    position: fixed;
+    bottom: 30px; 
+    left: 0; 
+    width: 100%;
+    display: flex; 
+    justify-content: center; 
+    gap: 20px; 
+    z-index: 4000;
+    pointer-events: none; /* Permite tocar el mapa detrás */
+}
+
+.nav-item { 
+    pointer-events: auto; /* Reactiva clicks en los botones */
+    min-width: 130px;
+    height: 55px;
+    background: var(--surface); 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    gap: 10px;
+    border-radius: 20px;
+    color: var(--text-dim);
+    font-size: 13px; font-weight: 600;
+    /* Neumorfismo Elevado */
+    box-shadow: 8px 8px 16px var(--shadow-dark), 
+                -8px -8px 16px var(--shadow-light);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.nav-item.active { 
+    background: var(--primary);
+    color: #ffffff;
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+}
+
+.nav-item .icon { font-size: 18px; }
+
+/* --- 11. SIDEBAR --- */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 80%;
+    max-width: 320px;
+    height: 100vh;
+    background: var(--surface);
+    box-shadow: 10px 0 25px rgba(0,0,0,0.1);
+    padding: 40px 25px;
+    transform: translateX(-100%);
+    transition: transform 0.4s ease;
+    z-index: 5000;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+/* Estado visible */
+.sidebar.active {
+    transform: translateX(0);
+}
+
+/* Contenedor superior del menú */
+.sidebar-header {
+    text-align: center;
+}
+
+.sidebar-header img {
+    width: 90px;
+    height: 90px;
+    border-radius: 25px;
+    object-fit: cover;
+    margin-bottom: 10px;
+    box-shadow: 5px 5px 10px var(--shadow-dark),
+                -5px -5px 10px var(--shadow-light);
+}
+
+.sidebar-header h3 {
+    font-size: 18px;
+    margin-bottom: 3px;
+    color: var(--text-main);
+    word-break: break-word;
+}
+
+.sidebar-header small {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+/* Botones de acción */
+.sidebar-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 25px;
+}
+
+.sidebar-buttons button {
+    background: var(--surface);
+    border: none;
+    border-radius: 15px;
+    padding: 12px;
+    font-weight: 600;
+    color: var(--text-main);
+    box-shadow: 4px 4px 8px var(--shadow-dark),
+                -4px -4px 8px var(--shadow-light);
+    transition: 0.2s;
+    cursor: pointer;
+}
+
+.sidebar-buttons button:active {
+    box-shadow: inset 4px 4px 8px var(--shadow-dark),
+                inset -4px -4px 8px var(--shadow-light);
+    transform: scale(0.97);
+}
+
+/* Botón cerrar sesión */
+.sidebar button.logout {
+    background: #ff4d4d;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 15px;
+    font-weight: 600;
+    margin-top: 40px;
+    box-shadow: 4px 4px 8px rgba(0,0,0,0.2);
+    cursor: pointer;
+}
+
+/* === Overlay (fondo oscuro) === */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background: rgba(0,0,0,0.3);
+    backdrop-filter: blur(3px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+    z-index: 4500;
+}
+
+.overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+/* --- 12. CARDS Y DETALLES --- */
+/* Tarjeta flotante sobre el mapa */
+.preview-card {
+    position: absolute;
+    bottom: 80px; /* ← sube la tarjeta para que no se monte con la bottom-nav */
+    left: 20px;
+    right: 20px; /* margen lateral */
+    background: rgba(240, 240, 243, 0.95); /* semi-transparente */
+    backdrop-filter: blur(10px);
+    border-radius: 25px;
+    padding: 20px; 
+    z-index: 3000; 
+    box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+    animation: fade-in-up 0.4s ease;
+    transition: all 0.3s ease;
+}
+
+/* Estado oculto */
+.preview-card.hidden {
+    opacity: 0;
+    transform: translateY(20px);
+    pointer-events: none;
+}
+
+/* Estado visible */
+.preview-card:not(.hidden) {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+/* Animación de aparición suave */
+@keyframes fade-in-up {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Vistas Completas */
+.header-favoritos, .header-detalle {
+    padding: 60px 20px 20px;
+    background: var(--bg-color);
+}
+.header-detalle { display: flex; align-items: center; gap: 20px; }
+
+/* Grid Favoritos */
+.grid-favoritos {
+    padding: 10px 20px 100px; /* Padding bottom para no chocar con nav */
+    display: grid; 
+    grid-template-columns: 1fr; 
+    gap: 20px;
+}
+
+.card-restaurante-detalle, .card-restaurante {
+    background: var(--surface);
+    border-radius: 25px;
+    overflow: hidden;
+    /* Sombra suave */
+    box-shadow: 10px 10px 20px var(--shadow-dark), -10px -10px 20px var(--shadow-light);
+    animation: fade-in-up 0.5s ease;
+}
+
+.detalle-content { padding: 0 20px 120px; } /* Espacio para scroll */
+.detalle-body { padding: 25px; }
+
+.info-box-neumorph {
+    margin: 20px 0;
+    padding: 15px;
+    border-radius: 15px;
+    background: var(--bg-color);
+    box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+/* --- FIXES Y UTILIDADES --- */
+.leaflet-control-attribution { display: none !important; }
+.hidden { display: none !important; }

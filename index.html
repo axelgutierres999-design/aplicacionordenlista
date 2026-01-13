@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Café App - Premium UI</title>
+
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#f0f0f3">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css">
+  
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <div id="splash-screen">
+    <div class="splash-content">
+      <div class="splash-logo">
+        <div style="font-size: 50px;">🍴</div>
+      </div>
+      <div class="loader-dots">
+        <span>●</span><span>●</span><span>●</span>
+      </div>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-header">
+      <img id="user-photo" src="https://picsum.photos/200" alt="Foto de perfil">
+      <h3 id="user-name">Cargando...</h3>
+      <small>Cliente VIP</small>
+
+      <div class="sidebar-buttons">
+        <button onclick="window.location.href='perfil.html'">👤 Mi Perfil</button>
+        <button onclick="window.location.href='ajustes.html'">⚙️ Ajustes</button>
+      </div>
+    </div>
+
+    <button class="logout" onclick="cerrarSesionSidebar()">Cerrar Sesión</button>
+  </aside>
+
+  <div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+
+  <div id="view-mapa" class="view">
+    <header class="header">
+      <div class="top-bar">
+        <div class="menu-icon" onclick="toggleMenu()">☰</div>
+        <div class="search-container">
+          <span>🔍</span>
+          <input type="text" id="search-input-map" placeholder="¿Qué se te antoja hoy?">
+        </div>
+      </div>
+
+      <div class="filter-wrapper">
+        <div class="filter-chips" id="chips-mapa">
+          <button class="chip active" onclick="filtrarPorChip('Todos', this)">Todos</button>
+          <button class="chip" onclick="filtrarPorChip('Café', this)">☕ Café</button>
+          <button class="chip" onclick="filtrarPorChip('Taquería', this)">🌮 Tacos</button>
+          <button class="chip" onclick="filtrarPorChip('Pizza', this)">🍕 Pizza</button>
+          <button class="chip" onclick="filtrarPorChip('Italiana', this)">🍝 Italiana</button>
+          <button class="chip" onclick="filtrarPorChip('Japonesa', this)">🍣 Sushi</button>
+          <button class="chip" onclick="filtrarPorChip('Fast Food', this)">🍔 Burgers</button>
+        </div>
+      </div>
+    </header>
+
+    <main id="map-container">
+      <div id="map"></div>
+
+      <div id="preview-card" class="preview-card hidden">
+        <div class="preview-content">
+          <img id="preview-img" src="" alt="Lugar"
+               style="width: 60px; height: 60px; border-radius: 15px; object-fit: cover;">
+          <div class="preview-info">
+            <h3 id="preview-nombre">Nombre</h3>
+            <p id="preview-cat">Categoría</p>
+          </div>
+        </div>
+        <button class="btn-ver-mas" id="btn-abrir-detalle" style="width: 100%;">Ver detalles</button>
+      </div>
+    </main>
+  </div>
+
+  <div id="view-favoritos" class="view hidden">
+    <header class="header-favoritos">
+      <h1>Mis Favoritos</h1>
+      <div class="search-container">
+        <span>🔍</span>
+        <input type="text" id="search-input-fav" placeholder="Buscar en guardados...">
+      </div>
+    </header>
+    <main class="grid-favoritos" id="grid-favoritos"></main>
+  </div>
+
+  <div id="view-detalle" class="view hidden">
+    <header class="header-detalle">
+      <button class="btn-back" onclick="regresarVistas()">←</button>
+      <h2 id="detalle-titulo-header"
+          style="font-size: 18px; width: 100%; text-align: center; margin-right: 45px;">Detalles</h2>
+    </header>
+    <main class="detalle-content">
+      <div class="card-restaurante-detalle">
+        <img id="detalle-img" src="" alt="Lugar"
+             style="width: 100%; height: 250px; object-fit: cover;">
+        <div class="detalle-body">
+          <h1 id="detalle-nombre" style="margin-bottom: 5px;">Nombre</h1>
+          <p id="detalle-categoria" style="color: var(--text-dim); margin-bottom: 20px;">Categoría</p>
+
+          <div id="detalle-info-box" class="info-box-neumorph"></div>
+
+          <button class="btn-ver-detalle-negro"
+                  onclick="alert('Función de chat próximamente...')"
+                  style="width: 100%; margin-top: 15px;">
+            💬 Chatear con el local
+          </button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <nav class="bottom-nav">
+    <div class="nav-item active" id="btn-mapa" onclick="cambiarVista('mapa')">
+      <span class="icon">🗺️</span>
+      <span>Explorar</span>
+    </div>
+    <div class="nav-item" id="btn-favoritos" onclick="cambiarVista('favoritos')">
+      <span class="icon">⭐</span>
+      <span>Favoritos</span>
+    </div>
+  </nav>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+
+  <script>
+    // 1. INICIALIZAR SUPABASE GLOBALMENTE
+    const supabaseUrl = 'TU_SUPABASE_URL'; "https://cpveuexgxwxjejurtwro.supabase.co";
+    const supabaseKey = 'TU_SUPABASE_ANON_KEY';"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc";
+    window.supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+    window.db = window.supabase;
+
+    // 2. LÓGICA UI MENU LATERAL
+    function toggleMenu() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        sidebar.classList.toggle('active');
+        overlay.classList.toggle('active');
+    }
+
+    async function cerrarSesionSidebar() {
+        if(confirm("¿Cerrar sesión?")) {
+            await window.db.auth.signOut();
+            window.location.href = 'registro.html';
+        }
+    }
+
+    // 3. FILTRADO RÁPIDO POR CHIPS
+    function filtrarPorChip(categoria, btn) {
+        // Quitar clase active de todos
+        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+        // Poner al actual
+        btn.classList.add('active');
+        
+        // Llamar a la función de filtro de app.js (si es 'Todos', pasamos string vacía para resetear)
+        const busqueda = categoria === 'Todos' ? '' : categoria;
+        
+        // Asumiendo que filtrarLocales existe en app.js y busca en texto
+        const input = document.getElementById('search-input-map');
+        input.value = busqueda === '' ? '' : busqueda;
+        
+        // Disparar evento de input manualmente para activar el filtro
+        const event = new Event('input');
+        input.dispatchEvent(event);
+    }
+  </script>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

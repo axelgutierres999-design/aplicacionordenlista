@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ajustes</title>
+    <link rel="stylesheet" href="css/style.css"> 
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+    <style>
+        body { background-color: #f4f4f4; transition: 0.3s; font-family: sans-serif; }
+        .settings-container { padding: 20px; }
+        .settings-group { background: white; border-radius: 15px; margin-bottom: 20px; overflow: hidden; border: 1px solid #ddd; transition: 0.3s; }
+        .settings-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-bottom: 1px solid #eee; }
+        .settings-item:last-child { border-bottom: none; }
+        .settings-item-info h4 { margin: 0; font-size: 16px; color: #333; transition: 0.3s; }
+        .settings-item-info p { margin: 5px 0 0; font-size: 12px; color: #888; }
+        
+        .switch { position: relative; display: inline-block; width: 46px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #000; }
+        input:checked + .slider:before { transform: translateX(22px); }
+
+        .btn-cerrar-sesion { width: 100%; padding: 15px; background: white; color: #e74c3c; border: 1px solid #ddd; border-radius: 15px; font-weight: bold; margin-top: 20px; cursor: pointer; }
+        .header-detalle { display: flex; align-items: center; padding: 20px; background: white; }
+        .btn-back { background: none; border: none; font-size: 24px; cursor: pointer; margin-right: 15px; }
+        
+        /* Dark Mode styles */
+        body.dark-mode { background-color: #121212; color: white; }
+        body.dark-mode .settings-group { background-color: #1e1e1e; border-color: #333; }
+        body.dark-mode .settings-item { border-bottom-color: #333; }
+        body.dark-mode .settings-item-info h4 { color: white; }
+        body.dark-mode .btn-cerrar-sesion { background-color: #1e1e1e; border-color: #333; }
+        body.dark-mode .header-detalle { background-color: #1e1e1e; color: white; }
+        body.dark-mode .btn-back { color: white; }
+    </style>
+</head>
+<body>
+
+    <header class="header-detalle">
+        <button class="btn-back" onclick="window.location.href='index.html'">←</button>
+        <h2 style="margin:0;">Ajustes</h2>
+    </header>
+
+    <div class="settings-container">
+        <h3 style="margin: 0 0 10px 10px; color: #888; font-size: 14px; text-transform: uppercase;">Preferencias</h3>
+        <div class="settings-group">
+            <div class="settings-item">
+                <div class="settings-item-info">
+                    <h4>Modo Oscuro</h4>
+                    <p>Cambiar el tema de la aplicación</p>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="check-darkmode" onchange="toggleDarkMode(this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <button class="btn-cerrar-sesion" onclick="confirmarCerrarSesion()">Cerrar Sesión</button>
+    </div>
+
+    <script>
+        // Inicializar Supabase
+        const supabaseUrl = 'TU_SUPABASE_URL';
+        const supabaseKey = 'TU_SUPABASE_ANON_KEY';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        window.db = supabase; // Para mantener consistencia con otros archivos
+
+        // Lógica de UI (Dark Mode - Se mantiene en LocalStorage porque es preferencia visual)
+        function toggleDarkMode(isDark) {
+            localStorage.setItem('darkMode', isDark);
+            if(isDark) document.body.classList.add('dark-mode');
+            else document.body.classList.remove('dark-mode');
+        }
+
+        async function confirmarCerrarSesion() {
+            if(confirm("¿Estás seguro de que quieres salir?")) {
+                // Cerrar sesión en Supabase
+                await supabase.auth.signOut();
+                // Limpiar residuos
+                localStorage.clear();
+                window.location.href = 'registro.html';
+            }
+        }
+
+        window.onload = () => {
+            const isDark = localStorage.getItem('darkMode') === 'true';
+            document.getElementById('check-darkmode').checked = isDark;
+            if(isDark) document.body.classList.add('dark-mode');
+        };
+    </script>
+</body>
+</html>
