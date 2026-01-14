@@ -1,36 +1,54 @@
 // ==========================================
-// 1. CONFIGURACIÓN E INICIALIZACIÓN
+// 1. CONFIGURACIÓN E INICIALIZACIÓN ROBUSTA
 // ==========================================
 const supabaseUrl = "https://cpveuexgxwxjejurtwro.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc";
 
-// Inicializar el cliente si no existe
-if (!window.db) {
-    window.supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
-    window.db = window.supabaseClient;
+// Aseguramos que Supabase esté cargado
+let db = window.db;
+
+if (!db) {
+    if (typeof window.supabase !== 'undefined') {
+        window.supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+        window.db = window.supabaseClient;
+        db = window.db;
+    } else {
+        console.error("La librería de Supabase no ha cargado aún.");
+        // Si no hay librería, no podemos hacer nada, enviamos al registro por seguridad
+        window.location.href = 'registro.html';
+    }
 }
 
-const db = window.db;
 let currentUser = null;
 
 // ==========================================
 // 2. GUARDIA DE SEGURIDAD (AL CARGAR)
 // ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
-    // Obtenemos la sesión actual
-    const { data: { session } } = await db.auth.getSession();
-    
-    if (!session) {
-        console.log("Usuario no autenticado. Redirigiendo...");
+    try {
+        // Verificamos si db existe antes de llamar a auth
+        if (!db) throw new Error("No hay conexión con base de datos");
+
+        const { data, error } = await db.auth.getSession();
+        
+        // Si hay error, no hay sesión, o no hay usuario: REDIRIGIR
+        if (error || !data.session || !data.session.user) {
+            console.log("No hay sesión válida. Redirigiendo a registro...");
+            window.location.href = 'registro.html';
+            return;
+        }
+        
+        // Si llegamos aquí, todo está bien
+        currentUser = data.session.user;
+        console.log("Sesión activa:", currentUser.email);
+        
+        cargarDatosPerfil();
+
+    } catch (err) {
+        console.error("Error crítico de seguridad:", err);
+        // EN CASO DE DUDA O ERROR, SACAR AL USUARIO
         window.location.href = 'registro.html';
-        return;
     }
-    
-    currentUser = session.user;
-    console.log("Sesión iniciada:", currentUser.email);
-    
-    // Ejecutamos la carga de datos
-    cargarDatosPerfil();
 });
 
 // ==========================================
@@ -43,53 +61,54 @@ async function cargarDatosPerfil() {
     const fotoElem = document.getElementById('profile-display');
 
     try {
-        // Intentamos traer los datos de la tabla SQL
+        // 1. Intentar datos de la base de datos SQL
         const { data, error } = await db
             .from('perfiles_clientes')
             .select('*')
             .eq('id', currentUser.id)
             .single();
 
-        // FALLBACK: Si hay error o no existe la fila aún, usamos los datos de Auth
-        if (error || !data) {
-            console.log("Usando datos de Auth (Metadata de registro)");
-            if(nombreElem) nombreElem.innerText = currentUser.user_metadata.nombre || "Usuario VIP";
-            if(correoElem) correoElem.innerText = currentUser.email;
-            if(fotoElem) fotoElem.src = "https://picsum.photos/200";
-            return;
-        }
+        // 2. Datos por defecto (Auth) si falla la DB
+        const nombreMostrar = (data && data.nombre) ? data.nombre : (currentUser.user_metadata.nombre || "Usuario");
+        const correoMostrar = (data && data.email) ? data.email : currentUser.email;
+        const fotoMostrar = (data && data.foto_url) ? data.foto_url : "https://picsum.photos/200";
 
-        // Si todo está bien, usamos los datos de la tabla 'perfiles_clientes'
-        if(nombreElem) nombreElem.innerText = data.nombre || "Usuario";
-        if(correoElem) correoElem.innerText = data.email || currentUser.email;
-        if(fotoElem) fotoElem.src = data.foto_url || "https://picsum.photos/200";
+        // 3. Pintar en pantalla
+        if(nombreElem) nombreElem.innerText = nombreMostrar;
+        if(correoElem) correoElem.innerText = correoMostrar;
+        if(fotoElem) fotoElem.src = fotoMostrar;
 
     } catch (err) {
-        console.error("Error crítico al cargar perfil:", err);
+        console.error("Error al cargar datos visuales:", err);
     }
 }
 
 async function editarNombre() {
-    const actual = document.getElementById('user-name').innerText;
+    const nombreElem = document.getElementById('user-name');
+    const actual = nombreElem.innerText;
     const nuevoNombre = prompt("Ingresa tu nuevo nombre:", actual);
     
     if (nuevoNombre && nuevoNombre.trim() !== "") {
-        const { error } = await db
-            .from('perfiles_clientes')
-            .update({ nombre: nuevoNombre.trim() })
-            .eq('id', currentUser.id);
+        try {
+            const { error } = await db
+                .from('perfiles_clientes')
+                .update({ nombre: nuevoNombre.trim() })
+                .eq('id', currentUser.id);
 
-        if (!error) {
-            document.getElementById('user-name').innerText = nuevoNombre.trim();
-            alert("Nombre actualizado");
-        } else {
-            alert("Error al actualizar: " + error.message);
+            if (!error) {
+                nombreElem.innerText = nuevoNombre.trim();
+            } else {
+                alert("Error al actualizar: " + error.message);
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Error de conexión");
         }
     }
 }
 
 async function editarCorreo() {
-    alert("Por seguridad, el cambio de correo requiere validación oficial desde los ajustes de cuenta.");
+    alert("Para cambiar el correo, por favor contacta soporte o usa la gestión de cuenta de Supabase.");
 }
 
 // Manejo de imagen de perfil
@@ -106,15 +125,15 @@ if (inputFile) {
             reader.onload = async function(event) {
                 const base64Image = event.target.result;
                 
-                // 1. Mostrar cambio inmediato en la UI
+                // Actualizar visualmente primero (UX rápida)
                 document.getElementById('profile-display').src = base64Image;
 
-                // 2. Guardar en la base de datos
+                // Guardar en DB
                 const { error } = await db.from('perfiles_clientes')
                     .update({ foto_url: base64Image })
                     .eq('id', currentUser.id);
                 
-                if(error) alert("Error al guardar imagen: " + error.message);
+                if(error) alert("Error al guardar imagen en la nube: " + error.message);
             };
             reader.readAsDataURL(file);
         }
@@ -124,7 +143,6 @@ if (inputFile) {
 async function cerrarSesion() {
     if (confirm("¿Estás seguro de que quieres cerrar sesión?")) {
         await db.auth.signOut();
-        localStorage.clear(); 
         window.location.href = 'registro.html';
     }
 }
