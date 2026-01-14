@@ -4,18 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Bienvenido - Registro Premium</title>
-    <link rel="stylesheet" href="css/style.css">
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
+        :root {
+            --bg-color: #eef0f3;
+        }
         body {
-            background: var(--bg-color, #eef0f3);
+            background: var(--bg-color);
             display: flex;
             align-items: center;
             justify-content: center;
             height: 100vh;
             margin: 0;
             padding: 20px;
-            font-family: sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         .registro-card {
@@ -47,7 +49,7 @@
         .input-group { margin-bottom: 20px; text-align: left; }
         .input-group label {
             display: block; margin-left: 15px; margin-bottom: 8px;
-            font-size: 12px; font-weight: 700; color: #555;
+            font-size: 11px; font-weight: 700; color: #555;
             text-transform: uppercase; letter-spacing: 1px;
         }
 
@@ -59,19 +61,24 @@
             transition: 0.3s;
         }
 
-        input:focus { background: #e6e8eb; }
+        input:focus { box-shadow: inset 2px 2px 5px #caced1, inset -2px -2px 5px #ffffff; }
 
         .btn-registrar {
             width: 100%; background: #000; color: white;
             border: none; padding: 18px; border-radius: 18px;
             font-weight: 700; font-size: 16px; margin-top: 20px;
-            cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-            transition: transform 0.2s;
+            cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+            transition: 0.2s;
         }
 
-        .btn-registrar:active { transform: scale(0.96); }
+        .btn-registrar:active { transform: scale(0.97); }
+        .btn-registrar:disabled { background: #555; cursor: not-allowed; }
+
         .footer-text { margin-top: 25px; font-size: 12px; color: #888; }
-        .login-link { margin-top: 15px; font-size: 14px; color: #000; cursor: pointer; text-decoration: underline;}
+        .login-link { 
+            margin-top: 15px; display: block; font-size: 14px; 
+            color: #000; text-decoration: none; font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -82,7 +89,7 @@
         <p>Crea tu cuenta VIP para explorar los mejores sabores.</p>
         
         <div class="input-group">
-            <label>Nombre</label>
+            <label>Nombre Completo</label>
             <input type="text" id="reg-nombre" placeholder="Ej. Juan Pérez">
         </div>
 
@@ -96,37 +103,42 @@
             <input type="password" id="reg-pass" placeholder="Mínimo 6 caracteres">
         </div>
         
-        <button class="btn-registrar" onclick="registrarUsuario()">Crear Cuenta</button>
+        <button class="btn-registrar" id="btnRegistro" onclick="registrarUsuario()">Crear Cuenta</button>
 
+        <a href="login.html" class="login-link">¿Ya tienes cuenta? Inicia sesión</a>
         <p class="footer-text">Al continuar, aceptas nuestros términos.</p>
     </div>
 
     <script>
-  // 2. Inicializar Supabase
-const supabaseUrl = "https://cpveuexgxwxjejurtwro.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc";
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-
-// Hacerlo global para que user.js y otros lo encuentren
-window.supabaseClient = supabase; 
-window.db = supabase;
+        // 1. Configuración de Supabase
+        const supabaseUrl = "https://cpveuexgxwxjejurtwro.supabase.co";
+        const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc";
+        
+        // Inicialización segura
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        window.supabaseClient = supabase; 
 
         async function registrarUsuario() {
-            const nombre = document.getElementById('reg-nombre').value;
-            const correo = document.getElementById('reg-correo').value;
+            // Capturar elementos
+            const nombre = document.getElementById('reg-nombre').value.trim();
+            const correo = document.getElementById('reg-correo').value.trim();
             const pass = document.getElementById('reg-pass').value;
+            const btn = document.getElementById('btnRegistro');
 
-            if (nombre.trim().length < 3) return alert("Nombre muy corto");
-            if (!correo.includes('@')) return alert("Correo inválido");
-            if (pass.length < 6) return alert("La contraseña debe tener al menos 6 caracteres");
+            // Validaciones básicas
+            if (nombre.length < 3) return alert("Por favor, ingresa tu nombre completo.");
+            if (!correo.includes('@')) return alert("Ingresa un correo electrónico válido.");
+            if (pass.length < 6) return alert("La contraseña debe tener al menos 6 caracteres.");
 
-            const btn = document.querySelector('.btn-registrar');
-            btn.textContent = "Registrando...";
+            // Estado de carga
+            btn.textContent = "Procesando...";
             btn.disabled = true;
 
             try {
+                console.log("Intentando registrar a:", correo);
+
                 // Registro en Supabase Auth
-                // Pasamos el nombre en 'data' para que el Trigger SQL lo guarde en la tabla perfiles
+                // 'nombre' se guarda en raw_user_meta_data para que el Trigger SQL lo mueva a perfiles_clientes
                 const { data, error } = await supabase.auth.signUp({
                     email: correo,
                     password: pass,
@@ -139,20 +151,38 @@ window.db = supabase;
 
                 if (error) throw error;
 
-                alert("¡Cuenta creada! Bienvenido.");
+                // Caso especial: Si el usuario ya existe pero no se ha confirmado (y la opción está on)
+                if (data.user && data.session === null) {
+                    alert("¡Registro iniciado! Por favor revisa tu correo para confirmar tu cuenta.");
+                } else {
+                    alert("¡Cuenta creada con éxito! Bienvenido.");
+                }
                 
-                // Animación de salida
+                // Animación de éxito y redirección
                 document.querySelector('.registro-card').style.transform = "scale(0.9)";
                 document.querySelector('.registro-card').style.opacity = "0";
-                document.querySelector('.registro-card').style.transition = "0.4s";
+                document.querySelector('.registro-card').style.transition = "0.5s ease";
 
                 setTimeout(() => {
                     window.location.href = 'index.html';
-                }, 400);
+                }, 500);
 
             } catch (err) {
-                alert("Error: " + err.message);
-                btn.textContent = "Intentar de nuevo";
+                console.error("Error completo de Supabase:", err);
+                
+                // Mensajes de error amigables
+                let mensajeError = "No se pudo crear la cuenta.";
+                
+                if (err.message.includes("already registered")) {
+                    mensajeError = "Este correo ya está registrado. Intenta iniciar sesión.";
+                } else if (err.message.includes("Database error")) {
+                    mensajeError = "Error en la base de datos (Trigger). Verifica que la tabla perfiles_clientes exista.";
+                } else {
+                    mensajeError = "Detalle: " + err.message;
+                }
+
+                alert(mensajeError);
+                btn.textContent = "Crear Cuenta";
                 btn.disabled = false;
             }
         }
