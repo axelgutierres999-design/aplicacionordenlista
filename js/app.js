@@ -1,7 +1,6 @@
 // --- 0. INICIALIZACIÓN SUPABASE ---
-// Asegúrate de que 'db' o 'supabase' esté definido globalmente en tu HTML o defínelo aquí
-// const supabase = supabase.createClient('TU_URL', 'TU_ANON_KEY');
-const db = window.supabase; // Asumiendo que usas la variable global del script CDN
+// Usamos la variable global definida en el index.html
+const db = window.supabase; 
 
 // --- 1. CONFIGURACIÓN Y DATOS ---
 let usuarioId = null;
@@ -38,7 +37,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const { data: { session } } = await db.auth.getSession();
   if (session) {
     usuarioId = session.user.id;
-    actualizarInfoUsuarioHeader(); // Función opcional para actualizar foto en header
+    actualizarInfoUsuarioHeader();
   }
 
   // 3.1 Inicializar mapa
@@ -67,7 +66,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (inputMap) inputMap.addEventListener('input', e => filtrarLocales(e.target.value, false));
   if (inputFav) inputFav.addEventListener('input', e => filtrarLocales(e.target.value, true));
 
-  // 3.5 Clic en el mapa
+  // 3.5 Clic en el mapa para cerrar preview
   map.on('click', () => {
     document.getElementById('preview-card')?.classList.add('hidden');
     if (controlRuta) {
@@ -78,7 +77,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function actualizarInfoUsuarioHeader() {
-    // Busca datos básicos para el header si existen elementos
     const nameEl = document.getElementById('user-name');
     const photoEl = document.getElementById('user-photo');
     
@@ -102,24 +100,28 @@ async function cargarLocalesDesdeDB() {
       return;
     }
 
-    // Mapeo exacto con tu SQL
+    // Mapeo con campos de Menú, WhatsApp y Mesas
     locales = data.map((r, index) => ({
       id: r.id,
       nombre: r.nombre || "Sin nombre",
-      lat: r.lat ? parseFloat(r.lat) : 0,         // SQL: lat
-      lng: r.longitud ? parseFloat(r.longitud) : 0, // SQL: longitud
-      cat: r.categoria || "General",              // Asegúrate de tener esta columna o usa un default
-      icono: "🍽️",                                // Puedes agregar col icono en SQL o usar default
+      lat: r.lat ? parseFloat(r.lat) : 0,
+      lng: r.longitud ? parseFloat(r.longitud) : 0,
+      cat: r.categoria || "General",
+      icono: "🍽️",
       pago: "Efectivo/Tarjeta",
       horario: r.horarios || "Consultar",
       direccion: r.direccion || "",
-      img: r.menu_digital_url || r.qr_pago_url || `https://picsum.photos/400/300?random=${index}` // Usamos urls disponibles o random
+      img: r.foto_url || `https://picsum.photos/400/300?random=${index}`,
+      // CAMPOS DINÁMICOS
+      menu_img: r.menu_digital_url, 
+      whatsapp: r.whatsapp || "", 
+      mesas_libres: r.mesas_disponibles || 0,
+      mesas_total: r.mesas_totales || 0
     }));
 
     renderizarMarcadores(locales);
   } catch (err) {
     console.error("❌ Error al cargar restaurantes:", err);
-    // alert("Error de conexión con la base de datos."); 
   }
 }
 
@@ -172,7 +174,6 @@ async function filtrarLocales(termino, esFav) {
   let listaFiltrada = locales;
 
   if (esFav) {
-      // Lógica especial para filtrar favoritos desde DB
       if (!usuarioId) return;
       const { data: favs } = await db.from('favoritos').select('restaurante_id').eq('usuario_id', usuarioId);
       const idsFavs = favs.map(f => f.restaurante_id);
@@ -191,7 +192,6 @@ async function verDetalle(nombre) {
   const res = locales.find(l => l.nombre === nombre);
   if (!res) return;
 
-  // Verificar si es favorito en DB
   let esFav = false;
   if (usuarioId) {
       const { data } = await db.from('favoritos')
@@ -200,16 +200,32 @@ async function verDetalle(nombre) {
       esFav = data && data.length > 0;
   }
 
+  // Actualización de UI básica
   document.getElementById('detalle-nombre').textContent = res.nombre;
   document.getElementById('detalle-titulo-header').textContent = res.nombre;
   document.getElementById('detalle-categoria').textContent = res.cat;
   document.getElementById('detalle-img').src = res.img;
 
+  // Lógica de Mesas (Visual)
+  const mesasHTML = res.mesas_total > 0 
+    ? `<div style="margin-top:15px; padding:12px; background:#e0e5ec; border-radius:12px; box-shadow: inset 4px 4px 8px #bec3c9, inset -4px -4px 8px #ffffff;">
+         <span style="font-size:13px; font-weight:bold; color:#333;">🪑 Mesas disponibles: ${res.mesas_libres} de ${res.mesas_total}</span>
+       </div>`
+    : '';
+
+  // Lógica de Menú Digital
+  const menuHTML = res.menu_img 
+    ? `<h3 style="margin-top:20px; font-size:16px; font-weight:800;">📖 Menú del día</h3>
+       <img src="${res.menu_img}" style="width:100%; border-radius:15px; margin-top:10px; box-shadow: 5px 5px 15px #caced1;">`
+    : '<p style="font-size:12px; color:gray; margin-top:15px;">Menú digital no disponible actualmente.</p>';
+
   const info = document.getElementById('detalle-info-box');
   info.innerHTML = `
     <p>📍 ${res.direccion || 'Sin dirección registrada'}</p>
     <p>🕒 ${res.horario}</p>
-    <p>💳 Pago: ${res.pago}</p>
+    ${mesasHTML}
+    ${menuHTML}
+    
     <div style="margin-top:20px; display:flex; gap:10px;">
       <button id="btn-fav-action" onclick="toggleFav('${res.id}')"
         style="flex:1; padding:15px; border-radius:15px;
@@ -222,28 +238,39 @@ async function verDetalle(nombre) {
                background:#000; color:#fff; font-weight:600;">
         📍 Ir ahora
       </button>
-    </div>`;
+    </div>
+    
+    <button class="btn-ver-detalle-negro"
+            onclick="abrirWhatsApp('${res.whatsapp}', '${res.nombre}')"
+            style="width: 100%; margin-top: 15px; background:#25D366; border:none; color:white;">
+      💬 Chatear por WhatsApp
+    </button>`;
+
   cambiarVista('detalle');
+}
+
+// Ayudante de WhatsApp
+function abrirWhatsApp(telefono, localNombre) {
+    if (!telefono || telefono === "") return alert("Este local aún no tiene WhatsApp registrado.");
+    const telLimpio = telefono.replace(/\D/g,'');
+    const mensaje = encodeURIComponent(`¡Hola! Vengo de la App. Me gustaría pedir informes en ${localNombre}.`);
+    window.open(`https://wa.me/${telLimpio}?text=${mensaje}`, '_blank');
 }
 
 async function toggleFav(restauranteId) {
   if (!usuarioId) return alert("Debes iniciar sesión para guardar favoritos.");
 
-  // 1. Verificar si ya existe
   const { data: existente } = await db.from('favoritos')
     .select('id')
     .match({ usuario_id: usuarioId, restaurante_id: restauranteId })
     .single();
 
   if (existente) {
-      // BORRAR
       await db.from('favoritos').delete().eq('id', existente.id);
   } else {
-      // INSERTAR
       await db.from('favoritos').insert([{ usuario_id: usuarioId, restaurante_id: restauranteId }]);
   }
 
-  // Refrescar vistas
   const local = locales.find(l => l.id === restauranteId);
   if (!document.getElementById('view-detalle').classList.contains('hidden')) verDetalle(local.nombre);
   if (!document.getElementById('view-favoritos').classList.contains('hidden')) cargarFavoritos();
@@ -254,15 +281,11 @@ async function cargarFavoritos() {
       document.getElementById('grid-favoritos').innerHTML = "<p style='text-align:center; padding:20px;'>Inicia sesión para ver tus favoritos.</p>";
       return;
   }
-
-  // Obtener IDs de favoritos
-  const { data: favs, error } = await db.from('favoritos').select('restaurante_id').eq('usuario_id', usuarioId);
-  
-  if (error || !favs) return;
+  const { data: favs } = await db.from('favoritos').select('restaurante_id').eq('usuario_id', usuarioId);
+  if (!favs) return;
 
   const ids = favs.map(f => f.restaurante_id);
   const listaFavoritos = locales.filter(loc => ids.includes(loc.id));
-  
   mostrarFavoritosEnGrid(listaFavoritos);
 }
 
@@ -270,12 +293,7 @@ function mostrarFavoritosEnGrid(lista) {
   const grid = document.getElementById('grid-favoritos');
   grid.innerHTML = "";
   if (!lista.length) {
-    grid.innerHTML = `
-      <div style="text-align:center; padding:50px 20px; color:#888;">
-        <div style="font-size:40px; margin-bottom:10px;">📂</div>
-        <p>No tienes favoritos guardados.</p>
-        <button onclick="regresarVistas()" style="margin-top:20px;">Explorar mapa</button>
-      </div>`;
+    grid.innerHTML = `<div style="text-align:center; padding:50px 20px; color:#888;">📂<p>No tienes favoritos.</p></div>`;
     return;
   }
   lista.forEach(loc => {
@@ -284,14 +302,11 @@ function mostrarFavoritosEnGrid(lista) {
     card.innerHTML = `
       <div style="position:relative;">
         <img src="${loc.img}" style="width:100%; height:140px; object-fit:cover;">
-        <button onclick="toggleFav('${loc.id}')"
-          style="position:absolute; top:10px; right:10px; background:white;
-                 border:none; width:30px; height:30px; border-radius:50%;
-                 box-shadow:0 2px 5px rgba(0,0,0,0.2);">🗑️</button>
+        <button onclick="toggleFav('${loc.id}')" style="position:absolute; top:10px; right:10px; background:white; border:none; width:30px; height:30px; border-radius:50%;">🗑️</button>
       </div>
       <div style="padding:15px;">
         <h3>${loc.nombre}</h3>
-        <p style="color:var(--text-dim); font-size:12px;">${loc.cat} • ${loc.horario}</p>
+        <p style="color:var(--text-dim); font-size:12px;">${loc.cat}</p>
         <button class="btn-ver-detalle-negro" style="width:100%;" onclick="verDetalle('${loc.nombre}')">Ver Detalles</button>
       </div>`;
     grid.appendChild(card);
@@ -317,7 +332,6 @@ function trazarRuta(lat, lng) {
     }).addTo(map);
     cambiarVista('mapa');
   }, err => {
-    alert("No se pudo obtener tu ubicación. Activa el GPS.");
-    console.error(err);
+    alert("Activa el GPS para trazar la ruta.");
   });
 }
