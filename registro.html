@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Bienvenido - Registro Premium</title>
+    
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
     <style>
         :root {
             --bg-color: #eef0f3;
@@ -110,55 +112,49 @@
     </div>
 
     <script>
-        // 1. Configuración de Supabase
-        const supabaseUrl = "https://cpveuexgxwxjejurtwro.supabase.co";
-        const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc";
+        // Configuración de Supabase con nombres de variables únicos
+        const _supabaseUrl = "https://cpveuexgxwxjejurtwro.supabase.co";
+        const _supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc";
         
-        // Inicialización segura
-        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-        window.supabaseClient = supabase; 
+        // Creamos la conexión (Usamos supabaseApp para evitar conflictos)
+        const supabaseApp = window.supabase.createClient(_supabaseUrl, _supabaseKey);
+
+        // Hacemos el cliente accesible para otros archivos si es necesario
+        window.supabaseClient = supabaseApp;
 
         async function registrarUsuario() {
-            // Capturar elementos
+            console.log("Iniciando proceso de registro...");
+
             const nombre = document.getElementById('reg-nombre').value.trim();
             const correo = document.getElementById('reg-correo').value.trim();
             const pass = document.getElementById('reg-pass').value;
             const btn = document.getElementById('btnRegistro');
 
-            // Validaciones básicas
-            if (nombre.length < 3) return alert("Por favor, ingresa tu nombre completo.");
-            if (!correo.includes('@')) return alert("Ingresa un correo electrónico válido.");
-            if (pass.length < 6) return alert("La contraseña debe tener al menos 6 caracteres.");
+            // 1. Validaciones
+            if (!nombre || !correo || pass.length < 6) {
+                return alert("Por favor, llena todos los campos. La contraseña debe tener al menos 6 caracteres.");
+            }
 
-            // Estado de carga
+            // 2. Bloquear botón
             btn.textContent = "Procesando...";
             btn.disabled = true;
 
             try {
-                console.log("Intentando registrar a:", correo);
-
-                // Registro en Supabase Auth
-                // 'nombre' se guarda en raw_user_meta_data para que el Trigger SQL lo mueva a perfiles_clientes
-                const { data, error } = await supabase.auth.signUp({
+                // 3. Intento de registro en Supabase Auth
+                const { data, error } = await supabaseApp.auth.signUp({
                     email: correo,
                     password: pass,
                     options: {
-                        data: {
-                            nombre: nombre
-                        }
+                        data: { nombre: nombre } // Esto lo recibe el Trigger SQL para 'perfiles_clientes'
                     }
                 });
 
                 if (error) throw error;
 
-                // Caso especial: Si el usuario ya existe pero no se ha confirmado (y la opción está on)
-                if (data.user && data.session === null) {
-                    alert("¡Registro iniciado! Por favor revisa tu correo para confirmar tu cuenta.");
-                } else {
-                    alert("¡Cuenta creada con éxito! Bienvenido.");
-                }
+                // 4. Manejo de éxito
+                alert("¡Registro exitoso! Ya puedes disfrutar de la experiencia.");
                 
-                // Animación de éxito y redirección
+                // Animación visual de salida
                 document.querySelector('.registro-card').style.transform = "scale(0.9)";
                 document.querySelector('.registro-card').style.opacity = "0";
                 document.querySelector('.registro-card').style.transition = "0.5s ease";
@@ -168,20 +164,15 @@
                 }, 500);
 
             } catch (err) {
-                console.error("Error completo de Supabase:", err);
+                console.error("Error capturado:", err);
                 
-                // Mensajes de error amigables
-                let mensajeError = "No se pudo crear la cuenta.";
-                
+                // Mensaje amigable al usuario
+                let msg = "Error al registrar: " + err.message;
                 if (err.message.includes("already registered")) {
-                    mensajeError = "Este correo ya está registrado. Intenta iniciar sesión.";
-                } else if (err.message.includes("Database error")) {
-                    mensajeError = "Error en la base de datos (Trigger). Verifica que la tabla perfiles_clientes exista.";
-                } else {
-                    mensajeError = "Detalle: " + err.message;
+                    msg = "Este correo ya está registrado. Intenta iniciar sesión.";
                 }
-
-                alert(mensajeError);
+                
+                alert(msg);
                 btn.textContent = "Crear Cuenta";
                 btn.disabled = false;
             }
