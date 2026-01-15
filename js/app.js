@@ -1,208 +1,247 @@
-// --- 0. INICIALIZACIÓN ---
 const db = window.supabase; 
 let usuarioId = null;
 let locales = [];
 let map, capaMarcadores = L.layerGroup(), controlRuta = null;
 
-// --- 1. CREADOR DE ICONOS PERSONALIZADOS (USANDO LOGO DEL SQL) ---
-function crearIconoFlotante(logoUrl, index) {
-    const delay = (index * 0.1) + "s";
-    // Si no hay logo, ponemos un emoji genérico
-    const contenido = logoUrl 
-        ? `<img src="${logoUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`
-        : `<div style="transform: rotate(45deg); font-size: 20px;">🍽️</div>`;
-
-    return L.divIcon({
-        className: 'custom-marker-container',
-        html: `
-            <div style="
-                background: #fff; width: 45px; height: 45px;
-                border-radius: 50% 50% 50% 12px; transform: rotate(-45deg);
-                display: flex; align-items: center; justify-content: center;
-                box-shadow: 5px 10px 15px rgba(0,0,0,0.3); border: 2px solid white;
-                overflow: hidden; animation: floating 3s ease-in-out ${delay} infinite;">
-                <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; transform: rotate(45deg);">
-                    ${contenido}
-                </div>
-            </div>`,
-        iconSize: [45, 45],
-        iconAnchor: [22, 45]
-    });
+// --- 1. ICONOS: SOLO EMOJIS (COMO EL CÓDIGO ANTERIOR) ---
+function crearIconoFlotante(emoji, index) {
+  const delay = (index * 0.1) + "s";
+  return L.divIcon({
+    className: 'custom-marker-container',
+    html: `
+      <div style="
+        background: #000; width: 45px; height: 45px;
+        border-radius: 50% 50% 50% 12px; transform: rotate(-45deg);
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 5px 10px 15px rgba(0,0,0,0.3); border: 2px solid white;
+        animation: floating 3s ease-in-out ${delay} infinite;">
+        <div style="transform: rotate(45deg); font-size: 22px;">${emoji || '🍽️'}</div>
+      </div>`,
+    iconSize: [45, 45],
+    iconAnchor: [22, 45]
+  });
 }
 
-// --- 2. INICIALIZACIÓN Y SPLASH ANIMADO ---
+// --- 2. INICIALIZACIÓN ---
 document.addEventListener('DOMContentLoaded', async () => {
-    // Verificar Sesión
-    const { data: { session } } = await db.auth.getSession();
-    if (session) usuarioId = session.user.id;
+  const { data: { session } } = await db.auth.getSession();
+  if (session) {
+    usuarioId = session.user.id;
+    actualizarInfoUsuarioHeader();
+  }
 
-    // Inicializar mapa
-    map = L.map('map', { zoomControl: false, attributionControl: false }).setView([19.2826, -99.6557], 14);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
-    capaMarcadores.addTo(map);
+  map = L.map('map', { zoomControl: false, attributionControl: false }).setView([19.2826, -99.6557], 14);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
+  capaMarcadores.addTo(map);
 
-    await cargarLocalesDesdeDB();
+  await cargarLocalesDesdeDB();
 
-    // Splash Screen con salida suave
+  // Splash screen
+  setTimeout(() => {
     const splash = document.getElementById('splash-screen');
     if (splash) {
-        setTimeout(() => {
-            splash.style.transition = "opacity 0.8s ease, transform 0.8s ease";
-            splash.style.opacity = '0';
-            splash.style.transform = "scale(1.1)"; // Efecto de zoom al salir
-            setTimeout(() => {
-                splash.style.display = 'none';
-                map.invalidateSize();
-            }, 800);
-        }, 2000); // 2 segundos de lucimiento
+      splash.style.opacity = '0';
+      setTimeout(() => { splash.style.display = 'none'; map.invalidateSize(); }, 500);
     }
+  }, 1500);
+
+  // Eventos de búsqueda
+  document.getElementById('search-input-map')?.addEventListener('input', e => filtrarLocales(e.target.value, false));
+  document.getElementById('search-input-fav')?.addEventListener('input', e => filtrarLocales(e.target.value, true));
+
+  // CORRECCIÓN: CERRAR PREVIEW AL TOCAR EL MAPA
+  map.on('click', () => {
+    document.getElementById('preview-card')?.classList.add('hidden');
+    if (controlRuta) { map.removeControl(controlRuta); controlRuta = null; }
+  });
 });
 
-// --- 3. CARGAR DATOS (MAPEADO AL SQL V9.2) ---
+// --- 3. CARGAR DATOS ---
 async function cargarLocalesDesdeDB() {
-    try {
-        const { data, error } = await db.from('restaurantes').select('*');
-        if (error) throw error;
+  try {
+    const { data, error } = await db.from('restaurantes').select('*');
+    if (error) throw error;
 
-        locales = data.map((r, index) => ({
-            id: r.id,
-            nombre: r.nombre,
-            lat: r.lat || 0,
-            lng: r.longitud || 0,
-            cat: r.categoria || "Restaurante",
-            logo: r.logo_url, // Extraído del SQL
-            portada: r.foto_url || `https://picsum.photos/400/300?random=${index}`,
-            direccion: r.direccion || "Dirección no disponible",
-            horario: r.horarios || "8:00 AM - 10:00 PM",
-            whatsapp: r.telefono || "", // Usamos 'telefono' del SQL para WhatsApp
-            menu_img: r.menu_digital_url,
-            mesas_total: r.num_mesas || 10,
-            // Simulamos disponibilidad para el diseño (o podrías traerlo de otra tabla)
-            mesas_libres: Math.floor(Math.random() * (r.num_mesas || 10)) 
-        }));
+    locales = data.map((r, index) => ({
+      id: r.id,
+      nombre: r.nombre || "Sin nombre",
+      lat: r.lat ? parseFloat(r.lat) : 0,
+      lng: r.longitud ? parseFloat(r.longitud) : 0,
+      cat: r.categoria || "General",
+      icono: "🍽️", // Puedes mapear emojis por categoría aquí
+      horario: r.horarios || "Consultar",
+      direccion: r.direccion || "",
+      img: r.foto_url || `https://picsum.photos/400/300?random=${index}`,
+      logo: r.logo_url,
+      menu_img: r.menu_digital_url, 
+      whatsapp: r.whatsapp || r.telefono || "", 
+      mesas_libres: r.mesas_disponibles ?? r.num_mesas, // Si no hay dinámico, usa el total
+      mesas_total: r.mesas_totales ?? r.num_mesas ?? 10
+    }));
 
-        renderizarMarcadores(locales);
-    } catch (err) {
-        console.error("Error cargando locales:", err);
-    }
+    renderizarMarcadores(locales);
+  } catch (err) { console.error("Error:", err); }
 }
 
-// --- 4. RENDERIZADO EN MAPA ---
+// --- 4. MAPA Y PREVIEW (RECTÁNGULO INFERIOR) ---
 function renderizarMarcadores(lista) {
-    capaMarcadores.clearLayers();
-    lista.forEach((loc, index) => {
-        if (!loc.lat || !loc.lng) return;
-        const marker = L.marker([loc.lat, loc.lng], { icon: crearIconoFlotante(loc.logo, index) }).addTo(capaMarcadores);
-        marker.on('click', () => {
-            mostrarPreview(loc);
-            map.panTo([loc.lat - 0.002, loc.lng], { animate: true });
-        });
+  capaMarcadores.clearLayers();
+  lista.forEach((loc, index) => {
+    if (!loc.lat || !loc.lng) return;
+    const marker = L.marker([loc.lat, loc.lng], { icon: crearIconoFlotante(loc.icono, index) }).addTo(capaMarcadores);
+    marker.on('click', e => {
+      L.DomEvent.stopPropagation(e);
+      mostrarPreview(loc);
+      map.panTo([loc.lat - 0.002, loc.lng], { animate: true });
     });
+  });
 }
 
 function mostrarPreview(loc) {
-    const card = document.getElementById('preview-card');
-    document.getElementById('preview-nombre').textContent = loc.nombre;
-    document.getElementById('preview-cat').textContent = loc.cat;
-    document.getElementById('preview-img').src = loc.logo || loc.portada;
-    document.getElementById('btn-abrir-detalle').onclick = () => verDetalle(loc.id);
-    card.classList.remove('hidden');
+  const card = document.getElementById('preview-card');
+  document.getElementById('preview-nombre').textContent = loc.nombre;
+  // CORRECCIÓN: Mostrar categoría y horario en la tarjeta previa
+  document.getElementById('preview-cat').innerHTML = `${loc.cat} <br> <span style="font-size:11px; color:#666;">🕒 ${loc.horario}</span>`;
+  document.getElementById('preview-img').src = loc.img;
+  
+  const btn = document.getElementById('btn-abrir-detalle');
+  btn.textContent = "Ver detalles"; // CORRECCIÓN: Texto del botón
+  btn.onclick = () => verDetalle(loc.nombre);
+  
+  card.classList.remove('hidden');
 }
 
-// --- 5. VISTA DE DETALLE PREMIUM ---
-async function verDetalle(id) {
-    const res = locales.find(l => l.id === id);
-    if (!res) return;
+// --- 5. VISTA DE DETALLE (CON LOGO FLOTANTE) ---
+async function verDetalle(nombre) {
+  const res = locales.find(l => l.nombre === nombre);
+  if (!res) return;
 
-    // 1. Imagen de Portada y Logo Flotante
-    document.getElementById('detalle-img').src = res.portada;
-    const logoImg = document.getElementById('detalle-logo-restaurante');
-    if (logoImg) {
-        logoImg.src = res.logo || "";
-        logoImg.style.display = res.logo ? 'block' : 'none';
-    }
+  let esFav = false;
+  if (usuarioId) {
+      const { data } = await db.from('favoritos').select('*').match({ usuario_id: usuarioId, restaurante_id: res.id });
+      esFav = data && data.length > 0;
+  }
 
-    document.getElementById('detalle-titulo-header').textContent = res.nombre;
-    document.getElementById('detalle-nombre').textContent = res.nombre;
-    document.getElementById('detalle-categoria').textContent = res.cat;
+  document.getElementById('detalle-nombre').textContent = res.nombre;
+  document.getElementById('detalle-titulo-header').textContent = res.nombre;
+  document.getElementById('detalle-categoria').textContent = res.cat;
+  document.getElementById('detalle-img').src = res.img;
+  
+  // CORRECCIÓN: El logo solo sale aquí
+  const logoEl = document.getElementById('detalle-logo-restaurante');
+  logoEl.src = res.logo || res.img;
 
-    // 2. Construcción del cuerpo del detalle
-    const infoBox = document.getElementById('detalle-info-box');
+  // CORRECCIÓN: Mesas (Si todas están disponibles, marca todas)
+  const info = document.getElementById('detalle-info-box');
+  info.innerHTML = `
+    <div class="info-box-neumorph" style="margin-bottom: 20px;">
+        <p>📍 ${res.direccion || 'Sin dirección'}</p>
+        <p>🕒 ${res.horario}</p>
+    </div>
+
+    <div class="mesa-status-card">
+        <div class="mesa-icon-box">🪑</div>
+        <div class="mesa-info">
+            <h3>${res.mesas_libres} Mesas Libres</h3>
+            <p>De un total de ${res.mesas_total} lugares</p>
+        </div>
+        <div class="mesa-indicator" style="background: ${res.mesas_libres > 0 ? '#4CAF50' : '#F44336'}; box-shadow: 0 0 10px ${res.mesas_libres > 0 ? '#4CAF50' : '#F44336'};"></div>
+    </div>
+
+    ${res.menu_img ? `
+        <h3 style="margin: 25px 0 10px; font-weight: 800;">📖 Menú Digital</h3>
+        <img src="${res.menu_img}" style="width:100%; border-radius:20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); margin-bottom: 20px;">
+    ` : ''}
+
+    <div style="display: flex; gap: 10px; margin-top: 20px;">
+      <button id="btn-fav-action" onclick="toggleFav('${res.id}')"
+        style="flex:1; padding:15px; border-radius:15px; border:1px solid #000; background:${esFav ? '#000':'#fff'}; color:${esFav ? '#fff':'#000'}; font-weight:600;">
+        ${esFav ? '⭐ Guardado' : '☆ Guardar'}
+      </button>
+      <button onclick="trazarRuta(${res.lat},${res.lng})"
+        style="flex:1; padding:15px; border-radius:15px; background:#000; color:#fff; font-weight:600;">
+        📍 Ir ahora
+      </button>
+    </div>
     
-    // Diseño de Mesas Neumórfico
-    const mesasHTML = `
-        <div class="mesa-status-card">
-            <div class="mesa-icon-box">🪑</div>
-            <div class="mesa-info">
-                <h3>${res.mesas_libres} Mesas Libres</h3>
-                <p>De un total de ${res.mesas_total} lugares</p>
-            </div>
-            <div class="mesa-indicator" style="background: ${res.mesas_libres > 0 ? '#4CAF50' : '#F44336'}; box-shadow: 0 0 10px ${res.mesas_libres > 0 ? '#4CAF50' : '#F44336'};"></div>
-        </div>
-    `;
+    <button class="btn-ver-mas" onclick="abrirWhatsApp('${res.whatsapp}', '${res.nombre}')" style="width: 100%; margin-top: 15px; background:#25D366; border:none; color:white;">
+      💬 Chatear por WhatsApp
+    </button>`;
 
-    infoBox.innerHTML = `
-        <div class="info-box-neumorph" style="margin-bottom: 20px;">
-            <p>📍 ${res.direccion}</p>
-            <p>🕒 ${res.horario}</p>
-        </div>
-
-        ${mesasHTML}
-
-        ${res.menu_img ? `
-            <h3 style="margin: 25px 0 10px; font-weight: 800;">📖 Menú Digital</h3>
-            <img src="${res.menu_img}" style="width:100%; border-radius:20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); margin-bottom: 20px;">
-        ` : ''}
-
-        <div style="display: flex; gap: 10px; margin-top: 20px;">
-            <button onclick="abrirWhatsApp('${res.whatsapp}', '${res.nombre}')" 
-                    style="flex: 1; background: #25D366; color: white; border: none; padding: 16px; border-radius: 15px; font-weight: bold; font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                <span>💬 WhatsApp</span>
-            </button>
-            <button onclick="trazarRuta(${res.lat}, ${res.lng})" 
-                    style="flex: 1; background: #000; color: white; border: none; padding: 16px; border-radius: 15px; font-weight: bold; font-size: 16px;">
-                📍 Ir ahora
-            </button>
-        </div>
-    `;
-
-    cambiarVista('detalle');
+  cambiarVista('detalle');
 }
 
-// --- 6. UTILIDADES (WHATSAPP Y RUTAS) ---
+// --- 6. FUNCIONES DE APOYO (Siguen intactas) ---
+function cambiarVista(target) {
+  document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`view-${target}`).classList.remove('hidden');
+  if (target !== 'detalle') {
+      const activeBtn = document.getElementById(`btn-${target}`);
+      if (activeBtn) activeBtn.classList.add('active');
+  }
+  if (target === 'mapa') setTimeout(() => map.invalidateSize(), 300);
+  if (target === 'favoritos') cargarFavoritos();
+}
 
-function abrirWhatsApp(telefono, nombre) {
-    if (!telefono) return alert("Este establecimiento no tiene WhatsApp registrado.");
-    
-    // Limpiar el número de caracteres no numéricos
-    const numLimpio = telefono.replace(/\D/g, '');
-    const mensaje = encodeURIComponent(`¡Hola! Vengo de la App y me gustaría pedir información sobre ${nombre}.`);
-    
-    // Abre WhatsApp en una nueva pestaña
-    window.open(`https://wa.me/${numLimpio}?text=${mensaje}`, '_blank');
+async function filtrarLocales(termino, esFav) {
+  const q = termino.toLowerCase();
+  let listaFiltrada = locales;
+  if (esFav) {
+      const { data: favs } = await db.from('favoritos').select('restaurante_id').eq('usuario_id', usuarioId);
+      const idsFavs = favs.map(f => f.restaurante_id);
+      listaFiltrada = locales.filter(l => idsFavs.includes(l.id));
+  }
+  const res = listaFiltrada.filter(l => l.nombre.toLowerCase().includes(q) || l.cat.toLowerCase().includes(q));
+  esFav ? mostrarFavoritosEnGrid(res) : renderizarMarcadores(res);
 }
 
 function trazarRuta(lat, lng) {
-    if (controlRuta) map.removeControl(controlRuta);
-    
-    navigator.geolocation.getCurrentPosition(pos => {
-        controlRuta = L.Routing.control({
-            waypoints: [
-                L.latLng(pos.coords.latitude, pos.coords.longitude),
-                L.latLng(lat, lng)
-            ],
-            lineOptions: { styles: [{ color: '#000', weight: 5, opacity: 0.7 }] },
-            createMarker: () => null,
-            show: false
-        }).addTo(map);
-        cambiarVista('mapa');
-    }, () => alert("Por favor activa el GPS"));
+  if (controlRuta) map.removeControl(controlRuta);
+  navigator.geolocation.getCurrentPosition(pos => {
+    controlRuta = L.Routing.control({
+      waypoints: [L.latLng(pos.coords.latitude, pos.coords.longitude), L.latLng(lat, lng)],
+      lineOptions: { styles: [{ color: '#000', weight: 6 }] },
+      createMarker: () => null,
+      show: false
+    }).addTo(map);
+    cambiarVista('mapa');
+  });
 }
 
-function cambiarVista(vista) {
-    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
-    document.getElementById(`view-${vista}`).classList.remove('hidden');
-    if (vista === 'mapa') setTimeout(() => map.invalidateSize(), 300);
+async function cargarFavoritos() {
+  if (!usuarioId) return;
+  const { data: favs } = await db.from('favoritos').select('restaurante_id').eq('usuario_id', usuarioId);
+  const ids = favs.map(f => f.restaurante_id);
+  mostrarFavoritosEnGrid(locales.filter(loc => ids.includes(loc.id)));
+}
+
+function mostrarFavoritosEnGrid(lista) {
+  const grid = document.getElementById('grid-favoritos');
+  grid.innerHTML = lista.length ? "" : "<p style='text-align:center;'>No tienes favoritos.</p>";
+  lista.forEach(loc => {
+    const card = document.createElement('div');
+    card.className = "card-restaurante";
+    card.innerHTML = `
+      <div style="position:relative;">
+        <img src="${loc.img}" style="width:100%; height:140px; object-fit:cover; border-radius:15px 15px 0 0;">
+        <button onclick="toggleFav('${loc.id}')" style="position:absolute; top:10px; right:10px; background:white; border:none; width:30px; height:30px; border-radius:50%;">🗑️</button>
+      </div>
+      <div style="padding:15px;">
+        <h3>${loc.nombre}</h3>
+        <p style="color:#888; font-size:12px;">${loc.cat}</p>
+        <button class="btn-ver-mas" style="width:100%; margin-top:10px;" onclick="verDetalle('${loc.nombre}')">Ver Detalles</button>
+      </div>`;
+    grid.appendChild(card);
+  });
 }
 
 function regresarVistas() { cambiarVista('mapa'); }
+function abrirWhatsApp(tel, nom) { window.open(`https://wa.me/${tel.replace(/\D/g,'')}?text=Hola, vengo de la app y quiero informes de ${nom}`); }
+async function actualizarInfoUsuarioHeader() {
+    const { data } = await db.from('perfiles_clientes').select('nombre, foto_url').eq('id', usuarioId).single();
+    if (data) {
+        document.getElementById('user-name').textContent = data.nombre;
+        document.getElementById('user-photo').src = data.foto_url || "https://picsum.photos/200";
+    }
+}

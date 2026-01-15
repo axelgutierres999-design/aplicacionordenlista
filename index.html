@@ -11,14 +11,13 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
   <link rel="stylesheet" href="css/style.css">
-  
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css">
   
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
   <style>
-    /* --- ESTILOS NEUMÓRFICOS EXCLUSIVOS PARA DETALLE --- */
+    /* --- ESTILOS NEUMÓRFICOS Y AJUSTES DE UI --- */
     .mesa-status-card {
         background: linear-gradient(145deg, #ffffff, #f0f0f3);
         border-radius: 20px;
@@ -32,37 +31,17 @@
     }
     
     .mesa-icon-box {
-        width: 50px;
-        height: 50px;
+        width: 50px; height: 50px;
         background: #000;
         border-radius: 15px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24px;
-        color: white;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 24px; color: white;
         box-shadow: 0 4px 10px rgba(0,0,0,0.2);
     }
 
-    .mesa-info h3 {
-        margin: 0;
-        font-size: 16px;
-        color: #333;
-        font-weight: 800;
-    }
-
-    .mesa-info p {
-        margin: 0;
-        font-size: 12px;
-        color: #888;
-    }
-
-    .mesa-indicator {
-        margin-left: auto;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-    }
+    .mesa-info h3 { margin: 0; font-size: 16px; color: #333; font-weight: 800; }
+    .mesa-info p { margin: 0; font-size: 12px; color: #888; }
+    .mesa-indicator { margin-left: auto; width: 12px; height: 12px; border-radius: 50%; }
 
     .info-box-neumorph {
         background: #f0f0f3;
@@ -80,8 +59,18 @@
         font-weight: bold;
         cursor: pointer;
         transition: transform 0.2s;
+        width: 100%;
     }
     .btn-ver-mas:active { transform: scale(0.98); }
+
+    /* Ajuste para que la búsqueda en favoritos no choque con el header */
+    .header-search-fav {
+        padding: 15px 20px;
+        background: #f0f0f3;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
   </style>
 </head>
 <body>
@@ -138,24 +127,27 @@
 
       <div id="preview-card" class="preview-card hidden">
         <div class="preview-content">
-          <img id="preview-img" src="" alt="Logo">
+          <img id="preview-img" src="" alt="Restaurante">
           <div class="preview-info">
             <h3 id="preview-nombre">Nombre</h3>
-            <p id="preview-cat">Categoría</p>
+            <p id="preview-cat">Categoría e Horario</p>
           </div>
         </div>
-        <button class="btn-ver-mas" id="btn-abrir-detalle">Ver disponibilidad</button>
+        <button class="btn-ver-mas" id="btn-abrir-detalle">Ver detalles</button>
       </div>
     </main>
   </div>
 
   <div id="view-favoritos" class="view hidden">
-    <header class="header-favoritos">
-      <h1>⭐ Favoritos</h1>
-    </header>
+    <div class="header-search-fav">
+        <h1 style="margin: 0 0 15px 0; font-size: 24px;">⭐ Favoritos</h1>
+        <div class="search-container">
+            <span>🔍</span>
+            <input type="text" id="search-input-fav" placeholder="Buscar en mis guardados...">
+        </div>
+    </div>
     <main class="grid-favoritos" id="grid-favoritos" style="padding: 20px;">
-        <p style="text-align: center; color: #888;">Aquí aparecerán tus lugares guardados.</p>
-    </main>
+        </main>
   </div>
 
   <div id="view-detalle" class="view hidden">
@@ -166,7 +158,7 @@
     
     <main class="detalle-content">
       <div class="card-restaurante-detalle">
-        <div style="position: relative; width: 100%; height: 220px;">
+        <div style="position: relative; width: 100%; height: 220px; overflow: visible;">
             <img id="detalle-img" src="" alt="Portada" style="width: 100%; height: 100%; object-fit: cover; border-radius: 0 0 25px 25px;">
             <img id="detalle-logo-restaurante" src="" 
                  style="position: absolute; bottom: -30px; right: 20px; width: 85px; height: 85px; 
@@ -178,7 +170,8 @@
           <h1 id="detalle-nombre" style="font-size: 26px; margin: 0;">Nombre</h1>
           <p id="detalle-categoria" style="color: #888; margin: 5px 0 25px 0; font-size: 14px;">Categoría</p>
 
-          <div id="detalle-info-box"></div>
+          <div id="detalle-info-box">
+              </div>
         </div>
       </div>
     </main>
@@ -199,12 +192,12 @@
   <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
   <script>
+    // CONFIGURACIÓN SUPABASE
     const supabaseUrl = 'https://cpveuexgxwxjejurtwro.supabase.co'; 
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc';
 
     window.supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-    // Funciones Globales de UI
     function toggleMenu() {
         document.getElementById('sidebar').classList.toggle('active');
         document.getElementById('overlay').classList.toggle('active');
@@ -213,22 +206,16 @@
     async function cerrarSesionSidebar() {
         if(confirm("¿Estás seguro de que quieres salir?")) {
             await window.supabase.auth.signOut();
-            window.location.href = 'index.html'; // O login.html
+            window.location.reload();
         }
     }
 
-    // Filtros por chips (comunica con app.js)
     function filtrarPorChip(cat, btn) {
         document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
         btn.classList.add('active');
-        if (typeof window.filtrarPorChip === 'function') {
-            window.filtrarPorChip(cat);
-        } else {
-            // Fallback: usar el input de búsqueda
-            const input = document.getElementById('search-input-map');
-            input.value = (cat === 'Todos') ? '' : cat;
-            input.dispatchEvent(new Event('input'));
-        }
+        const input = document.getElementById('search-input-map');
+        input.value = (cat === 'Todos') ? '' : cat;
+        input.dispatchEvent(new Event('input'));
     }
   </script>
 
