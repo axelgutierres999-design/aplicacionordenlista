@@ -11,6 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
   <link rel="stylesheet" href="css/style.css">
+  
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css">
   
@@ -103,22 +104,25 @@
       <h2 id="detalle-titulo-header"
           style="font-size: 18px; width: 100%; text-align: center; margin-right: 45px;">Detalles</h2>
     </header>
+    
     <main class="detalle-content">
       <div class="card-restaurante-detalle">
-        <img id="detalle-img" src="" alt="Lugar"
-             style="width: 100%; height: 250px; object-fit: cover;">
+        <div style="position: relative;">
+            <img id="detalle-img" src="" alt="Lugar" style="width: 100%; height: 250px; object-fit: cover; display: block;">
+            
+            <img id="detalle-logo-restaurante" src="" 
+                 style="position: absolute; bottom: -25px; right: 20px; width: 70px; height: 70px; 
+                        border-radius: 50%; border: 4px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
+                        background: white; object-fit: cover; display: none; z-index: 10;">
+        </div>
+        
         <div class="detalle-body">
-          <h1 id="detalle-nombre" style="margin-bottom: 5px;">Nombre</h1>
+          <h1 id="detalle-nombre" style="margin-bottom: 5px; margin-top: 15px;">Nombre</h1>
           <p id="detalle-categoria" style="color: var(--text-dim); margin-bottom: 20px;">Categoría</p>
 
-          <div id="detalle-info-box" class="info-box-neumorph"></div>
-
-          <button class="btn-ver-detalle-negro"
-                  onclick="alert('Función de chat próximamente...')"
-                  style="width: 100%; margin-top: 15px;">
-            💬 Chatear con el local
-          </button>
-        </div>
+          <div id="detalle-info-box"></div>
+          
+          </div>
       </div>
     </main>
   </div>
@@ -138,12 +142,13 @@
   <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
   <script>
-// 1. INICIALIZAR SUPABASE GLOBALMENTE
-const supabaseUrl = 'https://cpveuexgxwxjejurtwro.supabase.co'; 
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc';
+    // 1. INICIALIZAR SUPABASE GLOBALMENTE
+    const supabaseUrl = 'https://cpveuexgxwxjejurtwro.supabase.co'; 
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc';
 
-window.supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-window.db = window.supabase;
+    window.supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+    window.db = window.supabase;
+
     // 2. LÓGICA UI MENU LATERAL
     function toggleMenu() {
         const sidebar = document.getElementById('sidebar');
@@ -161,19 +166,14 @@ window.db = window.supabase;
 
     // 3. FILTRADO RÁPIDO POR CHIPS
     function filtrarPorChip(categoria, btn) {
-        // Quitar clase active de todos
         document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-        // Poner al actual
         btn.classList.add('active');
         
-        // Llamar a la función de filtro de app.js (si es 'Todos', pasamos string vacía para resetear)
         const busqueda = categoria === 'Todos' ? '' : categoria;
-        
-        // Asumiendo que filtrarLocales existe en app.js y busca en texto
         const input = document.getElementById('search-input-map');
-        input.value = busqueda === '' ? '' : busqueda;
+        input.value = busqueda;
         
-        // Disparar evento de input manualmente para activar el filtro
+        // Disparar evento de input manualmente para activar el filtro de app.js
         const event = new Event('input');
         input.dispatchEvent(event);
     }

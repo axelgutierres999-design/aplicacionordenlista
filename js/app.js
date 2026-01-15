@@ -1,12 +1,9 @@
 // --- 0. INICIALIZACIÓN SUPABASE ---
-// Usamos la variable global definida en el index.html
 const db = window.supabase; 
 
 // --- 1. CONFIGURACIÓN Y DATOS ---
 let usuarioId = null;
 let locales = [];
-
-// Variables globales del mapa
 let map, capaMarcadores = L.layerGroup(), controlRuta = null;
 
 // --- 2. CREADOR DE ICONOS ---
@@ -33,22 +30,18 @@ function crearIconoFlotante(emoji, index) {
 
 // --- 3. INICIALIZACIÓN ---
 document.addEventListener('DOMContentLoaded', async () => {
-  // 3.0 Verificar Sesión
   const { data: { session } } = await db.auth.getSession();
   if (session) {
     usuarioId = session.user.id;
     actualizarInfoUsuarioHeader();
   }
 
-  // 3.1 Inicializar mapa
   map = L.map('map', { zoomControl: false, attributionControl: false }).setView([19.2826, -99.6557], 14);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
   capaMarcadores.addTo(map);
 
-  // 3.2 Cargar locales desde Supabase
   await cargarLocalesDesdeDB();
 
-  // 3.3 Splash screen
   setTimeout(() => {
     const splash = document.getElementById('splash-screen');
     if (splash) {
@@ -60,13 +53,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }, 1500);
 
-  // 3.4 Eventos de búsqueda
   const inputMap = document.getElementById('search-input-map');
   const inputFav = document.getElementById('search-input-fav');
   if (inputMap) inputMap.addEventListener('input', e => filtrarLocales(e.target.value, false));
   if (inputFav) inputFav.addEventListener('input', e => filtrarLocales(e.target.value, true));
 
-  // 3.5 Clic en el mapa para cerrar preview
   map.on('click', () => {
     document.getElementById('preview-card')?.classList.add('hidden');
     if (controlRuta) {
@@ -77,10 +68,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function actualizarInfoUsuarioHeader() {
-    const nameEl = document.getElementById('user-name');
-    const photoEl = document.getElementById('user-photo');
+    const nameEl = document.getElementById('sidebar-user-name');
+    const photoEl = document.getElementById('sidebar-user-photo');
     
-    if (nameEl || photoEl) {
+    if (usuarioId) {
         const { data } = await db.from('perfiles_clientes').select('nombre, foto_url').eq('id', usuarioId).single();
         if (data) {
             if (nameEl) nameEl.textContent = data.nombre;
@@ -93,14 +84,8 @@ async function actualizarInfoUsuarioHeader() {
 async function cargarLocalesDesdeDB() {
   try {
     const { data, error } = await db.from('restaurantes').select('*');
-
     if (error) throw error;
-    if (!data || data.length === 0) {
-      console.warn("⚠️ No hay restaurantes en la base de datos.");
-      return;
-    }
 
-    // Mapeo con campos de Menú, WhatsApp y Mesas
     locales = data.map((r, index) => ({
       id: r.id,
       nombre: r.nombre || "Sin nombre",
@@ -108,11 +93,10 @@ async function cargarLocalesDesdeDB() {
       lng: r.longitud ? parseFloat(r.longitud) : 0,
       cat: r.categoria || "General",
       icono: "🍽️",
-      pago: "Efectivo/Tarjeta",
       horario: r.horarios || "Consultar",
       direccion: r.direccion || "",
       img: r.foto_url || `https://picsum.photos/400/300?random=${index}`,
-      // CAMPOS DINÁMICOS
+      logo_url: r.logo_url, // CAMPO PARA EL LOGO
       menu_img: r.menu_digital_url, 
       whatsapp: r.whatsapp || "", 
       mesas_libres: r.mesas_disponibles || 0,
@@ -173,17 +157,13 @@ async function filtrarLocales(termino, esFav) {
   const q = termino.toLowerCase();
   let listaFiltrada = locales;
 
-  if (esFav) {
-      if (!usuarioId) return;
+  if (esFav && usuarioId) {
       const { data: favs } = await db.from('favoritos').select('restaurante_id').eq('usuario_id', usuarioId);
       const idsFavs = favs.map(f => f.restaurante_id);
       listaFiltrada = locales.filter(l => idsFavs.includes(l.id));
   }
 
-  const res = listaFiltrada.filter(l => {
-    return l.nombre.toLowerCase().includes(q) || l.cat.toLowerCase().includes(q);
-  });
-
+  const res = listaFiltrada.filter(l => l.nombre.toLowerCase().includes(q) || l.cat.toLowerCase().includes(q));
   esFav ? mostrarFavoritosEnGrid(res) : renderizarMarcadores(res);
 }
 
@@ -200,51 +180,69 @@ async function verDetalle(nombre) {
       esFav = data && data.length > 0;
   }
 
-  // Actualización de UI básica
+  // 1. Imagen principal y Logo
+  document.getElementById('detalle-img').src = res.img;
+  const logoEl = document.getElementById('detalle-logo-restaurante');
+  if (logoEl) {
+      if (res.logo_url) {
+          logoEl.src = res.logo_url;
+          logoEl.style.display = 'block';
+      } else {
+          logoEl.style.display = 'none';
+      }
+  }
+
+  // 2. Textos básicos
   document.getElementById('detalle-nombre').textContent = res.nombre;
   document.getElementById('detalle-titulo-header').textContent = res.nombre;
   document.getElementById('detalle-categoria').textContent = res.cat;
-  document.getElementById('detalle-img').src = res.img;
 
-  // Lógica de Mesas (Visual)
+  // 3. Lógica de Mesas
   const mesasHTML = res.mesas_total > 0 
-    ? `<div style="margin-top:15px; padding:12px; background:#e0e5ec; border-radius:12px; box-shadow: inset 4px 4px 8px #bec3c9, inset -4px -4px 8px #ffffff;">
-         <span style="font-size:13px; font-weight:bold; color:#333;">🪑 Mesas disponibles: ${res.mesas_libres} de ${res.mesas_total}</span>
+    ? `<div class="info-box-neumorph" style="background: #eef1f5; border-left: 5px solid #000; margin-top:15px;">
+         <p style="margin:0; font-weight:bold;">🪑 Mesas Disponibles</p>
+         <h2 style="margin:5px 0 0; color:#000;">${res.mesas_libres} <span style="font-size:14px; color:#666;">de ${res.mesas_total}</span></h2>
        </div>`
     : '';
 
-  // Lógica de Menú Digital
+  // 4. Menú Digital
   const menuHTML = res.menu_img 
-    ? `<h3 style="margin-top:20px; font-size:16px; font-weight:800;">📖 Menú del día</h3>
-       <img src="${res.menu_img}" style="width:100%; border-radius:15px; margin-top:10px; box-shadow: 5px 5px 15px #caced1;">`
-    : '<p style="font-size:12px; color:gray; margin-top:15px;">Menú digital no disponible actualmente.</p>';
+    ? `<div style="margin-top:20px;">
+         <h3 style="font-size:16px; margin-bottom:10px;">📖 Menú del día</h3>
+         <img src="${res.menu_img}" style="width:100%; border-radius:15px; box-shadow: 5px 5px 15px var(--shadow-dark);">
+       </div>`
+    : '';
 
+  // 5. Construcción de info y BOTONES
   const info = document.getElementById('detalle-info-box');
   info.innerHTML = `
-    <p>📍 ${res.direccion || 'Sin dirección registrada'}</p>
-    <p>🕒 ${res.horario}</p>
+    <div class="info-box-neumorph">
+        <p style="margin-bottom:8px;">📍 ${res.direccion || 'Dirección no disponible'}</p>
+        <p>🕒 ${res.horario}</p>
+    </div>
+
     ${mesasHTML}
     ${menuHTML}
     
-    <div style="margin-top:20px; display:flex; gap:10px;">
+    <div style="margin-top:25px; display:flex; gap:12px;">
       <button id="btn-fav-action" onclick="toggleFav('${res.id}')"
-        style="flex:1; padding:15px; border-radius:15px;
-               border:1px solid #000; background:${esFav ? '#000':'#fff'};
-               color:${esFav ? '#fff':'#000'}; font-weight:600;">
+        style="flex:1; padding:16px; border-radius:18px; border:2px solid #000; 
+               background:${esFav ? '#000':'#fff'}; color:${esFav ? '#fff':'#000'}; font-weight:700;">
         ${esFav ? '⭐ Guardado' : '☆ Guardar'}
       </button>
+      
       <button onclick="trazarRuta(${res.lat},${res.lng})"
-        style="flex:1; padding:15px; border-radius:15px;
-               background:#000; color:#fff; font-weight:600;">
+        style="flex:1; padding:16px; border-radius:18px; background:#000; color:#fff; font-weight:700;">
         📍 Ir ahora
       </button>
     </div>
     
-    <button class="btn-ver-detalle-negro"
+    <button class="btn-ver-mas" 
             onclick="abrirWhatsApp('${res.whatsapp}', '${res.nombre}')"
-            style="width: 100%; margin-top: 15px; background:#25D366; border:none; color:white;">
-      💬 Chatear por WhatsApp
-    </button>`;
+            style="width: 100%; margin-top: 15px; background:#25D366; color:white; display:flex; align-items:center; justify-content:center; gap:10px; border:none; padding:15px; border-radius:18px; font-weight:700;">
+      <span style="font-size:20px;">💬</span> Chatear por WhatsApp
+    </button>
+  `;
 
   cambiarVista('detalle');
 }
@@ -259,11 +257,7 @@ function abrirWhatsApp(telefono, localNombre) {
 
 async function toggleFav(restauranteId) {
   if (!usuarioId) return alert("Debes iniciar sesión para guardar favoritos.");
-
-  const { data: existente } = await db.from('favoritos')
-    .select('id')
-    .match({ usuario_id: usuarioId, restaurante_id: restauranteId })
-    .single();
+  const { data: existente } = await db.from('favoritos').select('id').match({ usuario_id: usuarioId, restaurante_id: restauranteId }).single();
 
   if (existente) {
       await db.from('favoritos').delete().eq('id', existente.id);
@@ -277,37 +271,27 @@ async function toggleFav(restauranteId) {
 }
 
 async function cargarFavoritos() {
-  if (!usuarioId) {
-      document.getElementById('grid-favoritos').innerHTML = "<p style='text-align:center; padding:20px;'>Inicia sesión para ver tus favoritos.</p>";
-      return;
-  }
+  if (!usuarioId) return;
   const { data: favs } = await db.from('favoritos').select('restaurante_id').eq('usuario_id', usuarioId);
-  if (!favs) return;
-
-  const ids = favs.map(f => f.restaurante_id);
-  const listaFavoritos = locales.filter(loc => ids.includes(loc.id));
-  mostrarFavoritosEnGrid(listaFavoritos);
+  const ids = favs ? favs.map(f => f.restaurante_id) : [];
+  mostrarFavoritosEnGrid(locales.filter(loc => ids.includes(loc.id)));
 }
 
 function mostrarFavoritosEnGrid(lista) {
   const grid = document.getElementById('grid-favoritos');
-  grid.innerHTML = "";
-  if (!lista.length) {
-    grid.innerHTML = `<div style="text-align:center; padding:50px 20px; color:#888;">📂<p>No tienes favoritos.</p></div>`;
-    return;
-  }
+  grid.innerHTML = lista.length ? "" : `<div style="text-align:center; padding:50px 20px; color:#888;">📂<p>No tienes favoritos.</p></div>`;
   lista.forEach(loc => {
     const card = document.createElement('div');
     card.className = "card-restaurante";
     card.innerHTML = `
       <div style="position:relative;">
-        <img src="${loc.img}" style="width:100%; height:140px; object-fit:cover;">
-        <button onclick="toggleFav('${loc.id}')" style="position:absolute; top:10px; right:10px; background:white; border:none; width:30px; height:30px; border-radius:50%;">🗑️</button>
+        <img src="${loc.img}" style="width:100%; height:140px; object-fit:cover; border-radius:15px 15px 0 0;">
+        <button onclick="toggleFav('${loc.id}')" style="position:absolute; top:10px; right:10px; background:white; border:none; width:30px; height:30px; border-radius:50%; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">🗑️</button>
       </div>
       <div style="padding:15px;">
         <h3>${loc.nombre}</h3>
         <p style="color:var(--text-dim); font-size:12px;">${loc.cat}</p>
-        <button class="btn-ver-detalle-negro" style="width:100%;" onclick="verDetalle('${loc.nombre}')">Ver Detalles</button>
+        <button class="btn-ver-detalle-negro" style="width:100%; margin-top:10px;" onclick="verDetalle('${loc.nombre}')">Ver Detalles</button>
       </div>`;
     grid.appendChild(card);
   });
@@ -331,7 +315,5 @@ function trazarRuta(lat, lng) {
       show: false
     }).addTo(map);
     cambiarVista('mapa');
-  }, err => {
-    alert("Activa el GPS para trazar la ruta.");
-  });
+  }, () => alert("Activa el GPS para trazar la ruta."));
 }
