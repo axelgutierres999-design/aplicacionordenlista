@@ -1,300 +1,337 @@
-// ====================================================
-// ☕ CAFÉ APP - VERSIÓN FINAL PREMIUM (CORREGIDA)
-// ====================================================
+// --- 0. INICIALIZACIÓN SUPABASE ---
+// Usamos la variable global definida en el index.html
+const db = window.supabase; 
 
-const db = window.supabase;
-
-// --- 1. VARIABLES GLOBALES ---
+// --- 1. CONFIGURACIÓN Y DATOS ---
 let usuarioId = null;
 let locales = [];
+
+// Variables globales del mapa
 let map, capaMarcadores = L.layerGroup(), controlRuta = null;
 
-// --- 2. ICONOS PERSONALIZADOS ---
-function crearIconoFlotante(emoji, imgUrl, index = 0) {
-    const delay = (index * 0.1) + "s";
-    const contenido = imgUrl
-        ? `<img src="${imgUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
-        : `<div style="transform:rotate(45deg);font-size:22px;">${emoji}</div>`;
-
-    return L.divIcon({
-        className: "custom-marker-container",
-        html: `
-            <div style="
-                background:#fff;
-                width:50px; height:50px;
-                border-radius:50% 50% 50% 10px;
-                transform:rotate(-45deg);
-                display:flex; align-items:center; justify-content:center;
-                box-shadow:5px 10px 15px rgba(0,0,0,0.3);
-                border:3px solid white;
-                overflow:hidden;
-                animation:floating 3s ease-in-out ${delay} infinite;">
-                <div style="width:100%;height:100%;transform:rotate(45deg);
-                    display:flex;align-items:center;justify-content:center;">
-                    ${contenido}
-                </div>
-            </div>`,
-        iconSize: [50, 50],
-        iconAnchor: [25, 50],
-    });
+// --- 2. CREADOR DE ICONOS ---
+function crearIconoFlotante(emoji, index) {
+  const delay = (index * 0.1) + "s";
+  return L.divIcon({
+    className: 'custom-marker-container',
+    html: `
+      <div style="
+        background: #000;
+        width: 45px; height: 45px;
+        border-radius: 50% 50% 50% 12px;
+        transform: rotate(-45deg);
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 5px 10px 15px rgba(0,0,0,0.3);
+        border: 2px solid white;
+        animation: floating 3s ease-in-out ${delay} infinite;">
+        <div style="transform: rotate(45deg); font-size: 22px;">${emoji}</div>
+      </div>`,
+    iconSize: [45, 45],
+    iconAnchor: [22, 45]
+  });
 }
 
 // --- 3. INICIALIZACIÓN ---
-document.addEventListener("DOMContentLoaded", async () => {
-    // Verificar Sesión
-    const { data: { session } } = await db.auth.getSession();
-    if (session) {
-        usuarioId = session.user.id;
-        actualizarInfoUsuarioHeader();
+document.addEventListener('DOMContentLoaded', async () => {
+  // 3.0 Verificar Sesión
+  const { data: { session } } = await db.auth.getSession();
+  if (session) {
+    usuarioId = session.user.id;
+    actualizarInfoUsuarioHeader();
+  }
+
+  // 3.1 Inicializar mapa
+  map = L.map('map', { zoomControl: false, attributionControl: false }).setView([19.2826, -99.6557], 14);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
+  capaMarcadores.addTo(map);
+
+  // 3.2 Cargar locales desde Supabase
+  await cargarLocalesDesdeDB();
+
+  // 3.3 Splash screen
+  setTimeout(() => {
+    const splash = document.getElementById('splash-screen');
+    if (splash) {
+      splash.style.opacity = '0';
+      setTimeout(() => {
+        splash.style.display = 'none';
+        map.invalidateSize();
+      }, 500);
     }
+  }, 1500);
 
-    // Inicializar mapa
-    map = L.map("map", { zoomControl: false, attributionControl: false })
-        .setView([19.2826, -99.6557], 13);
-    
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png").addTo(map);
-    capaMarcadores.addTo(map);
+  // 3.4 Eventos de búsqueda
+  const inputMap = document.getElementById('search-input-map');
+  const inputFav = document.getElementById('search-input-fav');
+  if (inputMap) inputMap.addEventListener('input', e => filtrarLocales(e.target.value, false));
+  if (inputFav) inputFav.addEventListener('input', e => filtrarLocales(e.target.value, true));
 
-    await cargarLocalesDesdeDB();
-
-    // Splash screen
-    setTimeout(() => {
-        const splash = document.getElementById("splash-screen");
-        if (splash) {
-            splash.style.opacity = "0";
-            setTimeout(() => {
-                splash.style.display = "none";
-                map.invalidateSize();
-            }, 500);
-        }
-    }, 1500);
-
-    // Eventos búsqueda
-    const inputMap = document.getElementById("search-input-map");
-    if (inputMap) inputMap.addEventListener("input", e => filtrarLocales(e.target.value));
-
-    // Clic en mapa para cerrar preview
-    map.on("click", () => {
-        document.getElementById("preview-card")?.classList.add("hidden");
-        if (controlRuta) {
-            map.removeControl(controlRuta);
-            controlRuta = null;
-        }
-    });
+  // 3.5 Clic en el mapa para cerrar preview
+  map.on('click', () => {
+    document.getElementById('preview-card')?.classList.add('hidden');
+    if (controlRuta) {
+      map.removeControl(controlRuta);
+      controlRuta = null;
+    }
+  });
 });
 
-// --- 4. PERFIL USUARIO ---
 async function actualizarInfoUsuarioHeader() {
-    const nameEl = document.getElementById("user-name");
-    const photoEl = document.getElementById("user-photo");
+    const nameEl = document.getElementById('user-name');
+    const photoEl = document.getElementById('user-photo');
     
-    const { data } = await db.from("perfiles_clientes")
-        .select("nombre, foto_url")
-        .eq("id", usuarioId)
-        .single();
-
-    if (data) {
-        if (nameEl) nameEl.textContent = data.nombre || "Cliente";
-        if (photoEl) photoEl.src = data.foto_url || "https://picsum.photos/200";
-    }
-}
-
-// --- 5. CARGAR RESTAURANTES ---
-async function cargarLocalesDesdeDB() {
-    try {
-        const { data, error } = await db.from("restaurantes").select("*");
-        if (error) throw error;
-
-        locales = data.map((r, index) => ({
-            id: r.id,
-            nombre: r.nombre || "Sin nombre",
-            lat: parseFloat(r.latitud || 0),
-            lng: parseFloat(r.longitud || 0),
-            direccion: r.direccion || "Dirección no disponible",
-            horario: r.horarios || "Consultar horario",
-            whatsapp: r.whatsapp || r.telefono || "",
-            logo: r.logo_url || "",
-            menu_img: r.menu_digital_url || "",
-            mesas_total: r.num_mesas || 7, // Basado en tu captura de Supabase
-            cat: r.categoria || "Restaurante",
-            img: r.foto_url || `https://picsum.photos/400/300?random=${index}`,
-            icono: "🍽️"
-        }));
-
-        renderizarMarcadores(locales);
-    } catch (err) {
-        console.error("❌ Error al cargar locales:", err);
-    }
-}
-
-// --- 6. MARCADORES Y FILTROS (¡LAS QUE FALTABAN!) ---
-function renderizarMarcadores(lista) {
-    capaMarcadores.clearLayers();
-    lista.forEach((loc, index) => {
-        if (!loc.lat || !loc.lng) return;
-        const icono = crearIconoFlotante(loc.icono, loc.logo, index);
-        const marker = L.marker([loc.lat, loc.lng], { icon: icono }).addTo(capaMarcadores);
-
-        marker.on("click", e => {
-            L.DomEvent.stopPropagation(e);
-            mostrarPreview(loc);
-            map.panTo([loc.lat - 0.002, loc.lng], { animate: true });
-        });
-    });
-}
-
-function filtrarLocales(termino) {
-    const q = termino.toLowerCase();
-    const filtrados = locales.filter(l => 
-        l.nombre.toLowerCase().includes(q) || 
-        l.cat.toLowerCase().includes(q)
-    );
-    renderizarMarcadores(filtrados);
-}
-
-function filtrarPorChip(categoria) {
-    // Si la categoría es 'Todos', mostramos todo. Si no, filtramos.
-    const filtrados = (categoria === 'Todos') 
-        ? locales 
-        : locales.filter(l => l.cat.toLowerCase() === categoria.toLowerCase());
-    
-    renderizarMarcadores(filtrados);
-    
-    // Feedback visual opcional: cerrar preview si estaba abierta
-    document.getElementById("preview-card")?.classList.add("hidden");
-}
-
-// --- 7. DETALLES Y PREVIEW ---
-function mostrarPreview(loc) {
-    const card = document.getElementById("preview-card");
-    document.getElementById("preview-nombre").textContent = loc.nombre;
-    document.getElementById("preview-cat").textContent = loc.cat;
-    document.getElementById("preview-img").src = loc.logo || loc.img;
-    document.getElementById("btn-abrir-detalle").onclick = () => verDetalle(loc);
-    card.classList.remove("hidden");
-}
-
-async function verDetalle(res) {
-    let mesasOcupadas = 0;
-    if (res.mesas_total > 0) {
-        const { count } = await db
-            .from("ordenes")
-            .select("*", { count: "exact", head: true })
-            .eq("restaurante_id", res.id)
-            .neq("estado", "pagado")
-            .neq("estado", "terminado");
-
-        mesasOcupadas = count || 0;
-    }
-
-    const mesasLibres = Math.max(0, res.mesas_total - mesasOcupadas);
-    const colorEstado = mesasLibres > 0 ? "#25D366" : "#FF3B30";
-
-    document.getElementById("detalle-img").src = res.img;
-    const logoEl = document.getElementById("detalle-logo-restaurante");
-    logoEl.src = res.logo;
-    logoEl.style.display = res.logo ? "block" : "none";
-
-    document.getElementById("detalle-nombre").textContent = res.nombre;
-    document.getElementById("detalle-titulo-header").textContent = res.nombre;
-    document.getElementById("detalle-categoria").textContent = res.cat;
-
-    // Verificar favoritos
-    let esFav = false;
-    if (usuarioId) {
-        const { data } = await db.from("favoritos")
-            .select("*")
-            .match({ usuario_id: usuarioId, restaurante_id: res.id });
-        esFav = data && data.length > 0;
-    }
-
-    const info = document.getElementById("detalle-info-box");
-    info.innerHTML = `
-        <div class="info-box-neumorph" style="margin-bottom:15px; padding:15px;">
-            <p style="margin:0;">📍 ${res.direccion}</p>
-            <p style="margin:5px 0 0 0; color:gray; font-size:14px;">🕒 ${res.horario}</p>
-        </div>
-
-        <div class="mesa-status-card">
-            <div class="mesa-icon-box">🪑</div>
-            <div class="mesa-info">
-                <h3>${mesasLibres} mesas disponibles</h3>
-                <p>Capacidad total: ${res.mesas_total}</p>
-            </div>
-            <div class="mesa-indicator" style="background:${colorEstado};"></div>
-        </div>
-
-        ${res.menu_img 
-            ? `<button onclick="window.open('${res.menu_img}','_blank')" class="btn-ver-mas" style="margin-top:15px; width:100%;">📖 Ver Menú Digital</button>`
-            : `<p style="color:gray; text-align:center; margin-top:10px;">📄 Menú no disponible</p>`
+    if (nameEl || photoEl) {
+        const { data } = await db.from('perfiles_clientes').select('nombre, foto_url').eq('id', usuarioId).single();
+        if (data) {
+            if (nameEl) nameEl.textContent = data.nombre;
+            if (photoEl) photoEl.src = data.foto_url || "https://picsum.photos/200";
         }
-
-        <div style="margin-top:20px; display:flex; gap:10px;">
-            <button onclick="trazarRuta(${res.lat},${res.lng})" 
-                style="flex:1; padding:15px; border-radius:15px; background:#000; color:#fff; font-weight:700; border:none;">📍 GPS</button>
-            <button onclick="abrirWhatsApp('${res.whatsapp}','${res.nombre}')"
-                style="flex:1; padding:15px; border-radius:15px; background:#25D366; color:#fff; font-weight:700; border:none;">💬 WhatsApp</button>
-        </div>
-
-        <button id="btn-fav-action" onclick="toggleFav('${res.id}')"
-            style="margin-top:15px; width:100%; padding:15px; border-radius:15px; border:2px solid #000; background:${esFav ? '#000' : '#fff'}; color:${esFav ? '#fff' : '#000'}; font-weight:700;">
-            ${esFav ? '⭐ Guardado' : '☆ Guardar en favoritos'}
-        </button>
-    `;
-
-    cambiarVista("detalle");
+    }
 }
 
-// --- 8. FAVORITOS ---
-async function toggleFav(restauranteId) {
-    if (!usuarioId) return alert("Inicia sesión para esta función.");
+// --- 4. CARGAR DATOS DESDE SUPABASE ---
+async function cargarLocalesDesdeDB() {
+  try {
+    const { data, error } = await db.from('restaurantes').select('*');
 
-    const { data: existente } = await db.from("favoritos")
-        .select("id")
-        .match({ usuario_id: usuarioId, restaurante_id: restauranteId })
-        .maybeSingle();
-
-    if (existente) {
-        await db.from("favoritos").delete().eq("id", existente.id);
-    } else {
-        await db.from("favoritos").insert([{ usuario_id: usuarioId, restaurante_id: restauranteId }]);
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      console.warn("⚠️ No hay restaurantes en la base de datos.");
+      return;
     }
 
-    const local = locales.find(l => l.id === restauranteId);
-    verDetalle(local);
+    // Mapeo con campos de Menú, WhatsApp y Mesas
+    locales = data.map((r, index) => ({
+      id: r.id,
+      nombre: r.nombre || "Sin nombre",
+      lat: r.lat ? parseFloat(r.lat) : 0,
+      lng: r.longitud ? parseFloat(r.longitud) : 0,
+      cat: r.categoria || "General",
+      icono: "🍽️",
+      pago: "Efectivo/Tarjeta",
+      horario: r.horarios || "Consultar",
+      direccion: r.direccion || "",
+      img: r.foto_url || `https://picsum.photos/400/300?random=${index}`,
+      // CAMPOS DINÁMICOS
+      menu_img: r.menu_digital_url, 
+      whatsapp: r.whatsapp || "", 
+      mesas_libres: r.mesas_disponibles || 0,
+      mesas_total: r.mesas_totales || 0
+    }));
+
+    renderizarMarcadores(locales);
+  } catch (err) {
+    console.error("❌ Error al cargar restaurantes:", err);
+  }
 }
 
-// --- 9. WHATSAPP Y GPS ---
-function abrirWhatsApp(tel, nombre) {
-    if (!tel) return alert("Número no disponible.");
-    const limpio = tel.replace(/\D/g, "");
-    const msg = encodeURIComponent(`¡Hola! Vi "${nombre}" en la app y me gustaría información.`);
-    window.open(`https://wa.me/${limpio}?text=${msg}`, "_blank");
-}
+// --- 5. VISTAS ---
+function cambiarVista(target) {
+  document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 
-function trazarRuta(lat, lng) {
-    if (controlRuta) map.removeControl(controlRuta);
-    navigator.geolocation.getCurrentPosition(pos => {
-        controlRuta = L.Routing.control({
-            waypoints: [L.latLng(pos.coords.latitude, pos.coords.longitude), L.latLng(lat, lng)],
-            lineOptions: { styles: [{ color: "#000", weight: 6, opacity: 0.8 }] },
-            createMarker: () => null,
-            addWaypoints: false,
-            fitSelectedRoutes: true,
-            show: false
-        }).addTo(map);
-        cambiarVista("mapa");
-    }, () => alert("Por favor activa el GPS."));
-}
+  const view = document.getElementById(`view-${target}`);
+  if (view) view.classList.remove('hidden');
 
-// --- 10. VISTAS ---
-function cambiarVista(vista) {
-    document.querySelectorAll(".view").forEach(v => v.classList.add("hidden"));
-    const target = document.getElementById(`view-${vista}`);
-    if (target) target.classList.remove("hidden");
-    if (vista === "mapa") setTimeout(() => map.invalidateSize(), 300);
+  const activeBtn = document.getElementById(target === 'detalle' ? 'btn-mapa' : `btn-${target}`);
+  if (activeBtn) activeBtn.classList.add('active');
+
+  if (target === 'mapa') setTimeout(() => map.invalidateSize(), 300);
+  if (target === 'favoritos') cargarFavoritos();
 }
 
 function regresarVistas() {
-    cambiarVista("mapa");
+  cambiarVista('mapa');
+}
+
+// --- 6. MAPA Y FILTROS ---
+function renderizarMarcadores(lista) {
+  capaMarcadores.clearLayers();
+  lista.forEach((loc, index) => {
+    if (!loc.lat || !loc.lng) return;
+    const icono = crearIconoFlotante(loc.icono, index);
+    const marker = L.marker([loc.lat, loc.lng], { icon: icono }).addTo(capaMarcadores);
+    marker.on('click', e => {
+      L.DomEvent.stopPropagation(e);
+      mostrarPreview(loc);
+      map.panTo([loc.lat - 0.002, loc.lng], { animate: true, duration: 1 });
+    });
+  });
+}
+
+function mostrarPreview(loc) {
+  const card = document.getElementById('preview-card');
+  document.getElementById('preview-nombre').textContent = loc.nombre;
+  document.getElementById('preview-cat').textContent = loc.cat;
+  document.getElementById('preview-img').src = loc.img;
+  const btn = document.getElementById('btn-abrir-detalle');
+  btn.onclick = () => verDetalle(loc.nombre);
+  card.classList.remove('hidden');
+}
+
+async function filtrarLocales(termino, esFav) {
+  const q = termino.toLowerCase();
+  let listaFiltrada = locales;
+
+  if (esFav) {
+      if (!usuarioId) return;
+      const { data: favs } = await db.from('favoritos').select('restaurante_id').eq('usuario_id', usuarioId);
+      const idsFavs = favs.map(f => f.restaurante_id);
+      listaFiltrada = locales.filter(l => idsFavs.includes(l.id));
+  }
+
+  const res = listaFiltrada.filter(l => {
+    return l.nombre.toLowerCase().includes(q) || l.cat.toLowerCase().includes(q);
+  });
+
+  esFav ? mostrarFavoritosEnGrid(res) : renderizarMarcadores(res);
+}
+
+// --- 7. DETALLE Y FAVORITOS ---
+async function verDetalle(nombre) {
+  const res = locales.find(l => l.nombre === nombre);
+  if (!res) return;
+
+  let esFav = false;
+  if (usuarioId) {
+      const { data } = await db.from('favoritos')
+        .select('*')
+        .match({ usuario_id: usuarioId, restaurante_id: res.id });
+      esFav = data && data.length > 0;
+  }
+
+  // Actualización de UI básica
+  document.getElementById('detalle-nombre').textContent = res.nombre;
+  document.getElementById('detalle-titulo-header').textContent = res.nombre;
+  document.getElementById('detalle-categoria').textContent = res.cat;
+  document.getElementById('detalle-img').src = res.img;
+
+  // Lógica de Mesas (Visual)
+  const mesasHTML = res.mesas_total > 0 
+    ? `<div style="margin-top:15px; padding:12px; background:#e0e5ec; border-radius:12px; box-shadow: inset 4px 4px 8px #bec3c9, inset -4px -4px 8px #ffffff;">
+         <span style="font-size:13px; font-weight:bold; color:#333;">🪑 Mesas disponibles: ${res.mesas_libres} de ${res.mesas_total}</span>
+       </div>`
+    : '';
+
+  // Lógica de Menú Digital
+  const menuHTML = res.menu_img 
+    ? `<h3 style="margin-top:20px; font-size:16px; font-weight:800;">📖 Menú del día</h3>
+       <img src="${res.menu_img}" style="width:100%; border-radius:15px; margin-top:10px; box-shadow: 5px 5px 15px #caced1;">`
+    : '<p style="font-size:12px; color:gray; margin-top:15px;">Menú digital no disponible actualmente.</p>';
+
+  const info = document.getElementById('detalle-info-box');
+  info.innerHTML = `
+    <p>📍 ${res.direccion || 'Sin dirección registrada'}</p>
+    <p>🕒 ${res.horario}</p>
+    ${mesasHTML}
+    ${menuHTML}
+    
+    <div style="margin-top:20px; display:flex; gap:10px;">
+      <button id="btn-fav-action" onclick="toggleFav('${res.id}')"
+        style="flex:1; padding:15px; border-radius:15px;
+               border:1px solid #000; background:${esFav ? '#000':'#fff'};
+               color:${esFav ? '#fff':'#000'}; font-weight:600;">
+        ${esFav ? '⭐ Guardado' : '☆ Guardar'}
+      </button>
+      <button onclick="trazarRuta(${res.lat},${res.lng})"
+        style="flex:1; padding:15px; border-radius:15px;
+               background:#000; color:#fff; font-weight:600;">
+        📍 Ir ahora
+      </button>
+    </div>
+    
+    <button class="btn-ver-detalle-negro"
+            onclick="abrirWhatsApp('${res.whatsapp}', '${res.nombre}')"
+            style="width: 100%; margin-top: 15px; background:#25D366; border:none; color:white;">
+      💬 Chatear por WhatsApp
+    </button>`;
+
+  cambiarVista('detalle');
+}
+
+// Ayudante de WhatsApp
+function abrirWhatsApp(telefono, localNombre) {
+    if (!telefono || telefono === "") return alert("Este local aún no tiene WhatsApp registrado.");
+    const telLimpio = telefono.replace(/\D/g,'');
+    const mensaje = encodeURIComponent(`¡Hola! Vengo de la App. Me gustaría pedir informes en ${localNombre}.`);
+    window.open(`https://wa.me/${telLimpio}?text=${mensaje}`, '_blank');
+}
+
+async function toggleFav(restauranteId) {
+  if (!usuarioId) return alert("Debes iniciar sesión para guardar favoritos.");
+
+  const { data: existente } = await db.from('favoritos')
+    .select('id')
+    .match({ usuario_id: usuarioId, restaurante_id: restauranteId })
+    .single();
+
+  if (existente) {
+      await db.from('favoritos').delete().eq('id', existente.id);
+  } else {
+      await db.from('favoritos').insert([{ usuario_id: usuarioId, restaurante_id: restauranteId }]);
+  }
+
+  const local = locales.find(l => l.id === restauranteId);
+  if (!document.getElementById('view-detalle').classList.contains('hidden')) verDetalle(local.nombre);
+  if (!document.getElementById('view-favoritos').classList.contains('hidden')) cargarFavoritos();
+}
+
+async function cargarFavoritos() {
+  if (!usuarioId) {
+      document.getElementById('grid-favoritos').innerHTML = "<p style='text-align:center; padding:20px;'>Inicia sesión para ver tus favoritos.</p>";
+      return;
+  }
+  const { data: favs } = await db.from('favoritos').select('restaurante_id').eq('usuario_id', usuarioId);
+  if (!favs) return;
+
+  const ids = favs.map(f => f.restaurante_id);
+  const listaFavoritos = locales.filter(loc => ids.includes(loc.id));
+  mostrarFavoritosEnGrid(listaFavoritos);
+}
+
+function mostrarFavoritosEnGrid(lista) {
+  const grid = document.getElementById('grid-favoritos');
+  grid.innerHTML = "";
+  if (!lista.length) {
+    grid.innerHTML = `<div style="text-align:center; padding:50px 20px; color:#888;">📂<p>No tienes favoritos.</p></div>`;
+    return;
+  }
+  lista.forEach(loc => {
+    const card = document.createElement('div');
+    card.className = "card-restaurante";
+    card.innerHTML = `
+      <div style="position:relative;">
+        <img src="${loc.img}" style="width:100%; height:140px; object-fit:cover;">
+        <button onclick="toggleFav('${loc.id}')" style="position:absolute; top:10px; right:10px; background:white; border:none; width:30px; height:30px; border-radius:50%;">🗑️</button>
+      </div>
+      <div style="padding:15px;">
+        <h3>${loc.nombre}</h3>
+        <p style="color:var(--text-dim); font-size:12px;">${loc.cat}</p>
+        <button class="btn-ver-detalle-negro" style="width:100%;" onclick="verDetalle('${loc.nombre}')">Ver Detalles</button>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+// --- 8. RUTA GPS ---
+function trazarRuta(lat, lng) {
+  if (controlRuta) map.removeControl(controlRuta);
+  document.getElementById('preview-card')?.classList.add('hidden');
+
+  navigator.geolocation.getCurrentPosition(pos => {
+    const start = L.latLng(pos.coords.latitude, pos.coords.longitude);
+    const end = L.latLng(lat, lng);
+    controlRuta = L.Routing.control({
+      waypoints: [start, end],
+      lineOptions: { styles: [{ color: '#000', weight: 6, opacity: 0.8 }] },
+      createMarker: () => null,
+      addWaypoints: false,
+      draggableWaypoints: false,
+      fitSelectedRoutes: true,
+      show: false
+    }).addTo(map);
+    cambiarVista('mapa');
+  }, err => {
+    alert("Activa el GPS para trazar la ruta.");
+  });
 }
