@@ -1,42 +1,44 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Café App - Premium UI</title>
 
+  <!-- ✅ Manifest + Configuración WebApp -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#f0f0f3">
-  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="icon" href="assets/logo.png" type="image/png">
 
+  <!-- ✅ Estilos principales -->
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css">
-  
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
   <style>
-    /* --- ESTILOS NEUMÓRFICOS Y AJUSTES DE UI --- */
+    /* --- ESTILOS NEUMÓRFICOS --- */
     .mesa-status-card {
-        background: linear-gradient(145deg, #ffffff, #f0f0f3);
-        border-radius: 20px;
-        padding: 15px;
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        margin-bottom: 20px;
-        box-shadow: 5px 5px 15px #d1d9e6, -5px -5px 15px #ffffff;
-        border: 1px solid rgba(255,255,255,0.5);
+      background: linear-gradient(145deg, #ffffff, #f0f0f3);
+      border-radius: 20px;
+      padding: 15px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 20px;
+      box-shadow: 5px 5px 15px #d1d9e6, -5px -5px 15px #ffffff;
+      border: 1px solid rgba(255,255,255,0.5);
     }
-    
+
     .mesa-icon-box {
-        width: 50px; height: 50px;
-        background: #000;
-        border-radius: 15px;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 24px; color: white;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      width: 50px; height: 50px;
+      background: #000;
+      border-radius: 15px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; color: white;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
     }
 
     .mesa-info h3 { margin: 0; font-size: 16px; color: #333; font-weight: 800; }
@@ -44,37 +46,37 @@
     .mesa-indicator { margin-left: auto; width: 12px; height: 12px; border-radius: 50%; }
 
     .info-box-neumorph {
-        background: #f0f0f3;
-        border-radius: 15px;
-        padding: 15px;
-        box-shadow: inset 2px 2px 5px #d1d9e6, inset -2px -2px 5px #ffffff;
+      background: #f0f0f3;
+      border-radius: 15px;
+      padding: 15px;
+      box-shadow: inset 2px 2px 5px #d1d9e6, inset -2px -2px 5px #ffffff;
     }
 
     .btn-ver-mas {
-        background: #000;
-        color: #fff;
-        border: none;
-        padding: 15px;
-        border-radius: 15px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: transform 0.2s;
-        width: 100%;
+      background: #000;
+      color: #fff;
+      border: none;
+      padding: 15px;
+      border-radius: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s;
+      width: 100%;
     }
     .btn-ver-mas:active { transform: scale(0.98); }
 
-    /* Ajuste para que la búsqueda en favoritos no choque con el header */
     .header-search-fav {
-        padding: 15px 20px;
-        background: #f0f0f3;
-        position: sticky;
-        top: 0;
-        z-index: 100;
+      padding: 15px 20px;
+      background: #f0f0f3;
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
   </style>
 </head>
 <body>
 
+  <!-- 🔸 Splash Screen -->
   <div id="splash-screen">
     <div class="splash-content">
       <div class="splash-logo">
@@ -86,9 +88,10 @@
     </div>
   </div>
 
+  <!-- 🔹 Sidebar -->
   <aside id="sidebar" class="sidebar">
     <div class="sidebar-header">
-      <img id="user-photo" src="https://via.placeholder.com/100" alt="Foto">
+      <img id="user-photo" src="https://picsum.photos/200" alt="Foto de perfil">
       <h3 id="user-name">Cargando...</h3>
       <small>Cliente Preferencial</small>
       <div class="sidebar-buttons">
@@ -101,6 +104,7 @@
 
   <div id="overlay" class="overlay" onclick="toggleMenu()"></div>
 
+  <!-- 🔸 Vista MAPA -->
   <div id="view-mapa" class="view">
     <header class="header">
       <div class="top-bar">
@@ -138,18 +142,19 @@
     </main>
   </div>
 
+  <!-- 🔸 Vista FAVORITOS -->
   <div id="view-favoritos" class="view hidden">
     <div class="header-search-fav">
-        <h1 style="margin: 0 0 15px 0; font-size: 24px;">⭐ Favoritos</h1>
-        <div class="search-container">
-            <span>🔍</span>
-            <input type="text" id="search-input-fav" placeholder="Buscar en mis guardados...">
-        </div>
+      <h1 style="margin: 0 0 15px 0; font-size: 24px;">⭐ Favoritos</h1>
+      <div class="search-container">
+        <span>🔍</span>
+        <input type="text" id="search-input-fav" placeholder="Buscar en mis guardados...">
+      </div>
     </div>
-    <main class="grid-favoritos" id="grid-favoritos" style="padding: 20px;">
-        </main>
+    <main class="grid-favoritos" id="grid-favoritos" style="padding: 20px;"></main>
   </div>
 
+  <!-- 🔸 Vista DETALLE -->
   <div id="view-detalle" class="view hidden">
     <header class="header-detalle">
       <button class="btn-back" onclick="regresarVistas()">←</button>
@@ -159,24 +164,23 @@
     <main class="detalle-content">
       <div class="card-restaurante-detalle">
         <div style="position: relative; width: 100%; height: 220px; overflow: visible;">
-            <img id="detalle-img" src="" alt="Portada" style="width: 100%; height: 100%; object-fit: cover; border-radius: 0 0 25px 25px;">
-            <img id="detalle-logo-restaurante" src="" 
-                 style="position: absolute; bottom: -30px; right: 20px; width: 85px; height: 85px; 
-                        border-radius: 50%; border: 5px solid #f0f0f3; box-shadow: 0 10px 20px rgba(0,0,0,0.15); 
-                        background: white; object-fit: cover; z-index: 10;">
+          <img id="detalle-img" src="" alt="Portada" style="width: 100%; height: 100%; object-fit: cover; border-radius: 0 0 25px 25px;">
+          <img id="detalle-logo-restaurante" src="" 
+               style="position: absolute; bottom: -30px; right: 20px; width: 85px; height: 85px; 
+                      border-radius: 50%; border: 5px solid #f0f0f3; box-shadow: 0 10px 20px rgba(0,0,0,0.15); 
+                      background: white; object-fit: cover; z-index: 10;">
         </div>
         
         <div class="detalle-body" style="padding: 40px 20px 20px 20px;">
           <h1 id="detalle-nombre" style="font-size: 26px; margin: 0;">Nombre</h1>
           <p id="detalle-categoria" style="color: #888; margin: 5px 0 25px 0; font-size: 14px;">Categoría</p>
-
-          <div id="detalle-info-box">
-              </div>
+          <div id="detalle-info-box"></div>
         </div>
       </div>
     </main>
   </div>
 
+  <!-- 🔸 Navegación Inferior -->
   <nav class="bottom-nav">
     <div class="nav-item active" id="btn-mapa" onclick="cambiarVista('mapa')">
       <span class="icon">🗺️</span>
@@ -188,37 +192,38 @@
     </div>
   </nav>
 
+  <!-- 🔹 Librerías Leaflet -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
+  <!-- 🔹 Configuración Supabase -->
   <script>
-    // CONFIGURACIÓN SUPABASE
-    const supabaseUrl = 'https://cpveuexgxwxjejurtwro.supabase.co'; 
+    const supabaseUrl = 'https://cpveuexgxwxjejurtwro.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc';
-
     window.supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
     function toggleMenu() {
-        document.getElementById('sidebar').classList.toggle('active');
-        document.getElementById('overlay').classList.toggle('active');
+      document.getElementById('sidebar').classList.toggle('active');
+      document.getElementById('overlay').classList.toggle('active');
     }
 
     async function cerrarSesionSidebar() {
-        if(confirm("¿Estás seguro de que quieres salir?")) {
-            await window.supabase.auth.signOut();
-            window.location.reload();
-        }
+      if (confirm("¿Estás seguro de que quieres salir?")) {
+        await window.supabase.auth.signOut();
+        window.location.reload();
+      }
     }
 
     function filtrarPorChip(cat, btn) {
-        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-        btn.classList.add('active');
-        const input = document.getElementById('search-input-map');
-        input.value = (cat === 'Todos') ? '' : cat;
-        input.dispatchEvent(new Event('input'));
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      const input = document.getElementById('search-input-map');
+      input.value = (cat === 'Todos') ? '' : cat;
+      input.dispatchEvent(new Event('input'));
     }
   </script>
 
+  <!-- 🔹 App Principal -->
   <script src="js/app.js"></script>
 </body>
 </html>

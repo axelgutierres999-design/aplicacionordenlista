@@ -353,20 +353,48 @@ body {
 }
 
 /* --- 12. CARDS Y DETALLES --- */
-/* Tarjeta flotante sobre el mapa */
+/* Tarjeta flotante pequeña sobre el mapa */
 .preview-card {
-    position: absolute;
-    bottom: 80px; /* ← sube la tarjeta para que no se monte con la bottom-nav */
-    left: 20px;
-    right: 20px; /* margen lateral */
-    background: rgba(240, 240, 243, 0.95); /* semi-transparente */
-    backdrop-filter: blur(10px);
-    border-radius: 25px;
-    padding: 20px; 
-    z-index: 3000; 
-    box-shadow: 0 15px 35px rgba(0,0,0,0.15);
-    animation: fade-in-up 0.4s ease;
-    transition: all 0.3s ease;
+  position: absolute;
+  bottom: 100px;
+  left: 20px;
+  right: 20px;
+  background: rgba(240, 240, 243, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 10px 15px;
+  z-index: 3000;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  animation: fade-in-up 0.4s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+/* Imagen reducida dentro de la vista previa */
+.preview-card img {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 15px;
+}
+
+/* Texto más pequeño */
+.preview-card h3 {
+  font-size: 16px;
+  margin: 5px 0 0 0;
+}
+.preview-card p {
+  font-size: 12px;
+  color: #555;
+  margin: 0;
+}
+.preview-card button {
+  padding: 10px;
+  font-size: 13px;
+  border-radius: 12px;
 }
 
 /* Estado oculto */
