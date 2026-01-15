@@ -16,6 +16,55 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css">
   
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+  <style>
+    /* Diseño de la tarjeta de Mesas */
+    .mesa-status-card {
+        background: linear-gradient(145deg, #ffffff, #f0f0f3);
+        border-radius: 20px;
+        padding: 15px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 20px;
+        box-shadow: 5px 5px 15px #d1d9e6, -5px -5px 15px #ffffff;
+        border: 1px solid rgba(255,255,255,0.5);
+    }
+    
+    .mesa-icon-box {
+        width: 50px;
+        height: 50px;
+        background: #000;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        color: white;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+
+    .mesa-info h3 {
+        margin: 0;
+        font-size: 18px;
+        color: #333;
+        font-weight: 800;
+    }
+
+    .mesa-info p {
+        margin: 0;
+        font-size: 12px;
+        color: #888;
+    }
+
+    .mesa-indicator {
+        margin-left: auto;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        box-shadow: 0 0 10px currentColor;
+    }
+  </style>
 </head>
 <body>
 
@@ -101,28 +150,39 @@
   <div id="view-detalle" class="view hidden">
     <header class="header-detalle">
       <button class="btn-back" onclick="regresarVistas()">←</button>
-      <h2 id="detalle-titulo-header"
-          style="font-size: 18px; width: 100%; text-align: center; margin-right: 45px;">Detalles</h2>
+      <h2 id="detalle-titulo-header" style="font-size: 18px; width: 100%; text-align: center; margin-right: 45px;">
+        Detalles
+      </h2>
     </header>
     
     <main class="detalle-content">
       <div class="card-restaurante-detalle">
-        <div style="position: relative;">
-            <img id="detalle-img" src="" alt="Lugar" style="width: 100%; height: 250px; object-fit: cover; display: block;">
+        
+        <div style="position: relative; width: 100%; height: 250px;">
+            <img id="detalle-img" src="" alt="Fondo" 
+                 style="width: 100%; height: 100%; object-fit: cover; border-radius: 0 0 20px 20px;">
             
             <img id="detalle-logo-restaurante" src="" 
-                 style="position: absolute; bottom: -25px; right: 20px; width: 70px; height: 70px; 
-                        border-radius: 50%; border: 4px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
-                        background: white; object-fit: cover; display: none; z-index: 10;">
+                 style="position: absolute; 
+                        bottom: -30px; 
+                        right: 20px; 
+                        width: 80px; 
+                        height: 80px; 
+                        border-radius: 50%; 
+                        border: 4px solid white; 
+                        box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
+                        background: white; 
+                        object-fit: cover; 
+                        display: none; 
+                        z-index: 10;">
         </div>
         
         <div class="detalle-body">
-          <h1 id="detalle-nombre" style="margin-bottom: 5px; margin-top: 15px;">Nombre</h1>
+          <h1 id="detalle-nombre" style="margin-bottom: 5px; margin-top: 10px;">Nombre</h1>
           <p id="detalle-categoria" style="color: var(--text-dim); margin-bottom: 20px;">Categoría</p>
 
           <div id="detalle-info-box"></div>
-          
-          </div>
+        </div>
       </div>
     </main>
   </div>
@@ -142,14 +202,12 @@
   <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
   <script>
-    // 1. INICIALIZAR SUPABASE GLOBALMENTE
     const supabaseUrl = 'https://cpveuexgxwxjejurtwro.supabase.co'; 
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc';
 
     window.supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
     window.db = window.supabase;
 
-    // 2. LÓGICA UI MENU LATERAL
     function toggleMenu() {
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('overlay');
@@ -164,7 +222,6 @@
         }
     }
 
-    // 3. FILTRADO RÁPIDO POR CHIPS
     function filtrarPorChip(categoria, btn) {
         document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
         btn.classList.add('active');
@@ -173,7 +230,6 @@
         const input = document.getElementById('search-input-map');
         input.value = busqueda;
         
-        // Disparar evento de input manualmente para activar el filtro de app.js
         const event = new Event('input');
         input.dispatchEvent(event);
     }
