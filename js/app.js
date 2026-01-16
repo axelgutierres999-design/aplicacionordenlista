@@ -51,11 +51,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('search-input-map')?.addEventListener('input', e => filtrarLocales(e.target.value, false));
   document.getElementById('search-input-fav')?.addEventListener('input', e => filtrarLocales(e.target.value, true));
 
-  // CERRAR PREVIEW AL TOCAR EL MAPA (O LIMPIAR RUTA)
+  // --- CORRECCIÓN FINAL: LIMPIAR RUTA AL TOCAR EL MAPA ---
   map.on('click', () => {
+    // 1. Ocultar la tarjeta de vista previa
     document.getElementById('preview-card')?.classList.add('hidden');
-    // Opcional: Si quieres que al tocar el mapa se borre la ruta actual, descomenta la siguiente línea:
-    // if (controlRuta) { map.removeControl(controlRuta); controlRuta = null; }
+
+    // 2. Si existe una ruta trazada, BORRARLA
+    if (controlRuta) {
+        map.removeControl(controlRuta);
+        controlRuta = null; // Reiniciar variable
+    }
   });
 });
 
@@ -94,7 +99,14 @@ function renderizarMarcadores(lista) {
     const marker = L.marker([loc.lat, loc.lng], { icon: crearIconoFlotante(loc.icono, index) }).addTo(capaMarcadores);
     
     marker.on('click', e => {
-      L.DomEvent.stopPropagation(e); // Evita que el mapa reciba el click y cierre el preview inmediatamente
+      L.DomEvent.stopPropagation(e); // Evita que el click pase al mapa (para que no cierre el preview instantáneamente)
+      
+      // Si hay una ruta activa, la borramos al seleccionar un nuevo restaurante
+      if (controlRuta) {
+          map.removeControl(controlRuta);
+          controlRuta = null;
+      }
+
       mostrarPreview(loc);
       map.panTo([loc.lat - 0.002, loc.lng], { animate: true });
     });
@@ -105,7 +117,7 @@ function mostrarPreview(loc) {
   const card = document.getElementById('preview-card');
   document.getElementById('preview-nombre').textContent = loc.nombre;
   document.getElementById('preview-cat').innerHTML = `${loc.cat} <br> <span style="font-size:11px; color:#666;">🕒 ${loc.horario}</span>`;
-  document.getElementById('preview-img').src = loc.logo || loc.img; // Preferimos Logo si hay, sino Foto
+  document.getElementById('preview-img').src = loc.logo || loc.img; 
   
   // Botón Ver Detalles
   const btnDetalle = document.getElementById('btn-abrir-detalle');
@@ -125,7 +137,7 @@ async function verDetalle(nombre) {
   const res = locales.find(l => l.nombre === nombre);
   if (!res) return;
   
-  idRestauranteActual = res.id; // Guardamos ID para calificar
+  idRestauranteActual = res.id; 
 
   let esFav = false;
   if (usuarioId) {
@@ -143,7 +155,6 @@ async function verDetalle(nombre) {
 
   const info = document.getElementById('detalle-info-box');
   
-  // Generamos el HTML incluyendo la sección de estrellas
   info.innerHTML = `
     <div class="info-box-neumorph" style="margin-bottom: 20px;">
         <p>📍 ${res.direccion || 'Sin dirección'}</p>
@@ -198,16 +209,13 @@ function calificar(n) {
     const stars = document.querySelectorAll('.star');
     stars.forEach((s, index) => {
         if(index < n) {
-            s.style.color = '#FFD700'; // Dorado
+            s.style.color = '#FFD700'; 
             s.style.transform = 'scale(1.2)';
         } else {
-            s.style.color = '#ddd'; // Gris
+            s.style.color = '#ddd'; 
             s.style.transform = 'scale(1)';
         }
     });
-    
-    // Aquí podrías guardar en Supabase:
-    // await db.from('calificaciones').insert({ ... })
     
     setTimeout(() => {
        alert(`¡Gracias por calificar con ${n} estrellas! ⭐`);
@@ -216,7 +224,6 @@ function calificar(n) {
 
 // --- 6. FUNCIONES DE APOYO Y RUTAS ---
 
-// ** CORRECCIÓN IMPORTANTE AQUÍ **
 function trazarRuta(lat, lng) {
   // 1. Ocultar inmediatamente la tarjeta previa
   const previewCard = document.getElementById('preview-card');
@@ -231,12 +238,12 @@ function trazarRuta(lat, lng) {
   navigator.geolocation.getCurrentPosition(pos => {
     controlRuta = L.Routing.control({
       waypoints: [L.latLng(pos.coords.latitude, pos.coords.longitude), L.latLng(lat, lng)],
-      lineOptions: { styles: [{ color: '#000', weight: 6, opacity: 0.8 }] }, // Estilo de línea premium
-      createMarker: () => null, // No crear marcadores extra
+      lineOptions: { styles: [{ color: '#000', weight: 6, opacity: 0.8 }] },
+      createMarker: () => null,
       addWaypoints: false,
       draggableWaypoints: false,
       fitSelectedRoutes: true,
-      show: false // No mostrar el cuadro de texto de instrucciones
+      show: false 
     }).addTo(map);
     
     cambiarVista('mapa');
@@ -296,26 +303,17 @@ function mostrarFavoritosEnGrid(lista) {
   });
 }
 
-// Función Toggle Favoritos (Necesaria para que funcionen los botones)
 async function toggleFav(id) {
     if (!usuarioId) return alert("Inicia sesión para guardar favoritos.");
-    
-    // Verificar si ya existe
     const { data } = await db.from('favoritos').select('*').match({ usuario_id: usuarioId, restaurante_id: id });
-    
     if (data && data.length > 0) {
-        // Borrar
         await db.from('favoritos').delete().match({ usuario_id: usuarioId, restaurante_id: id });
     } else {
-        // Insertar
         await db.from('favoritos').insert({ usuario_id: usuarioId, restaurante_id: id });
     }
-    
-    // Recargar vista actual
     if (!document.getElementById('view-favoritos').classList.contains('hidden')) {
         cargarFavoritos();
     } else if (!document.getElementById('view-detalle').classList.contains('hidden')) {
-        // Si estamos en detalle, actualizamos el botón visualmente
         const res = locales.find(l => l.id === id);
         if(res) verDetalle(res.nombre);
     }
