@@ -2,7 +2,7 @@ const db = window.supabase;
 let usuarioId = null;
 let locales = [];
 let map, capaMarcadores = L.layerGroup(), controlRuta = null;
-let idRestauranteActual = null; // Para saber qué restaurante se está calificando
+let idRestauranteActual = null; // Variable global vital para las calificaciones
 
 // --- 1. ICONOS: SOLO EMOJIS ---
 function crearIconoFlotante(emoji, index) {
@@ -51,44 +51,56 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('search-input-map')?.addEventListener('input', e => filtrarLocales(e.target.value, false));
   document.getElementById('search-input-fav')?.addEventListener('input', e => filtrarLocales(e.target.value, true));
 
-  // --- CORRECCIÓN FINAL: LIMPIAR RUTA AL TOCAR EL MAPA ---
+  // --- LIMPIAR RUTA AL TOCAR EL MAPA ---
   map.on('click', () => {
-    // 1. Ocultar la tarjeta de vista previa
     document.getElementById('preview-card')?.classList.add('hidden');
-
-    // 2. Si existe una ruta trazada, BORRARLA
     if (controlRuta) {
         map.removeControl(controlRuta);
-        controlRuta = null; // Reiniciar variable
+        controlRuta = null;
     }
   });
 });
 
-// --- 3. CARGAR DATOS ---
+// --- 3. CARGAR DATOS (RESTAURANTES + CALIFICACIONES) ---
 async function cargarLocalesDesdeDB() {
   try {
-    const { data, error } = await db.from('restaurantes').select('*');
+    // A) Traemos los restaurantes
+    const { data: dataRestaurantes, error } = await db.from('restaurantes').select('*');
     if (error) throw error;
 
-    locales = data.map((r, index) => ({
-      id: r.id,
-      nombre: r.nombre || "Sin nombre",
-      lat: r.lat ? parseFloat(r.lat) : 0,
-      lng: r.longitud ? parseFloat(r.longitud) : 0,
-      cat: r.categoria || "General",
-      icono: "🍽️", 
-      horario: r.horarios || "Consultar",
-      direccion: r.direccion || "",
-      img: r.foto_url || `https://picsum.photos/400/300?random=${index}`,
-      logo: r.logo_url,
-      menu_img: r.menu_digital_url, 
-      whatsapp: r.whatsapp || r.telefono || "", 
-      mesas_libres: r.mesas_disponibles ?? r.num_mesas, 
-      mesas_total: r.mesas_totales ?? r.num_mesas ?? 10
-    }));
+    // B) Traemos TODAS las calificaciones para calcular promedios
+    const { data: dataCalificaciones } = await db.from('calificaciones').select('*');
+
+    locales = dataRestaurantes.map((r, index) => {
+      // 1. Calcular promedio de estrellas para este restaurante
+      const votosEsteLocal = dataCalificaciones.filter(c => c.restaurante_id === r.id);
+      const sumaPuntos = votosEsteLocal.reduce((acc, curr) => acc + curr.puntuacion, 0);
+      const promedio = votosEsteLocal.length > 0 ? (sumaPuntos / votosEsteLocal.length).toFixed(1) : "Nuevo";
+      const totalVotos = votosEsteLocal.length;
+
+      return {
+        id: r.id,
+        nombre: r.nombre || "Sin nombre",
+        lat: r.lat ? parseFloat(r.lat) : 0,
+        lng: r.longitud ? parseFloat(r.longitud) : 0,
+        cat: r.categoria || "General",
+        icono: "🍽️", 
+        horario: r.horarios || "Consultar",
+        direccion: r.direccion || "",
+        img: r.foto_url || `https://picsum.photos/400/300?random=${index}`,
+        logo: r.logo_url,
+        menu_img: r.menu_digital_url, 
+        whatsapp: r.whatsapp || r.telefono || "", 
+        mesas_libres: r.mesas_disponibles ?? r.num_mesas, 
+        mesas_total: r.mesas_totales ?? r.num_mesas ?? 10,
+        // Datos de calificación
+        rating: promedio,
+        votos: totalVotos
+      };
+    });
 
     renderizarMarcadores(locales);
-  } catch (err) { console.error("Error:", err); }
+  } catch (err) { console.error("Error cargando datos:", err); }
 }
 
 // --- 4. MAPA Y PREVIEW ---
@@ -99,14 +111,11 @@ function renderizarMarcadores(lista) {
     const marker = L.marker([loc.lat, loc.lng], { icon: crearIconoFlotante(loc.icono, index) }).addTo(capaMarcadores);
     
     marker.on('click', e => {
-      L.DomEvent.stopPropagation(e); // Evita que el click pase al mapa (para que no cierre el preview instantáneamente)
-      
-      // Si hay una ruta activa, la borramos al seleccionar un nuevo restaurante
+      L.DomEvent.stopPropagation(e);
       if (controlRuta) {
           map.removeControl(controlRuta);
           controlRuta = null;
       }
-
       mostrarPreview(loc);
       map.panTo([loc.lat - 0.002, loc.lng], { animate: true });
     });
@@ -116,14 +125,21 @@ function renderizarMarcadores(lista) {
 function mostrarPreview(loc) {
   const card = document.getElementById('preview-card');
   document.getElementById('preview-nombre').textContent = loc.nombre;
-  document.getElementById('preview-cat').innerHTML = `${loc.cat} <br> <span style="font-size:11px; color:#666;">🕒 ${loc.horario}</span>`;
+  
+  // AQUI MOSTRAMOS LA CALIFICACIÓN EN EL PREVIEW
+  const ratingHTML = loc.rating === "Nuevo" 
+    ? `<span style="color:#888; font-size:12px; font-weight:bold;">✨ Nuevo</span>` 
+    : `<span style="color:#FFD700;">★</span> <b>${loc.rating}</b> <span style="font-size:10px; color:#888;">(${loc.votos})</span>`;
+
+  document.getElementById('preview-cat').innerHTML = `
+    ${ratingHTML} • ${loc.cat} <br> 
+    <span style="font-size:11px; color:#666;">🕒 ${loc.horario}</span>`;
+  
   document.getElementById('preview-img').src = loc.logo || loc.img; 
   
-  // Botón Ver Detalles
   const btnDetalle = document.getElementById('btn-abrir-detalle');
   btnDetalle.onclick = () => verDetalle(loc.nombre);
 
-  // Botón Ir Ahora (En la tarjeta pequeña)
   const btnIr = document.getElementById('btn-ir-ahora');
   if(btnIr) {
       btnIr.onclick = () => trazarRuta(loc.lat, loc.lng);
@@ -132,24 +148,39 @@ function mostrarPreview(loc) {
   card.classList.remove('hidden');
 }
 
-// --- 5. VISTA DE DETALLE (CON CALIFICACIÓN) ---
+// --- 5. VISTA DE DETALLE (INTEGRADA CON DB) ---
 async function verDetalle(nombre) {
   const res = locales.find(l => l.nombre === nombre);
   if (!res) return;
   
-  idRestauranteActual = res.id; 
+  idRestauranteActual = res.id; // IMPORTANTE: Seteamos el ID global
 
+  // 1. Verificar si es favorito
   let esFav = false;
   if (usuarioId) {
       const { data } = await db.from('favoritos').select('*').match({ usuario_id: usuarioId, restaurante_id: res.id });
       esFav = data && data.length > 0;
   }
 
+  // 2. Verificar si el usuario YA calificó este lugar para pintar las estrellas
+  let miPuntuacion = 0;
+  if (usuarioId) {
+      const { data: calif } = await db.from('calificaciones')
+        .select('puntuacion')
+        .match({ usuario_id: usuarioId, restaurante_id: res.id })
+        .single();
+      if(calif) miPuntuacion = calif.puntuacion;
+  }
+
+  // Llenar datos del DOM
   document.getElementById('detalle-nombre').textContent = res.nombre;
   document.getElementById('detalle-titulo-header').textContent = res.nombre;
-  document.getElementById('detalle-categoria').textContent = res.cat;
-  document.getElementById('detalle-img').src = res.img;
   
+  // Mostrar Rating Promedio Grande en Detalle
+  const ratingTexto = res.rating === "Nuevo" ? "Nuevo" : `${res.rating} (${res.votos} opiniones)`;
+  document.getElementById('detalle-categoria').innerHTML = `${res.cat} • <span style="color:#f5c518">★ ${ratingTexto}</span>`;
+  
+  document.getElementById('detalle-img').src = res.img;
   const logoEl = document.getElementById('detalle-logo-restaurante');
   logoEl.src = res.logo || res.img;
 
@@ -170,15 +201,15 @@ async function verDetalle(nombre) {
         <div class="mesa-indicator" style="background: ${res.mesas_libres > 0 ? '#4CAF50' : '#F44336'}; box-shadow: 0 0 10px ${res.mesas_libres > 0 ? '#4CAF50' : '#F44336'};"></div>
     </div>
 
-    <div style="text-align: center; margin: 25px 0; background: #fff; padding: 15px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05);">
-        <p style="margin: 0 0 10px; font-weight: bold; font-size: 14px; color: #555;">¿Qué te pareció este lugar?</p>
+    <div style="text-align: center; margin: 25px 0; background: #fff; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
+        <p style="margin: 0 0 10px; font-weight: bold; font-size: 15px; color: #333;">Califica tu experiencia</p>
         <div id="stars-container">
-            <span class="star" onclick="calificar(1)" style="font-size: 32px; cursor: pointer; color: #ddd; transition: 0.2s;">★</span>
-            <span class="star" onclick="calificar(2)" style="font-size: 32px; cursor: pointer; color: #ddd; transition: 0.2s;">★</span>
-            <span class="star" onclick="calificar(3)" style="font-size: 32px; cursor: pointer; color: #ddd; transition: 0.2s;">★</span>
-            <span class="star" onclick="calificar(4)" style="font-size: 32px; cursor: pointer; color: #ddd; transition: 0.2s;">★</span>
-            <span class="star" onclick="calificar(5)" style="font-size: 32px; cursor: pointer; color: #ddd; transition: 0.2s;">★</span>
+            ${[1,2,3,4,5].map(i => `
+                <span class="star" onclick="calificar(${i})" 
+                      style="font-size: 36px; cursor: pointer; transition: 0.2s; color: ${i <= miPuntuacion ? '#FFD700' : '#ddd'}; transform: ${i <= miPuntuacion ? 'scale(1.1)' : 'scale(1)'}">★</span>
+            `).join('')}
         </div>
+        <small style="color:#999; display:block; margin-top:5px;">Toca una estrella para guardar</small>
     </div>
 
     ${res.menu_img ? `
@@ -188,7 +219,7 @@ async function verDetalle(nombre) {
 
     <div style="display: flex; gap: 10px; margin-top: 20px;">
       <button id="btn-fav-action" onclick="toggleFav('${res.id}')"
-        style="flex:1; padding:15px; border-radius:15px; border:1px solid #000; background:${esFav ? '#000':'#fff'}; color:${esFav ? '#fff':'#000'}; font-weight:600;">
+        style="flex:1; padding:15px; border-radius:15px; border:1px solid #000; background:${esFav ? '#000':'#fff'}; color:${esFav ? '#fff':'#000'}; font-weight:600; transition: all 0.3s;">
         ${esFav ? '⭐ Guardado' : '☆ Guardar'}
       </button>
       <button onclick="trazarRuta(${res.lat},${res.lng})"
@@ -204,37 +235,55 @@ async function verDetalle(nombre) {
   cambiarVista('detalle');
 }
 
-// --- FUNCIÓN PARA CALIFICAR (INTERACTIVA) ---
-function calificar(n) {
+// --- 6. FUNCIÓN DE CALIFICAR (DB CONNECTED) ---
+async function calificar(n) {
+    if (!usuarioId) {
+        alert("🔒 Inicia sesión para guardar tu opinión.");
+        return;
+    }
+
+    // 1. Efecto visual inmediato (UX Rápida)
     const stars = document.querySelectorAll('.star');
     stars.forEach((s, index) => {
-        if(index < n) {
-            s.style.color = '#FFD700'; 
-            s.style.transform = 'scale(1.2)';
-        } else {
-            s.style.color = '#ddd'; 
-            s.style.transform = 'scale(1)';
-        }
+        s.style.color = (index < n) ? '#FFD700' : '#ddd';
+        s.style.transform = (index < n) ? 'scale(1.2)' : 'scale(1)';
     });
-    
-    setTimeout(() => {
-       alert(`¡Gracias por calificar con ${n} estrellas! ⭐`);
-    }, 300);
+
+    try {
+        // 2. Guardar en Supabase (Upsert: crea si no existe, actualiza si existe)
+        const { error } = await db
+            .from('calificaciones')
+            .upsert({ 
+                usuario_id: usuarioId, 
+                restaurante_id: idRestauranteActual, 
+                puntuacion: n 
+            }, { onConflict: 'usuario_id, restaurante_id' });
+
+        if (error) throw error;
+
+        // 3. Feedback visual (Toast o Alert simple)
+        // Opcional: Recargar datos para actualizar promedio global
+        // await cargarLocalesDesdeDB(); // Descomentar si quieres actualización en tiempo real (consume más datos)
+        
+        console.log("Calificación guardada exitosamente");
+        
+    } catch (err) {
+        console.error("Error al calificar:", err);
+        alert("Hubo un error al guardar tu calificación. Intenta de nuevo.");
+        // Revertir estrellas visualmente si falla (opcional)
+    }
 }
 
-// --- 6. FUNCIONES DE APOYO Y RUTAS ---
+// --- 7. FUNCIONES DE APOYO Y RUTAS ---
 
 function trazarRuta(lat, lng) {
-  // 1. Ocultar inmediatamente la tarjeta previa
   const previewCard = document.getElementById('preview-card');
   if(previewCard) {
       previewCard.classList.add('hidden');
   }
 
-  // 2. Limpiar ruta anterior si existe
   if (controlRuta) map.removeControl(controlRuta);
 
-  // 3. Obtener ubicación y trazar
   navigator.geolocation.getCurrentPosition(pos => {
     controlRuta = L.Routing.control({
       waypoints: [L.latLng(pos.coords.latitude, pos.coords.longitude), L.latLng(lat, lng)],
@@ -287,6 +336,9 @@ function mostrarFavoritosEnGrid(lista) {
   const grid = document.getElementById('grid-favoritos');
   grid.innerHTML = lista.length ? "" : "<p style='text-align:center;'>No tienes favoritos.</p>";
   lista.forEach(loc => {
+    // Calculamos texto de rating para la tarjeta de favoritos
+    const ratingTxt = loc.rating === "Nuevo" ? "✨ Nuevo" : `⭐ ${loc.rating}`;
+    
     const card = document.createElement('div');
     card.className = "card-restaurante";
     card.innerHTML = `
@@ -295,7 +347,10 @@ function mostrarFavoritosEnGrid(lista) {
         <button onclick="toggleFav('${loc.id}')" style="position:absolute; top:10px; right:10px; background:white; border:none; width:30px; height:30px; border-radius:50%; box-shadow:0 2px 5px rgba(0,0,0,0.2);">🗑️</button>
       </div>
       <div style="padding:15px;">
-        <h3>${loc.nombre}</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h3>${loc.nombre}</h3>
+            <span style="font-size:12px; font-weight:bold; color:#f5c518;">${ratingTxt}</span>
+        </div>
         <p style="color:#888; font-size:12px;">${loc.cat}</p>
         <button class="btn-ver-mas" style="width:100%; margin-top:10px;" onclick="verDetalle('${loc.nombre}')">Ver Detalles</button>
       </div>`;
@@ -311,6 +366,7 @@ async function toggleFav(id) {
     } else {
         await db.from('favoritos').insert({ usuario_id: usuarioId, restaurante_id: id });
     }
+    // Refrescar vista actual
     if (!document.getElementById('view-favoritos').classList.contains('hidden')) {
         cargarFavoritos();
     } else if (!document.getElementById('view-detalle').classList.contains('hidden')) {
