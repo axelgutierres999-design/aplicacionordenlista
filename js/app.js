@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 });
 
-// --- 3. CARGAR DATOS (RESTAURANTES + CALIFICACIONES) ---
+// --- 3. CARGAR DATOS (V9.3 ACTUALIZADO) ---
 async function cargarLocalesDesdeDB() {
   try {
     // A) Traemos los restaurantes
@@ -72,27 +72,43 @@ async function cargarLocalesDesdeDB() {
     const { data: dataCalificaciones } = await db.from('calificaciones').select('*');
 
     locales = dataRestaurantes.map((r, index) => {
-      // 1. Calcular promedio de estrellas para este restaurante
+      // 1. Calcular promedio de estrellas
       const votosEsteLocal = dataCalificaciones.filter(c => c.restaurante_id === r.id);
       const sumaPuntos = votosEsteLocal.reduce((acc, curr) => acc + curr.puntuacion, 0);
       const promedio = votosEsteLocal.length > 0 ? (sumaPuntos / votosEsteLocal.length).toFixed(1) : "Nuevo";
       const totalVotos = votosEsteLocal.length;
+
+      // 2. Manejo de Galería: Supabase devuelve JSONB como objeto/array directo
+      let galeriaMenu = [];
+      if (Array.isArray(r.galeria_menu)) {
+          galeriaMenu = r.galeria_menu;
+      } else if (typeof r.galeria_menu === 'string') {
+          try { galeriaMenu = JSON.parse(r.galeria_menu); } catch(e) { galeriaMenu = []; }
+      }
 
       return {
         id: r.id,
         nombre: r.nombre || "Sin nombre",
         lat: r.lat ? parseFloat(r.lat) : 0,
         lng: r.longitud ? parseFloat(r.longitud) : 0,
-        cat: r.categoria || "General",
+        cat: r.categoria || "General", // Usamos la nueva columna categoría
         icono: "🍽️", 
         horario: r.horarios || "Consultar",
         direccion: r.direccion || "",
-        img: r.foto_url || `https://picsum.photos/400/300?random=${index}`,
-        logo: r.logo_url,
+        
+        // Lógica de imágenes V9.3
+        // 'img' será la foto del lugar (fachada/ambiente). Si no hay, usa placeholder random.
+        img: r.foto_lugar_url || `https://picsum.photos/400/300?random=${index}`,
+        // 'logo' es el logotipo de la marca
+        logo: r.logo_url, 
+        // Menu: Soporte legacy (menu_img) y nuevo (galeria)
         menu_img: r.menu_digital_url, 
+        galeria: galeriaMenu,
+
         whatsapp: r.whatsapp || r.telefono || "", 
         mesas_libres: r.mesas_disponibles ?? r.num_mesas, 
         mesas_total: r.mesas_totales ?? r.num_mesas ?? 10,
+        
         // Datos de calificación
         rating: promedio,
         votos: totalVotos
@@ -126,7 +142,7 @@ function mostrarPreview(loc) {
   const card = document.getElementById('preview-card');
   document.getElementById('preview-nombre').textContent = loc.nombre;
   
-  // AQUI MOSTRAMOS LA CALIFICACIÓN EN EL PREVIEW
+  // Rating en Preview
   const ratingHTML = loc.rating === "Nuevo" 
     ? `<span style="color:#888; font-size:12px; font-weight:bold;">✨ Nuevo</span>` 
     : `<span style="color:#FFD700;">★</span> <b>${loc.rating}</b> <span style="font-size:10px; color:#888;">(${loc.votos})</span>`;
@@ -135,7 +151,8 @@ function mostrarPreview(loc) {
     ${ratingHTML} • ${loc.cat} <br> 
     <span style="font-size:11px; color:#666;">🕒 ${loc.horario}</span>`;
   
-  document.getElementById('preview-img').src = loc.logo || loc.img; 
+  // Usamos la foto del lugar para el preview grande, o el logo si no hay foto
+  document.getElementById('preview-img').src = loc.img || loc.logo; 
   
   const btnDetalle = document.getElementById('btn-abrir-detalle');
   btnDetalle.onclick = () => verDetalle(loc.nombre);
@@ -148,21 +165,21 @@ function mostrarPreview(loc) {
   card.classList.remove('hidden');
 }
 
-// --- 5. VISTA DE DETALLE (INTEGRADA CON DB) ---
+// --- 5. VISTA DE DETALLE (CON CARRUSEL V9.3) ---
 async function verDetalle(nombre) {
   const res = locales.find(l => l.nombre === nombre);
   if (!res) return;
   
-  idRestauranteActual = res.id; // IMPORTANTE: Seteamos el ID global
+  idRestauranteActual = res.id; 
 
-  // 1. Verificar si es favorito
+  // Verificar favoritos
   let esFav = false;
   if (usuarioId) {
       const { data } = await db.from('favoritos').select('*').match({ usuario_id: usuarioId, restaurante_id: res.id });
       esFav = data && data.length > 0;
   }
 
-  // 2. Verificar si el usuario YA calificó este lugar para pintar las estrellas
+  // Verificar calificación previa
   let miPuntuacion = 0;
   if (usuarioId) {
       const { data: calif } = await db.from('calificaciones')
@@ -172,20 +189,54 @@ async function verDetalle(nombre) {
       if(calif) miPuntuacion = calif.puntuacion;
   }
 
-  // Llenar datos del DOM
+  // Renderizado de Info
   document.getElementById('detalle-nombre').textContent = res.nombre;
   document.getElementById('detalle-titulo-header').textContent = res.nombre;
   
-  // Mostrar Rating Promedio Grande en Detalle
   const ratingTexto = res.rating === "Nuevo" ? "Nuevo" : `${res.rating} (${res.votos} opiniones)`;
   document.getElementById('detalle-categoria').innerHTML = `${res.cat} • <span style="color:#f5c518">★ ${ratingTexto}</span>`;
   
+  // Imagen principal: Foto del Lugar
   document.getElementById('detalle-img').src = res.img;
+  // Logo circular: Logo de la marca
   const logoEl = document.getElementById('detalle-logo-restaurante');
   logoEl.src = res.logo || res.img;
 
   const info = document.getElementById('detalle-info-box');
-  
+
+  // --- LÓGICA DEL CARRUSEL DE MENÚ ---
+  let menuHTML = '';
+  if (res.galeria && res.galeria.length > 0) {
+      // Caso 1: Hay Galería (Array de imágenes) -> Renderizar Carrusel
+      const itemsGaleria = res.galeria.map(imgUrl => `
+        <div style="flex: 0 0 auto; width: 85%; scroll-snap-align: center; margin-right: 15px;">
+            <img src="${imgUrl}" style="width:100%; height:450px; object-fit:contain; background:#f9f9f9; border-radius:15px; box-shadow:0 4px 10px rgba(0,0,0,0.1);">
+        </div>
+      `).join('');
+
+      menuHTML = `
+        <h3 style="margin: 25px 0 10px; font-weight: 800;">📖 Menú Digital (${res.galeria.length} págs)</h3>
+        <div style="
+            display: flex; 
+            overflow-x: auto; 
+            padding: 10px 0 20px 0; 
+            scroll-snap-type: x mandatory; 
+            -webkit-overflow-scrolling: touch; /* Suavidad en iOS */
+        ">
+            ${itemsGaleria}
+        </div>
+        <p style="text-align:center; color:#999; font-size:12px; margin-top:-10px;">← Desliza para ver más →</p>
+      `;
+
+  } else if (res.menu_img) {
+      // Caso 2: Solo hay una imagen (Legacy)
+      menuHTML = `
+        <h3 style="margin: 25px 0 10px; font-weight: 800;">📖 Menú Digital</h3>
+        <img src="${res.menu_img}" style="width:100%; border-radius:20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); margin-bottom: 20px;">
+      `;
+  }
+
+  // Inyectar HTML
   info.innerHTML = `
     <div class="info-box-neumorph" style="margin-bottom: 20px;">
         <p>📍 ${res.direccion || 'Sin dirección'}</p>
@@ -212,10 +263,7 @@ async function verDetalle(nombre) {
         <small style="color:#999; display:block; margin-top:5px;">Toca una estrella para guardar</small>
     </div>
 
-    ${res.menu_img ? `
-        <h3 style="margin: 25px 0 10px; font-weight: 800;">📖 Menú Digital</h3>
-        <img src="${res.menu_img}" style="width:100%; border-radius:20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); margin-bottom: 20px;">
-    ` : ''}
+    ${menuHTML}
 
     <div style="display: flex; gap: 10px; margin-top: 20px;">
       <button id="btn-fav-action" onclick="toggleFav('${res.id}')"
@@ -235,14 +283,13 @@ async function verDetalle(nombre) {
   cambiarVista('detalle');
 }
 
-// --- 6. FUNCIÓN DE CALIFICAR (DB CONNECTED) ---
+// --- 6. FUNCIÓN DE CALIFICAR ---
 async function calificar(n) {
     if (!usuarioId) {
         alert("🔒 Inicia sesión para guardar tu opinión.");
         return;
     }
 
-    // 1. Efecto visual inmediato (UX Rápida)
     const stars = document.querySelectorAll('.star');
     stars.forEach((s, index) => {
         s.style.color = (index < n) ? '#FFD700' : '#ddd';
@@ -250,7 +297,6 @@ async function calificar(n) {
     });
 
     try {
-        // 2. Guardar en Supabase (Upsert: crea si no existe, actualiza si existe)
         const { error } = await db
             .from('calificaciones')
             .upsert({ 
@@ -260,28 +306,20 @@ async function calificar(n) {
             }, { onConflict: 'usuario_id, restaurante_id' });
 
         if (error) throw error;
-
-        // 3. Feedback visual (Toast o Alert simple)
-        // Opcional: Recargar datos para actualizar promedio global
-        // await cargarLocalesDesdeDB(); // Descomentar si quieres actualización en tiempo real (consume más datos)
-        
         console.log("Calificación guardada exitosamente");
         
     } catch (err) {
         console.error("Error al calificar:", err);
         alert("Hubo un error al guardar tu calificación. Intenta de nuevo.");
-        // Revertir estrellas visualmente si falla (opcional)
     }
 }
 
 // --- 7. FUNCIONES DE APOYO Y RUTAS ---
-
 function trazarRuta(lat, lng) {
   const previewCard = document.getElementById('preview-card');
   if(previewCard) {
       previewCard.classList.add('hidden');
   }
-
   if (controlRuta) map.removeControl(controlRuta);
 
   navigator.geolocation.getCurrentPosition(pos => {
@@ -336,7 +374,6 @@ function mostrarFavoritosEnGrid(lista) {
   const grid = document.getElementById('grid-favoritos');
   grid.innerHTML = lista.length ? "" : "<p style='text-align:center;'>No tienes favoritos.</p>";
   lista.forEach(loc => {
-    // Calculamos texto de rating para la tarjeta de favoritos
     const ratingTxt = loc.rating === "Nuevo" ? "✨ Nuevo" : `⭐ ${loc.rating}`;
     
     const card = document.createElement('div');
@@ -366,7 +403,6 @@ async function toggleFav(id) {
     } else {
         await db.from('favoritos').insert({ usuario_id: usuarioId, restaurante_id: id });
     }
-    // Refrescar vista actual
     if (!document.getElementById('view-favoritos').classList.contains('hidden')) {
         cargarFavoritos();
     } else if (!document.getElementById('view-detalle').classList.contains('hidden')) {

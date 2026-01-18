@@ -5,21 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Café App - Premium UI</title>
 
-  <!-- ✅ Manifest + Configuración WebApp -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#f0f0f3">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="icon" href="assets/logo.png" type="image/png">
 
-  <!-- ✅ Estilos principales -->
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css">
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
   <style>
-    /* --- ESTILOS NEUMÓRFICOS --- */
+    /* --- ESTILOS NEUMÓRFICOS (Mantener los tuyos) --- */
     .mesa-status-card {
       background: linear-gradient(145deg, #ffffff, #f0f0f3);
       border-radius: 20px;
@@ -72,11 +70,20 @@
       top: 0;
       z-index: 100;
     }
+
+    /* --- ✅ NUEVO: CSS PARA EL CARRUSEL DEL MENÚ (V9.3) --- */
+    /* Esto oculta la barra de scroll pero permite deslizar */
+    .menu-carousel::-webkit-scrollbar {
+        display: none;
+    }
+    .menu-carousel {
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
+    }
   </style>
 </head>
 <body>
 
-  <!-- 🔸 Splash Screen -->
   <div id="splash-screen">
     <div class="splash-content">
       <div class="splash-logo">
@@ -88,7 +95,6 @@
     </div>
   </div>
 
-  <!-- 🔹 Sidebar -->
   <aside id="sidebar" class="sidebar">
     <div class="sidebar-header">
       <img id="user-photo" src="https://picsum.photos/200" alt="Foto de perfil">
@@ -104,24 +110,25 @@
 
   <div id="overlay" class="overlay" onclick="toggleMenu()"></div>
 
-  <!-- 🔸 Vista MAPA -->
   <div id="view-mapa" class="view">
     <header class="header">
       <div class="top-bar">
         <div class="menu-icon" onclick="toggleMenu()">☰</div>
         <div class="search-container">
           <span>🔍</span>
-          <input type="text" id="search-input-map" placeholder="Buscar un lugar...">
+          <input type="text" id="search-input-map" placeholder="Buscar antojito o lugar...">
         </div>
       </div>
 
       <div class="filter-wrapper">
         <div class="filter-chips">
           <button class="chip active" onclick="filtrarPorChip('Todos', this)">Todos</button>
+          <button class="chip" onclick="filtrarPorChip('Restaurante', this)">🍽️ Restaurante</button>
           <button class="chip" onclick="filtrarPorChip('Café', this)">☕ Café</button>
-          <button class="chip" onclick="filtrarPorChip('Taquería', this)">🌮 Tacos</button>
+          <button class="chip" onclick="filtrarPorChip('Bar', this)">🍻 Bar</button>
           <button class="chip" onclick="filtrarPorChip('Pizza', this)">🍕 Pizza</button>
-          <button class="chip" onclick="filtrarPorChip('Italiana', this)">🍝 Italiana</button>
+          <button class="chip" onclick="filtrarPorChip('Tacos', this)">🌮 Tacos</button>
+          <button class="chip" onclick="filtrarPorChip('Postres', this)">🍩 Postres</button>
         </div>
       </div>
     </header>
@@ -131,18 +138,20 @@
 
       <div id="preview-card" class="preview-card hidden">
         <div class="preview-content">
-          <img id="preview-img" src="" alt="Restaurante">
-          <div class="preview-info">
-            <h3 id="preview-nombre">Nombre</h3>
-            <p id="preview-cat">Categoría e Horario</p>
-          </div>
+            <img id="preview-img" src="" alt="Restaurante" style="object-fit: cover;"> 
+            <div class="preview-info">
+                <h3 id="preview-nombre">Nombre</h3>
+                <p id="preview-cat">Categoría e Horario</p>
+            </div>
         </div>
-        <button class="btn-ver-mas" id="btn-abrir-detalle">Ver detalles</button>
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+             <button class="btn-ver-mas" id="btn-abrir-detalle" style="flex: 2;">Ver detalles</button>
+             <button class="btn-ver-mas" id="btn-ir-ahora" style="flex: 1; background: #25D366;">📍 Ir</button>
+        </div>
       </div>
     </main>
   </div>
 
-  <!-- 🔸 Vista FAVORITOS -->
   <div id="view-favoritos" class="view hidden">
     <div class="header-search-fav">
       <h1 style="margin: 0 0 15px 0; font-size: 24px;">⭐ Favoritos</h1>
@@ -154,33 +163,33 @@
     <main class="grid-favoritos" id="grid-favoritos" style="padding: 20px;"></main>
   </div>
 
-  <!-- 🔸 Vista DETALLE -->
   <div id="view-detalle" class="view hidden">
     <header class="header-detalle">
       <button class="btn-back" onclick="regresarVistas()">←</button>
-      <h2 id="detalle-titulo-header">Cargando...</h2>
+      <h2 id="detalle-titulo-header" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Cargando...</h2>
     </header>
     
     <main class="detalle-content">
       <div class="card-restaurante-detalle">
-        <div style="position: relative; width: 100%; height: 220px; overflow: visible;">
+        <div style="position: relative; width: 100%; height: 250px; overflow: visible;">
           <img id="detalle-img" src="" alt="Portada" style="width: 100%; height: 100%; object-fit: cover; border-radius: 0 0 25px 25px;">
+          
           <img id="detalle-logo-restaurante" src="" 
-               style="position: absolute; bottom: -30px; right: 20px; width: 85px; height: 85px; 
+               style="position: absolute; bottom: -40px; right: 20px; width: 90px; height: 90px; 
                       border-radius: 50%; border: 5px solid #f0f0f3; box-shadow: 0 10px 20px rgba(0,0,0,0.15); 
-                      background: white; object-fit: cover; z-index: 10;">
+                      background: white; object-fit: contain; z-index: 10;">
         </div>
         
-        <div class="detalle-body" style="padding: 40px 20px 20px 20px;">
-          <h1 id="detalle-nombre" style="font-size: 26px; margin: 0;">Nombre</h1>
+        <div class="detalle-body" style="padding: 50px 20px 20px 20px;">
+          <h1 id="detalle-nombre" style="font-size: 26px; margin: 0; line-height: 1.2;">Nombre</h1>
           <p id="detalle-categoria" style="color: #888; margin: 5px 0 25px 0; font-size: 14px;">Categoría</p>
+          
           <div id="detalle-info-box"></div>
         </div>
       </div>
     </main>
   </div>
 
-  <!-- 🔸 Navegación Inferior -->
   <nav class="bottom-nav">
     <div class="nav-item active" id="btn-mapa" onclick="cambiarVista('mapa')">
       <span class="icon">🗺️</span>
@@ -192,11 +201,9 @@
     </div>
   </nav>
 
-  <!-- 🔹 Librerías Leaflet -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
-  <!-- 🔹 Configuración Supabase -->
   <script>
     const supabaseUrl = 'https://cpveuexgxwxjejurtwro.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc';
@@ -218,12 +225,12 @@
       document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
       btn.classList.add('active');
       const input = document.getElementById('search-input-map');
+      // Filtro simple: si es "Todos" limpia, si no, pone el texto
       input.value = (cat === 'Todos') ? '' : cat;
       input.dispatchEvent(new Event('input'));
     }
   </script>
 
-  <!-- 🔹 App Principal -->
   <script src="js/app.js"></script>
 </body>
 </html>
