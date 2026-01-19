@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Iniciar Sesión - Café App</title>
-    <link rel="stylesheet" href="css/style.css"> <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="css/style.css"> 
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         body { background: #f0f0f3; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: sans-serif; }
         .login-card {
@@ -40,43 +41,64 @@
             margin-top: 20px;
             cursor: pointer;
             box-shadow: 5px 5px 15px rgba(0,0,0,0.2);
+            transition: all 0.2s;
         }
-        .btn-login:active { transform: scale(0.98); }
+        .btn-login:disabled { background: #555; cursor: not-allowed; }
+        .btn-login:active:not(:disabled) { transform: scale(0.98); }
     </style>
 </head>
 <body>
 
 <div class="login-card">
     <h2>Bienvenido</h2>
-    <div class="input-group">
-        <label>Email</label>
-        <input type="email" id="email" placeholder="tu@email.com">
-    </div>
-    <div class="input-group">
-        <label>Contraseña</label>
-        <input type="password" id="password" placeholder="••••••••">
-    </div>
-    <button class="btn-login" onclick="login()">Entrar</button>
-    <p style="margin-top: 25px; font-size: 13px; color: #888;">¿No tienes cuenta? <a href="#" style="color: #000; font-weight: bold; text-decoration: none;">Regístrate</a></p>
+    <form id="login-form">
+        <div class="input-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" placeholder="tu@email.com" required>
+        </div>
+        <div class="input-group">
+            <label for="password">Contraseña</label>
+            <input type="password" id="password" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn-login" id="btn-entrar">Entrar</button>
+    </form>
+    
+    <p style="margin-top: 25px; font-size: 13px; color: #888;">
+        ¿No tienes cuenta? 
+        <a href="registro.html" style="color: #000; font-weight: bold; text-decoration: none;">Regístrate</a>
+    </p>
 </div>
 
 <script>
+    // ✅ Credenciales actualizadas
     const supabaseUrl = 'https://cpveuexgxwxjejurtwro.supabase.co';
-    const supabaseKey = 'TU_KEY'; // Usa la misma de tu index.html
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc';
     const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-    async function login() {
+    const loginForm = document.getElementById('login-form');
+    const btnEntrar = document.getElementById('btn-entrar');
+
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault(); // Evita que la página se recargue
+        
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
+
+        // Feedback visual
+        btnEntrar.innerText = "Cargando...";
+        btnEntrar.disabled = true;
 
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
         if (error) {
             alert("Error: " + error.message);
+            btnEntrar.innerText = "Entrar";
+            btnEntrar.disabled = false;
         } else {
-            window.location.href = 'index.html'; // Redirigir al mapa
+            // Guardar sesión y redirigir
+            window.location.href = 'index.html'; 
         }
-    }
+    });
 </script>
 </body>
 </html>
