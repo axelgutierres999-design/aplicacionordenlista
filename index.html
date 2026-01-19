@@ -97,10 +97,10 @@
 
   <aside id="sidebar" class="sidebar">
     <div class="sidebar-header">
-  <img id="user-photo" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" alt="Foto de perfil" style="background: #e0e0e0;">
-  <h3 id="user-name">...</h3>
-  <small id="user-status">Cliente Preferencial</small>
-  </div>
+      <img id="user-photo" src="https://picsum.photos/200" alt="Foto de perfil">
+      <h3 id="user-name">Cargando...</h3>
+      <small>Cliente Preferencial</small>
+      <div class="sidebar-buttons">
         <button onclick="window.location.href='perfil.html'">👤 Perfil</button>
         <button onclick="window.location.href='ajustes.html'">⚙️ Ajustes</button>
       </div>
@@ -215,11 +215,11 @@
     }
 
     async function cerrarSesionSidebar() {
-  if (confirm("¿Estás seguro de que quieres salir?")) {
-    await window.supabase.auth.signOut();
-    window.location.href = 'login.html'; // Redirige al login inmediatamente
-  }
-}
+      if (confirm("¿Estás seguro de que quieres salir?")) {
+        await window.supabase.auth.signOut();
+        window.location.reload();
+      }
+    }
 
     function filtrarPorChip(cat, btn) {
       document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
