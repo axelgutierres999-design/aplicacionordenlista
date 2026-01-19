@@ -1,8 +1,4 @@
-// ✅ Configuración correcta del cliente
-const supabaseUrl = 'https://cpveuexgxwxjejurtwro.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc';
-const db = supabase.createClient(supabaseUrl, supabaseKey);
-
+const db = window.supabase; 
 let usuarioId = null;
 let locales = [];
 let map, capaMarcadores = L.layerGroup(), controlRuta = null;
@@ -29,22 +25,14 @@ function crearIconoFlotante(emoji, index) {
 
 // --- 2. INICIALIZACIÓN ---
 document.addEventListener('DOMContentLoaded', async () => {
-    // Verificamos sesión activa
-    const { data: { session }, error } = await db.auth.getSession();
-    
-    if (session) {
-        usuarioId = session.user.id;
-        console.log("Usuario detectado:", usuarioId);
-        await actualizarInfoUsuarioHeader(); // Esperamos a que cargue la info
-    } else {
-        console.log("No hay sesión, redirigiendo...");
-        window.location.href = 'login.html'; // Si no hay sesión, al login
-        return; 
-    }
+  const { data: { session } } = await db.auth.getSession();
+  if (session) {
+    usuarioId = session.user.id;
+    actualizarInfoUsuarioHeader();
+  }
 
-    // Inicializar mapa y lo demás...
-    map = L.map('map', { zoomControl: false, attributionControl: false }).setView([19.2826, -99.6557], 14);
-
+  // Inicializar mapa
+  map = L.map('map', { zoomControl: false, attributionControl: false }).setView([19.2826, -99.6557], 14);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
   capaMarcadores.addTo(map);
 
@@ -426,22 +414,9 @@ async function toggleFav(id) {
 function regresarVistas() { cambiarVista('mapa'); }
 function abrirWhatsApp(tel, nom) { window.open(`https://wa.me/${tel.replace(/\D/g,'')}?text=Hola, vengo de la app y quiero informes de ${nom}`); }
 async function actualizarInfoUsuarioHeader() {
-    try {
-        const { data, error } = await db.from('perfiles_clientes').select('nombre, foto_url').eq('id', usuarioId).single();
-        
-        const nameEl = document.getElementById('user-name');
-        const photoEl = document.getElementById('user-photo');
-
-        if (data && data.nombre) {
-            if(nameEl) nameEl.textContent = data.nombre;
-            if(photoEl) photoEl.src = data.foto_url || "https://picsum.photos/200";
-        } else {
-            // ✅ Plan B: Si no hay perfil creado, usa el correo de la cuenta
-            const { data: { user } } = await db.auth.getUser();
-            if(nameEl) nameEl.textContent = user.email.split('@')[0]; 
-            if(photoEl) photoEl.src = "https://ui-avatars.com/api/?name=" + user.email;
-        }
-    } catch (err) {
-        console.error("Error en header:", err);
+    const { data } = await db.from('perfiles_clientes').select('nombre, foto_url').eq('id', usuarioId).single();
+    if (data) {
+        document.getElementById('user-name').textContent = data.nombre;
+        document.getElementById('user-photo').src = data.foto_url || "https://picsum.photos/200";
     }
 }
