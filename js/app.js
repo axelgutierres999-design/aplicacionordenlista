@@ -1,8 +1,11 @@
+// Referencia a Supabase (inicializado en index.html)
 const db = window.supabase; 
+
+// Variables Globales
 let usuarioId = null;
 let locales = [];
 let map, capaMarcadores = L.layerGroup(), controlRuta = null;
-let idRestauranteActual = null; // Variable global vital para las calificaciones
+let idRestauranteActual = null; 
 
 // --- 1. ICONOS: SOLO EMOJIS ---
 function crearIconoFlotante(emoji, index) {
@@ -23,22 +26,31 @@ function crearIconoFlotante(emoji, index) {
   });
 }
 
-// --- 2. INICIALIZACIÓN ---
+// --- 2. INICIALIZACIÓN Y GESTIÓN DE SESIÓN ---
 document.addEventListener('DOMContentLoaded', async () => {
+  // A) Verificar Sesión
   const { data: { session } } = await db.auth.getSession();
-  if (session) {
-    usuarioId = session.user.id;
-    actualizarInfoUsuarioHeader();
+  
+  if (!session) {
+    // Si por alguna razón app.js carga sin sesión, regresamos al login
+    window.location.href = 'login.html';
+    return;
   }
 
-  // Inicializar mapa
+  // B) Guardar ID y Cargar Info del Usuario
+  usuarioId = session.user.id;
+  console.log("Usuario autenticado:", usuarioId);
+  await actualizarInfoUsuarioHeader(); // Carga nombre y foto en el sidebar
+
+  // C) Inicializar mapa
   map = L.map('map', { zoomControl: false, attributionControl: false }).setView([19.2826, -99.6557], 14);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
   capaMarcadores.addTo(map);
 
+  // D) Cargar Restaurantes
   await cargarLocalesDesdeDB();
 
-  // Splash screen
+  // E) Ocultar Splash screen
   setTimeout(() => {
     const splash = document.getElementById('splash-screen');
     if (splash) {
@@ -47,11 +59,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }, 1500);
 
-  // Eventos de búsqueda
+  // F) Eventos de búsqueda
   document.getElementById('search-input-map')?.addEventListener('input', e => filtrarLocales(e.target.value, false));
   document.getElementById('search-input-fav')?.addEventListener('input', e => filtrarLocales(e.target.value, true));
 
-  // --- LIMPIAR RUTA AL TOCAR EL MAPA ---
+  // G) Limpiar ruta al tocar el mapa
   map.on('click', () => {
     document.getElementById('preview-card')?.classList.add('hidden');
     if (controlRuta) {
@@ -78,7 +90,7 @@ async function cargarLocalesDesdeDB() {
       const promedio = votosEsteLocal.length > 0 ? (sumaPuntos / votosEsteLocal.length).toFixed(1) : "Nuevo";
       const totalVotos = votosEsteLocal.length;
 
-      // 2. Manejo de Galería: Supabase devuelve JSONB como objeto/array directo
+      // 2. Manejo de Galería
       let galeriaMenu = [];
       if (Array.isArray(r.galeria_menu)) {
           galeriaMenu = r.galeria_menu;
@@ -91,17 +103,13 @@ async function cargarLocalesDesdeDB() {
         nombre: r.nombre || "Sin nombre",
         lat: r.lat ? parseFloat(r.lat) : 0,
         lng: r.longitud ? parseFloat(r.longitud) : 0,
-        cat: r.categoria || "General", // Usamos la nueva columna categoría
+        cat: r.categoria || "General",
         icono: "🍽️", 
         horario: r.horarios || "Consultar",
         direccion: r.direccion || "",
         
-        // Lógica de imágenes V9.3
-        // 'img' será la foto del lugar (fachada/ambiente). Si no hay, usa placeholder random.
         img: r.foto_lugar_url || `https://picsum.photos/400/300?random=${index}`,
-        // 'logo' es el logotipo de la marca
         logo: r.logo_url, 
-        // Menu: Soporte legacy (menu_img) y nuevo (galeria)
         menu_img: r.menu_digital_url, 
         galeria: galeriaMenu,
 
@@ -109,7 +117,6 @@ async function cargarLocalesDesdeDB() {
         mesas_libres: r.mesas_disponibles ?? r.num_mesas, 
         mesas_total: r.mesas_totales ?? r.num_mesas ?? 10,
         
-        // Datos de calificación
         rating: promedio,
         votos: totalVotos
       };
@@ -142,7 +149,6 @@ function mostrarPreview(loc) {
   const card = document.getElementById('preview-card');
   document.getElementById('preview-nombre').textContent = loc.nombre;
   
-  // Rating en Preview
   const ratingHTML = loc.rating === "Nuevo" 
     ? `<span style="color:#888; font-size:12px; font-weight:bold;">✨ Nuevo</span>` 
     : `<span style="color:#FFD700;">★</span> <b>${loc.rating}</b> <span style="font-size:10px; color:#888;">(${loc.votos})</span>`;
@@ -151,7 +157,6 @@ function mostrarPreview(loc) {
     ${ratingHTML} • ${loc.cat} <br> 
     <span style="font-size:11px; color:#666;">🕒 ${loc.horario}</span>`;
   
-  // Usamos la foto del lugar para el preview grande, o el logo si no hay foto
   document.getElementById('preview-img').src = loc.img || loc.logo; 
   
   const btnDetalle = document.getElementById('btn-abrir-detalle');
@@ -165,7 +170,7 @@ function mostrarPreview(loc) {
   card.classList.remove('hidden');
 }
 
-// --- 5. VISTA DE DETALLE (CON CARRUSEL V9.3) ---
+// --- 5. VISTA DE DETALLE ---
 async function verDetalle(nombre) {
   const res = locales.find(l => l.nombre === nombre);
   if (!res) return;
@@ -189,25 +194,22 @@ async function verDetalle(nombre) {
       if(calif) miPuntuacion = calif.puntuacion;
   }
 
-  // Renderizado de Info
+  // Renderizado
   document.getElementById('detalle-nombre').textContent = res.nombre;
   document.getElementById('detalle-titulo-header').textContent = res.nombre;
   
   const ratingTexto = res.rating === "Nuevo" ? "Nuevo" : `${res.rating} (${res.votos} opiniones)`;
   document.getElementById('detalle-categoria').innerHTML = `${res.cat} • <span style="color:#f5c518">★ ${ratingTexto}</span>`;
   
-  // Imagen principal: Foto del Lugar
   document.getElementById('detalle-img').src = res.img;
-  // Logo circular: Logo de la marca
   const logoEl = document.getElementById('detalle-logo-restaurante');
   logoEl.src = res.logo || res.img;
 
   const info = document.getElementById('detalle-info-box');
 
-  // --- LÓGICA DEL CARRUSEL DE MENÚ ---
+  // Carrusel de Menú
   let menuHTML = '';
   if (res.galeria && res.galeria.length > 0) {
-      // Caso 1: Hay Galería (Array de imágenes) -> Renderizar Carrusel
       const itemsGaleria = res.galeria.map(imgUrl => `
         <div style="flex: 0 0 auto; width: 85%; scroll-snap-align: center; margin-right: 15px;">
             <img src="${imgUrl}" style="width:100%; height:450px; object-fit:contain; background:#f9f9f9; border-radius:15px; box-shadow:0 4px 10px rgba(0,0,0,0.1);">
@@ -216,27 +218,19 @@ async function verDetalle(nombre) {
 
       menuHTML = `
         <h3 style="margin: 25px 0 10px; font-weight: 800;">📖 Menú Digital (${res.galeria.length} págs)</h3>
-        <div style="
-            display: flex; 
-            overflow-x: auto; 
-            padding: 10px 0 20px 0; 
-            scroll-snap-type: x mandatory; 
-            -webkit-overflow-scrolling: touch; /* Suavidad en iOS */
-        ">
+        <div class="menu-carousel" style="display: flex; overflow-x: auto; padding: 10px 0 20px 0; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;">
             ${itemsGaleria}
         </div>
         <p style="text-align:center; color:#999; font-size:12px; margin-top:-10px;">← Desliza para ver más →</p>
       `;
 
   } else if (res.menu_img) {
-      // Caso 2: Solo hay una imagen (Legacy)
       menuHTML = `
         <h3 style="margin: 25px 0 10px; font-weight: 800;">📖 Menú Digital</h3>
         <img src="${res.menu_img}" style="width:100%; border-radius:20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); margin-bottom: 20px;">
       `;
   }
 
-  // Inyectar HTML
   info.innerHTML = `
     <div class="info-box-neumorph" style="margin-bottom: 20px;">
         <p>📍 ${res.direccion || 'Sin dirección'}</p>
@@ -314,7 +308,7 @@ async function calificar(n) {
     }
 }
 
-// --- 7. FUNCIONES DE APOYO Y RUTAS ---
+// --- 7. FUNCIONES DE APOYO ---
 function trazarRuta(lat, lng) {
   const previewCard = document.getElementById('preview-card');
   if(previewCard) {
@@ -413,10 +407,24 @@ async function toggleFav(id) {
 
 function regresarVistas() { cambiarVista('mapa'); }
 function abrirWhatsApp(tel, nom) { window.open(`https://wa.me/${tel.replace(/\D/g,'')}?text=Hola, vengo de la app y quiero informes de ${nom}`); }
+
+// --- 8. OBTENER INFO USUARIO SIDEBAR ---
 async function actualizarInfoUsuarioHeader() {
-    const { data } = await db.from('perfiles_clientes').select('nombre, foto_url').eq('id', usuarioId).single();
-    if (data) {
-        document.getElementById('user-name').textContent = data.nombre;
-        document.getElementById('user-photo').src = data.foto_url || "https://picsum.photos/200";
+    try {
+        // Intenta obtener perfil detallado de la tabla
+        const { data, error } = await db.from('perfiles_clientes').select('nombre, foto_url').eq('id', usuarioId).single();
+        
+        if (data) {
+            document.getElementById('user-name').textContent = data.nombre || "Usuario";
+            document.getElementById('user-photo').src = data.foto_url || "https://picsum.photos/200";
+        } else {
+            // Fallback si no hay perfil creado todavía: usar email del auth
+            const { data: authData } = await db.auth.getUser();
+            const email = authData.user?.email || "Usuario";
+            document.getElementById('user-name').textContent = email.split('@')[0]; // Muestra parte del email
+            document.getElementById('user-name').style.fontSize = "16px";
+        }
+    } catch (e) {
+        console.log("No se pudo cargar perfil detallado:", e);
     }
 }

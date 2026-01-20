@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Iniciar Sesión - Café App</title>
     <link rel="stylesheet" href="css/style.css"> 
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         body { background: #f0f0f3; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: sans-serif; }
         .login-card {
@@ -69,36 +68,8 @@
     </p>
 </div>
 
-<script>
-    // ✅ Credenciales actualizadas
-    const supabaseUrl = 'https://cpveuexgxwxjejurtwro.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc';
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="js/login.js"></script>
 
-    const loginForm = document.getElementById('login-form');
-    const btnEntrar = document.getElementById('btn-entrar');
-
-    loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault(); // Evita que la página se recargue
-        
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-
-        // Feedback visual
-        btnEntrar.innerText = "Cargando...";
-        btnEntrar.disabled = true;
-
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
-        if (error) {
-            alert("Error: " + error.message);
-            btnEntrar.innerText = "Entrar";
-            btnEntrar.disabled = false;
-        } else {
-            // Guardar sesión y redirigir
-            window.location.href = 'index.html'; 
-        }
-    });
-</script>
 </body>
 </html>

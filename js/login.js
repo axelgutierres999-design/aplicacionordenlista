@@ -1,17 +1,23 @@
-// Configuración de Supabase (Usa las mismas credenciales de tu index.html)
+// 1. Configuración de Supabase
 const supabaseUrl = 'https://cpveuexgxwxjejurtwro.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc';
-const supabase = supabasejs.createClient(supabaseUrl, supabaseKey);
 
-// Función para iniciar sesión
+// Inicializamos el cliente. Usamos window.supabase que viene del CDN del HTML
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+// 2. Función para iniciar sesión
 async function iniciarSesion(e) {
     e.preventDefault(); // Evita que la página se recargue
 
-    // Obtenemos los valores de los inputs (asegúrate que tus <input> tengan estos IDs)
-    const email = document.getElementById('email-input').value;
-    const password = document.getElementById('password-input').value;
+    // Referencias a los elementos del DOM (IDs corregidos según tu HTML)
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const btnEntrar = document.getElementById('btn-entrar');
 
-    const btnEntrar = e.target.querySelector('button');
+    const email = emailInput.value;
+    const password = passwordInput.value;
+
+    // Feedback visual (Cargando...)
     btnEntrar.innerText = "Cargando...";
     btnEntrar.disabled = true;
 
@@ -22,22 +28,28 @@ async function iniciarSesion(e) {
         });
 
         if (error) {
+            // Si hay error (contraseña mal, usuario no existe)
             alert("Error: " + error.message);
             btnEntrar.innerText = "Entrar";
             btnEntrar.disabled = false;
         } else {
-            // ¡Éxito! Redirigir a la app principal
+            // ¡Éxito!
             console.log("Sesión iniciada:", data);
+            // Redirigir a la app principal
             window.location.href = 'index.html';
         }
     } catch (err) {
         console.error("Error inesperado:", err);
-        alert("Ocurrió un error al intentar entrar.");
+        alert("Ocurrió un error de conexión.");
         btnEntrar.innerText = "Entrar";
         btnEntrar.disabled = false;
     }
 }
 
-// Escuchar el evento del formulario
-// Asegúrate de que tu etiqueta <form> tenga id="login-form"
-document.getElementById('login-form').addEventListener('submit', iniciarSesion);
+// 3. Escuchar el evento del formulario
+document.addEventListener('DOMContentLoaded', () => {
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) {
+        loginForm.addEventListener('submit', iniciarSesion);
+    }
+});
