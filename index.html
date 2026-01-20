@@ -17,7 +17,7 @@
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
   <style>
-    /* --- ESTILOS NEUMÓRFICOS (Mantener los tuyos) --- */
+    /* --- ESTILOS NEUMÓRFICOS --- */
     .mesa-status-card {
       background: linear-gradient(145deg, #ffffff, #f0f0f3);
       border-radius: 20px;
@@ -71,15 +71,8 @@
       z-index: 100;
     }
 
-    /* --- ✅ NUEVO: CSS PARA EL CARRUSEL DEL MENÚ (V9.3) --- */
-    /* Esto oculta la barra de scroll pero permite deslizar */
-    .menu-carousel::-webkit-scrollbar {
-        display: none;
-    }
-    .menu-carousel {
-        -ms-overflow-style: none;  /* IE and Edge */
-        scrollbar-width: none;  /* Firefox */
-    }
+    .menu-carousel::-webkit-scrollbar { display: none; }
+    .menu-carousel { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 </head>
 <body>
@@ -135,7 +128,6 @@
 
     <main id="map-container">
       <div id="map"></div>
-
       <div id="preview-card" class="preview-card hidden">
         <div class="preview-content">
             <img id="preview-img" src="" alt="Restaurante" style="object-fit: cover;"> 
@@ -173,7 +165,6 @@
       <div class="card-restaurante-detalle">
         <div style="position: relative; width: 100%; height: 250px; overflow: visible;">
           <img id="detalle-img" src="" alt="Portada" style="width: 100%; height: 100%; object-fit: cover; border-radius: 0 0 25px 25px;">
-          
           <img id="detalle-logo-restaurante" src="" 
                style="position: absolute; bottom: -40px; right: 20px; width: 90px; height: 90px; 
                       border-radius: 50%; border: 5px solid #f0f0f3; box-shadow: 0 10px 20px rgba(0,0,0,0.15); 
@@ -183,7 +174,6 @@
         <div class="detalle-body" style="padding: 50px 20px 20px 20px;">
           <h1 id="detalle-nombre" style="font-size: 26px; margin: 0; line-height: 1.2;">Nombre</h1>
           <p id="detalle-categoria" style="color: #888; margin: 5px 0 25px 0; font-size: 14px;">Categoría</p>
-          
           <div id="detalle-info-box"></div>
         </div>
       </div>
@@ -205,10 +195,21 @@
   <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
   <script>
+    // 1. Configuración de Supabase
     const supabaseUrl = 'https://cpveuexgxwxjejurtwro.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc';
     window.supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
+    // 2. Guardia de Sesión: Si no hay usuario, lo manda al login
+    async function checkSession() {
+      const { data: { session } } = await window.supabase.auth.getSession();
+      if (!session) {
+        window.location.href = 'login.html';
+      }
+    }
+    checkSession();
+
+    // 3. Funciones de Interfaz
     function toggleMenu() {
       document.getElementById('sidebar').classList.toggle('active');
       document.getElementById('overlay').classList.toggle('active');
@@ -217,7 +218,7 @@
     async function cerrarSesionSidebar() {
       if (confirm("¿Estás seguro de que quieres salir?")) {
         await window.supabase.auth.signOut();
-        window.location.reload();
+        window.location.href = 'login.html'; // Redirige al login después de cerrar sesión
       }
     }
 
@@ -225,7 +226,6 @@
       document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
       btn.classList.add('active');
       const input = document.getElementById('search-input-map');
-      // Filtro simple: si es "Todos" limpia, si no, pone el texto
       input.value = (cat === 'Todos') ? '' : cat;
       input.dispatchEvent(new Event('input'));
     }
