@@ -291,13 +291,7 @@ info.innerHTML = `
         style="flex:1; padding:15px; border-radius:15px; border:1px solid #000; background:${esFav ? '#000':'#fff'}; color:${esFav ? '#fff':'#000'}; font-weight:600; transition: all 0.3s;">
         ${esFav ? '⭐ Guardado' : '☆ Guardar'}
       </button>
-
-      <button onclick="compartirRestaurante('${res.nombre}', '${res.cat}')"
-        style="flex:1; padding:15px; border-radius:15px; background:#fff; color:#000; border:1px solid #ddd; font-weight:600; display:flex; align-items:center; justify-content:center; gap:8px;">
-        📤 Compartir
-      </button>
-    </div>
-    
+           
       <button onclick="trazarRuta(${res.lat},${res.lng})"
         style="flex:1; padding:15px; border-radius:15px; background:#000; color:#fff; font-weight:600;">
         📍 Ir ahora
