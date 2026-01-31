@@ -200,8 +200,8 @@
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc';
     window.supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-    // 2. Guardia de Sesión: Si no hay usuario, lo manda al login
-    async function checkSession() {
+   // --- BUSCA Y BORRA ESTO EN TU INDEX.HTML ---
+async function checkSession() {
   const { data: { session } } = await window.supabase.auth.getSession();
   if (!session) {
     window.location.href = 'login.html'; // <--- ESTO ES LO QUE TE MANDA AL LOGIN SIEMPRE
