@@ -31,17 +31,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   // A) Verificar Sesión
   const { data: { session } } = await db.auth.getSession();
   
-  if (!session) {
-    // Si por alguna razón app.js carga sin sesión, regresamos al login
-    window.location.href = 'login.html';
-    return;
+  if (session) {
+    // Si hay sesión, cargamos sus datos normalmente
+    usuarioId = session.user.id;
+    console.log("Usuario autenticado:", usuarioId);
+    await actualizarInfoUsuarioHeader(); 
+  } else {
+    // SI NO HAY SESIÓN: No redirigimos, solo marcamos como invitado
+    usuarioId = null;
+    console.log("Modo Invitado activo");
+    
+    // Opcional: Ajustar UI para invitados
+    if(document.getElementById('user-name')) {
+        document.getElementById('user-name').textContent = "Invitado";
+    }
+    if(document.getElementById('user-photo')) {
+        document.getElementById('user-photo').src = "https://via.placeholder.com/150?text=Guest";
+    }
   }
-
-  // B) Guardar ID y Cargar Info del Usuario
-  usuarioId = session.user.id;
-  console.log("Usuario autenticado:", usuarioId);
-  await actualizarInfoUsuarioHeader(); // Carga nombre y foto en el sidebar
-
   // C) Inicializar mapa
   map = L.map('map', { zoomControl: false, attributionControl: false }).setView([19.2826, -99.6557], 14);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
@@ -177,14 +184,14 @@ async function verDetalle(nombre) {
   
   idRestauranteActual = res.id; 
 
-  // Verificar favoritos
+ // Verificar favoritos (Solo si hay usuarioId)
   let esFav = false;
   if (usuarioId) {
       const { data } = await db.from('favoritos').select('*').match({ usuario_id: usuarioId, restaurante_id: res.id });
       esFav = data && data.length > 0;
   }
 
-  // Verificar calificación previa
+  // Verificar calificación previa (Solo si hay usuarioId)
   let miPuntuacion = 0;
   if (usuarioId) {
       const { data: calif } = await db.from('calificaciones')
@@ -231,22 +238,42 @@ async function verDetalle(nombre) {
       `;
   }
 
-  info.innerHTML = `
+  // 1. Cálculos previos (importante ponerlos antes del HTML)
+const mesasOcupadas = res.mesas_total - res.mesas_libres;
+const porcentajeOcupado = (mesasOcupadas / res.mesas_total) * 100;
+
+// 2. Insertar el contenido al contenedor info
+info.innerHTML = `
     <div class="info-box-neumorph" style="margin-bottom: 20px;">
         <p>📍 ${res.direccion || 'Sin dirección'}</p>
         <p>🕒 ${res.horario}</p>
     </div>
 
-    <div class="mesa-status-card">
-        <div class="mesa-icon-box">🪑</div>
-        <div class="mesa-info">
-            <h3>${res.mesas_libres} Mesas Libres</h3>
-            <p>De un total de ${res.mesas_total} lugares</p>
+    <div class="mesa-status-card" style="display: flex; align-items: center; justify-content: space-around; padding: 15px; text-align: center;">
+        <div>
+            <span style="font-size: 20px;">🟢</span>
+            <h3 style="margin: 5px 0 0;">${res.mesas_libres}</h3>
+            <p style="font-size: 10px; color: #666; text-transform: uppercase;">Libres</p>
         </div>
-        <div class="mesa-indicator" style="background: ${res.mesas_libres > 0 ? '#4CAF50' : '#F44336'}; box-shadow: 0 0 10px ${res.mesas_libres > 0 ? '#4CAF50' : '#F44336'};"></div>
+        <div style="width: 1px; height: 30px; background: #ddd;"></div>
+        <div>
+            <span style="font-size: 20px;">🔴</span>
+            <h3 style="margin: 5px 0 0;">${mesasOcupadas}</h3>
+            <p style="font-size: 10px; color: #666; text-transform: uppercase;">Ocupadas</p>
+        </div>
+        <div style="width: 1px; height: 30px; background: #ddd;"></div>
+        <div>
+            <span style="font-size: 20px;">📊</span>
+            <h3 style="margin: 5px 0 0;">${res.mesas_total}</h3>
+            <p style="font-size: 10px; color: #666; text-transform: uppercase;">Total</p>
+        </div>
     </div>
 
-    <div style="text-align: center; margin: 25px 0; background: #fff; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
+    <div style="width: 100%; height: 6px; background: #eee; border-radius: 10px; margin: 15px 0 25px; overflow: hidden;">
+        <div style="width: ${porcentajeOcupado}%; height: 100%; background: ${porcentajeOcupado > 80 ? '#F44336' : '#000'}; transition: width 0.5s;"></div>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 25px; background: #fff; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
         <p style="margin: 0 0 10px; font-weight: bold; font-size: 15px; color: #333;">Califica tu experiencia</p>
         <div id="stars-container">
             ${[1,2,3,4,5].map(i => `
@@ -264,6 +291,13 @@ async function verDetalle(nombre) {
         style="flex:1; padding:15px; border-radius:15px; border:1px solid #000; background:${esFav ? '#000':'#fff'}; color:${esFav ? '#fff':'#000'}; font-weight:600; transition: all 0.3s;">
         ${esFav ? '⭐ Guardado' : '☆ Guardar'}
       </button>
+
+      <button onclick="compartirRestaurante('${res.nombre}', '${res.cat}')"
+        style="flex:1; padding:15px; border-radius:15px; background:#fff; color:#000; border:1px solid #ddd; font-weight:600; display:flex; align-items:center; justify-content:center; gap:8px;">
+        📤 Compartir
+      </button>
+    </div>
+    
       <button onclick="trazarRuta(${res.lat},${res.lng})"
         style="flex:1; padding:15px; border-radius:15px; background:#000; color:#fff; font-weight:600;">
         📍 Ir ahora
