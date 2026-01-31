@@ -202,13 +202,12 @@
 
     // 2. Guardia de Sesión: Si no hay usuario, lo manda al login
     async function checkSession() {
-      const { data: { session } } = await window.supabase.auth.getSession();
-      if (!session) {
-        window.location.href = 'login.html';
-      }
-    }
-    checkSession();
-
+  const { data: { session } } = await window.supabase.auth.getSession();
+  if (!session) {
+    window.location.href = 'login.html'; // <--- ESTO ES LO QUE TE MANDA AL LOGIN SIEMPRE
+  }
+}
+checkSession();
     // 3. Funciones de Interfaz
     function toggleMenu() {
       document.getElementById('sidebar').classList.toggle('active');
