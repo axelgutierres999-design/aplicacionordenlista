@@ -438,21 +438,52 @@ function abrirWhatsApp(tel, nom) { window.open(`https://wa.me/${tel.replace(/\D/
 
 // --- 8. OBTENER INFO USUARIO SIDEBAR ---
 async function actualizarInfoUsuarioHeader() {
+    const btnLogout = document.querySelector('.logout'); // El botón del sidebar
+    const userNameElem = document.getElementById('user-name');
+    const userPhotoElem = document.getElementById('user-photo');
+
+    // 1. Lógica para Invitados (Sin sesión)
+    if (!usuarioId) {
+        userNameElem.textContent = "Invitado";
+        userPhotoElem.src = "https://via.placeholder.com/150?text=Guest";
+        
+        if (btnLogout) {
+            btnLogout.textContent = "Iniciar Sesión";
+            btnLogout.style.background = "#25D366"; // Verde
+            btnLogout.onclick = () => window.location.href = 'login.html';
+        }
+        return; // Detenemos la ejecución aquí porque no hay datos que buscar
+    }
+
+    // 2. Lógica para Usuarios Logueados
     try {
-        // Intenta obtener perfil detallado de la tabla
-        const { data, error } = await db.from('perfiles_clientes').select('nombre, foto_url').eq('id', usuarioId).single();
+        // Intentamos obtener perfil de la base de datos
+        const { data, error } = await db.from('perfiles_clientes')
+            .select('nombre, foto_url')
+            .eq('id', usuarioId)
+            .single();
         
         if (data) {
-            document.getElementById('user-name').textContent = data.nombre || "Usuario";
-            document.getElementById('user-photo').src = data.foto_url || "https://picsum.photos/200";
+            userNameElem.textContent = data.nombre || "Usuario";
+            userPhotoElem.src = data.foto_url || "https://picsum.photos/200";
         } else {
-            // Fallback si no hay perfil creado todavía: usar email del auth
+            // Fallback: Si el usuario existe pero no tiene perfil en la tabla aún
             const { data: authData } = await db.auth.getUser();
             const email = authData.user?.email || "Usuario";
-            document.getElementById('user-name').textContent = email.split('@')[0]; // Muestra parte del email
-            document.getElementById('user-name').style.fontSize = "16px";
+            userNameElem.textContent = email.split('@')[0]; 
+            userNameElem.style.fontSize = "16px";
+            userPhotoElem.src = "https://picsum.photos/200";
         }
+
+        // Si el usuario está logueado, nos aseguramos que el botón diga "Cerrar Sesión"
+        if (btnLogout) {
+            btnLogout.textContent = "Cerrar Sesión";
+            btnLogout.style.background = ""; // Color original (rojo usualmente)
+            // Aquí llamarías a tu función de logout normal
+            btnLogout.onclick = () => supaLogout(); 
+        }
+
     } catch (e) {
-        console.log("No se pudo cargar perfil detallado:", e);
+        console.error("Error al cargar perfil:", e);
     }
 }
