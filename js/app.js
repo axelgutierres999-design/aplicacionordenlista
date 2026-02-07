@@ -7,22 +7,59 @@ let locales = [];
 let map, capaMarcadores = L.layerGroup(), controlRuta = null;
 let idRestauranteActual = null; 
 
-// --- 1. ICONOS: SOLO EMOJIS ---
+// --- NUEVA FUNCIÓN: ELEGIR EMOJI SEGÚN CATEGORÍA ---
+function obtenerEmojiPorCategoria(categoria) {
+  // Convertimos a minúsculas para comparar fácil
+  const cat = categoria ? categoria.toLowerCase() : "general";
+
+  // 1. Asignación por palabras clave
+  if (cat.includes('pizza')) return '🍕';
+  if (cat.includes('tacos') || cat.includes('mexic')) return '🌮';
+  if (cat.includes('hamburguesa') || cat.includes('burger')) return '🍔';
+  if (cat.includes('cafe') || cat.includes('café') || cat.includes('coffee')) return '☕';
+  if (cat.includes('bar') || cat.includes('cerveza') || cat.includes('bebida')) return '🍺';
+  if (cat.includes('postre') || cat.includes('helado') || cat.includes('donut')) return '🍩';
+  if (cat.includes('sushi') || cat.includes('asiatica')) return '🍣';
+  if (cat.includes('carne') || cat.includes('parrilla')) return '🥩';
+  if (cat.includes('pollo')) return '🍗';
+  if (cat.includes('saludable') || cat.includes('ensalada')) return '🥗';
+
+  // 2. Si no coincide con nada, usar uno aleatorio de comida
+  const aleatorios = ['🍴', '🍽️', '🍗', '🥣', '🥢','🥩','🥗'];
+  return aleatorios[Math.floor(Math.random() * aleatorios.length)];
+}
+
+// --- 1. ICONOS: SOLO EMOJIS (VERSIÓN CORREGIDA) ---
 function crearIconoFlotante(emoji, index) {
   const delay = (index * 0.1) + "s";
+  
   return L.divIcon({
     className: 'custom-marker-container',
     html: `
       <div style="
-        background: #000; width: 45px; height: 45px;
-        border-radius: 50% 50% 50% 12px; transform: rotate(-45deg);
+        position: relative;
+        background: #000; 
+        width: 45px; height: 45px;
+        /* Esta forma crea la gota apuntando abajo-izquierda antes de rotar */
+        border-radius: 50% 50% 50% 0; 
+        /* Rotamos -45 grados para que la punta quede abajo al centro */
+        transform: rotate(-45deg);
         display: flex; align-items: center; justify-content: center;
-        box-shadow: 5px 10px 15px rgba(0,0,0,0.3); border: 2px solid white;
+        box-shadow: 5px 5px 10px rgba(0,0,0,0.3); 
+        border: 2px solid white;
         animation: floating 3s ease-in-out ${delay} infinite;">
-        <div style="transform: rotate(45deg); font-size: 22px;">${emoji || '🍽️'}</div>
+        
+        <div style="
+          transform: rotate(45deg); 
+          font-size: 24px; 
+          line-height: 1;
+          margin-top: 2px; /* Pequeño ajuste visual para centrado óptico */
+          margin-left: 2px;">
+          ${emoji}
+        </div>
       </div>`,
     iconSize: [45, 45],
-    iconAnchor: [22, 45]
+    iconAnchor: [22, 48] // El punto de anclaje (la punta del pin)
   });
 }
 
@@ -111,7 +148,7 @@ async function cargarLocalesDesdeDB() {
         lat: r.lat ? parseFloat(r.lat) : 0,
         lng: r.longitud ? parseFloat(r.longitud) : 0,
         cat: r.categoria || "General",
-        icono: "🍽️", 
+        icono: obtenerEmojiPorCategoria(r.categoria),
         horario: r.horarios || "Consultar",
         direccion: r.direccion || "",
         
