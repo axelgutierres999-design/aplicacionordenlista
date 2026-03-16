@@ -376,7 +376,36 @@ async function cargarPlanoEsteticoCliente(restauranteId) {
         const mesasOcupadas = (ordenesActivas || []).map(o => o.mesa);
 
         // 3. Crear el lienzo con Konva
-        const stage = Konva.Node.create(planoData.estructura, 'canvasPlanoCliente');
+        let stage;
+
+setTimeout(() => {
+    stage = Konva.Node.create(planoData.estructura, 'canvasPlanoCliente');
+
+    const container = document.getElementById('contenedorPlanoCliente');
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+
+    stage.width(rect.width);
+    stage.height(rect.height);
+
+    const dataBox = stage.getClientRect({ skipTransform: true });
+
+    const scaleX = rect.width / dataBox.width;
+    const scaleY = rect.height / dataBox.height;
+
+    const escala = Math.min(scaleX, scaleY);
+
+    stage.scale({ x: escala, y: escala });
+
+    stage.position({
+        x: (rect.width - dataBox.width * escala) / 2,
+        y: (rect.height - dataBox.height * escala) / 2
+    });
+
+    pintarMesas(stage, mesasOcupadas);
+
+}, 200);
 
         // 4. Ajuste perfecto al contenedor móvil
         setTimeout(() => {
@@ -407,7 +436,7 @@ async function cargarPlanoEsteticoCliente(restauranteId) {
             }
 
             mesas.forEach(mesaGroup => {
-                const nombreDeEstaMesa = `Mesa ${mesaGroup.id()}`;
+                const nombreDeEstaMesa = mesaGroup.id();
                 const estaOcupada = mesasOcupadas.includes(nombreDeEstaMesa);
                 
                 const shapeBase = mesaGroup.findOne('Rect') || mesaGroup.findOne('Circle') || mesaGroup.findOne('Line');
@@ -621,4 +650,41 @@ async function actualizarInfoUsuarioHeader() {
     } catch (e) {
         console.error("Error al cargar perfil:", e);
     }
+}function pintarMesas(stage, mesasOcupadas) {
+    let mesas = stage.find('.mesa-interactiva');
+
+    if (mesas.length === 0) {
+        stage.find('Group').forEach(g => {
+            if (g.id()) g.name('mesa-interactiva');
+        });
+        mesas = stage.find('.mesa-interactiva');
+    }
+
+    mesas.forEach(mesaGroup => {
+        const nombreMesa = mesaGroup.id();
+
+        const ocupada = mesasOcupadas.includes(nombreMesa);
+
+        const shape =
+            mesaGroup.findOne('Rect') ||
+            mesaGroup.findOne('Circle') ||
+            mesaGroup.findOne('Line');
+
+        if (shape) {
+            if (ocupada) {
+                shape.fill('#FF6B6B');
+                shape.stroke('#EE5253');
+            } else {
+                shape.fill('#FFFFFF');
+                shape.stroke('#DDDDDD');
+            }
+
+            shape.strokeWidth(2);
+        }
+
+        mesaGroup.listening(false);
+    });
+
+    stage.draggable(false);
+    stage.batchDraw();
 }
