@@ -352,24 +352,24 @@ setTimeout(() => {
 }, 300);}
 
 // --- 9. RENDERIZAR PLANO ESTÉTICO (CLIENTES) ---
+// --- 9. RENDERIZAR PLANO ESTÉTICO (CLIENTES) ---
 async function cargarPlanoEsteticoCliente(restauranteId) {
     try {
-        // 1. Obtener plano
-        const { data: planoData } = await db
+        // 1. Obtener datos del plano desde Supabase
+        const { data: planoData, error } = await db
             .from('planos')
             .select('estructura')
             .eq('restaurante_id', restauranteId)
             .single();
 
-        const container = document.getElementById('contenedorPlanoCliente');
-        const canvas = document.getElementById('canvasPlanoCliente');
-
-        if (!planoData || !planoData.estructura || !container || !canvas) {
-            if (container) container.style.display = 'none';
+        if (error || !planoData || !planoData.estructura) {
+            console.warn("No se encontró estructura de plano para este restaurante.");
+            const cont = document.getElementById('contenedorPlanoCliente');
+            if (cont) cont.style.display = 'none';
             return;
         }
 
-        // 2. Obtener órdenes activas
+        // 2. Obtener órdenes activas para saber qué mesas marcar como ocupadas
         const { data: ordenesActivas } = await db
             .from('ordenes')
             .select('mesa')
@@ -378,45 +378,56 @@ async function cargarPlanoEsteticoCliente(restauranteId) {
 
         const mesasOcupadas = (ordenesActivas || []).map(o => o.mesa);
 
-        // 3. Esperar render del HTML
+        // 3. Pequeña espera para asegurar que el HTML del detalle ya se pintó en pantalla
         setTimeout(() => {
+            const container = document.getElementById('contenedorPlanoCliente');
+            const canvasDiv = document.getElementById('canvasPlanoCliente');
 
+            // VALIDACIÓN CRÍTICA: Si el div no existe, salimos para evitar el error de Konva
+            if (!canvasDiv || !container) {
+                console.error("Error: No se encontró el div 'canvasPlanoCliente' en el DOM.");
+                return;
+            }
+
+            // Limpiamos el div por si había un plano anterior
+            canvasDiv.innerHTML = "";
+
+            // Convertimos la estructura a string si viene como objeto
             const estructuraJSON = typeof planoData.estructura === 'object' 
                 ? JSON.stringify(planoData.estructura) 
                 : planoData.estructura;
 
+            // 4. CREAR EL STAGE DE KONVA
+            // Aquí es donde ocurría el error. Konva busca el ID 'canvasPlanoCliente'
             const stage = Konva.Node.create(estructuraJSON, 'canvasPlanoCliente');
 
+            // 5. AJUSTE DE TAMAÑO Y ESCALA AUTOMÁTICA
             const rect = container.getBoundingClientRect();
-
-            if (!rect.width || !rect.height) return;
+            if (rect.width === 0) return; // Evitar cálculos si el contenedor no es visible
 
             stage.width(rect.width);
             stage.height(rect.height);
 
             const dataBox = stage.getClientRect({ skipTransform: true });
-
-            const scaleX = rect.width / dataBox.width;
-            const scaleY = rect.height / dataBox.height;
-
+            const padding = 20;
+            const scaleX = (rect.width - padding) / (dataBox.width || 500);
+            const scaleY = (rect.height - padding) / (dataBox.height || 400);
             const escala = Math.min(scaleX, scaleY);
 
-            stage.scale({
-                x: escala,
-                y: escala
-            });
+            stage.scale({ x: escala, y: escala });
+            
+            // Centrado
+            const xCentrado = (rect.width - (dataBox.width * escala)) / 2 - (dataBox.x * escala);
+            const yCentrado = (rect.height - (dataBox.height * escala)) / 2 - (dataBox.y * escala);
+            stage.position({ x: xCentrado, y: yCentrado });
 
-            stage.position({
-                x: (rect.width - dataBox.width * escala) / 2,
-                y: (rect.height - dataBox.height * escala) / 2
-            });
-
+            // 6. COLOREAR MESAS SEGÚN ESTADO
             pintarMesas(stage, mesasOcupadas);
 
-        }, 250);
+        }, 100); // 100ms es suficiente después del render de innerHTML
 
     } catch (e) {
-        console.error("Error al cargar plano:", e);
+        console.error("Error fatal en cargarPlanoEsteticoCliente:", e);
     }
 }
 function pintarMesas(stage, mesasOcupadas) {
@@ -456,65 +467,7 @@ function pintarMesas(stage, mesasOcupadas) {
 
     stage.draggable(false);
     stage.batchDraw();
-}
-
-        // 4. Ajuste perfecto al contenedor móvil
-        setTimeout(() => {
-            const container = document.getElementById('contenedorPlanoCliente');
-            if(!container) return;
-            
-            const rect = container.getBoundingClientRect();
-            stage.width(rect.width);
-            stage.height(rect.height);
-
-            const dataBox = stage.getClientRect({ skipTransform: true });
-            const padding = 20;
-            const scaleX = (rect.width - padding) / (dataBox.width || 800);
-            const scaleY = (rect.height - padding) / (dataBox.height || 600);
-            const escala = Math.min(scaleX, scaleY);
-
-            stage.scale({ x: escala, y: escala });
-            
-            const xCentrado = (rect.width - (dataBox.width * escala)) / 2 - (dataBox.x * escala);
-            const yCentrado = (rect.height - (dataBox.height * escala)) / 2 - (dataBox.y * escala);
-            stage.position({ x: xCentrado, y: yCentrado });
-
-            // 5. ESTILIZACIÓN MINIMALISTA PARA EL CLIENTE
-            let mesas = stage.find('.mesa-interactiva');
-            if (mesas.length === 0) {
-                stage.find('Group').forEach(g => { if(g.id()) g.name('mesa-interactiva'); });
-                mesas = stage.find('.mesa-interactiva');
-            }
-
-            mesas.forEach(mesaGroup => {
-                const nombreDeEstaMesa = mesaGroup.id();
-                const estaOcupada = mesasOcupadas.includes(nombreDeEstaMesa);
-                
-                const shapeBase = mesaGroup.findOne('Rect') || mesaGroup.findOne('Circle') || mesaGroup.findOne('Line');
-                
-                if (shapeBase) {
-                    if (estaOcupada) {
-                        // Color estético para ocupado (Rojo coral suave)
-                        shapeBase.fill('#FF6B6B'); 
-                        shapeBase.stroke('#EE5253');
-                    } else {
-                        // Color estético para libre (Blanco limpio)
-                        shapeBase.fill('#FFFFFF'); 
-                        shapeBase.stroke('#DDDDDD');
-                    }
-                    shapeBase.strokeWidth(2);
-                }
-                
-                // Desactivar interacción (es solo de lectura para el cliente)
-                mesaGroup.listening(false);
-            });
-
-            // Evitar que el cliente arrastre el mapa
-            stage.draggable(false);
-            stage.batchDraw();
-
-        }, 150);
-        
+}        
 
 // --- 6. FUNCIÓN DE CALIFICAR ---
 async function calificar(n) {
