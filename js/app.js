@@ -310,6 +310,13 @@ info.innerHTML = `
         <div style="width: ${porcentajeOcupado}%; height: 100%; background: ${porcentajeOcupado > 80 ? '#F44336' : '#000'}; transition: width 0.5s;"></div>
     </div>
 
+    <h3 style="margin: 20px 0 10px; font-weight: 800; font-size: 16px;">🗺️ Distribución del Lugar</h3>
+    <div id="contenedorPlanoCliente" style="width: 100%; height: 250px; background: #f9f9f9; border-radius: 20px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #eaeaea; margin-bottom: 25px; overflow: hidden; position: relative;">
+        <div id="canvasPlanoCliente"></div>
+    </div>
+
+    ${menuHTML}
+
     <div style="text-align: center; margin-bottom: 25px; background: #fff; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
         <p style="margin: 0 0 10px; font-weight: bold; font-size: 15px; color: #333;">Califica tu experiencia</p>
         <div id="stars-container">
@@ -320,26 +327,13 @@ info.innerHTML = `
         </div>
         <small style="color:#999; display:block; margin-top:5px;">Toca una estrella para guardar</small>
     </div>
-    // ... tu código anterior de info.innerHTML ...
-    <div style="width: 100%; height: 6px; background: #eee; border-radius: 10px; margin: 15px 0 25px; overflow: hidden;">
-        <div style="width: ${porcentajeOcupado}%; height: 100%; background: ${porcentajeOcupado > 80 ? '#F44336' : '#000'}; transition: width 0.5s;"></div>
-    </div>
-
-    <h3 style="margin: 20px 0 10px; font-weight: 800; font-size: 16px;">🗺️ Distribución del Lugar</h3>
-    <div id="contenedorPlanoCliente" style="width: 100%; height: 250px; background: #f9f9f9; border-radius: 20px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #eaeaea; margin-bottom: 25px; overflow: hidden;">
-        <div id="canvasPlanoCliente"></div>
-    </div>
-    <div style="text-align: center; margin-bottom: 25px; background: #fff; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
-    // ... continúa tu código ...
-
-    ${menuHTML}
 
     <div style="display: flex; gap: 10px; margin-top: 20px;">
       <button id="btn-fav-action" onclick="toggleFav('${res.id}')"
         style="flex:1; padding:15px; border-radius:15px; border:1px solid #000; background:${esFav ? '#000':'#fff'}; color:${esFav ? '#fff':'#000'}; font-weight:600; transition: all 0.3s;">
         ${esFav ? '⭐ Guardado' : '☆ Guardar'}
       </button>
-           
+            
       <button onclick="trazarRuta(${res.lat},${res.lng})"
         style="flex:1; padding:15px; border-radius:15px; background:#000; color:#fff; font-weight:600;">
         📍 Ir ahora
@@ -348,7 +342,8 @@ info.innerHTML = `
     
     <button class="btn-ver-mas" onclick="abrirWhatsApp('${res.whatsapp}', '${res.nombre}')" style="width: 100%; margin-top: 15px; background:#25D366; border:none; color:white;">
       💬 Chatear por WhatsApp
-    </button>`;
+    </button>
+`;
 
   cambiarVista('detalle');
   
@@ -386,7 +381,11 @@ async function cargarPlanoEsteticoCliente(restauranteId) {
         // 3. Esperar render del HTML
         setTimeout(() => {
 
-            const stage = Konva.Node.create(planoData.estructura, 'canvasPlanoCliente');
+            const estructuraJSON = typeof planoData.estructura === 'object' 
+                ? JSON.stringify(planoData.estructura) 
+                : planoData.estructura;
+
+            const stage = Konva.Node.create(estructuraJSON, 'canvasPlanoCliente');
 
             const rect = container.getBoundingClientRect();
 
