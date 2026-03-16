@@ -357,112 +357,65 @@ info.innerHTML = `
 // --- 9. RENDERIZAR PLANO ESTÉTICO (CLIENTES) ---
 async function cargarPlanoEsteticoCliente(restauranteId) {
     try {
-        // 1. Obtener el plano estructural
+        // 1. Obtener estructura y órdenes activas
         const { data: planoData } = await db.from('planos').select('estructura').eq('restaurante_id', restauranteId).single();
         
         if (!planoData || !planoData.estructura) {
-            document.getElementById('contenedorPlanoCliente').style.display = 'none';
-            document.querySelector('h3:contains("Distribución")').style.display = 'none';
-            return; // Si no hay plano, lo ocultamos
+            // Forma segura de ocultar el título y contenedor si no hay plano
+            const contenedor = document.getElementById('contenedorPlanoCliente');
+            if (contenedor) {
+                contenedor.style.display = 'none';
+                // Buscamos el H3 que está justo antes del contenedor
+                if (contenedor.previousElementSibling) contenedor.previousElementSibling.style.display = 'none';
+            }
+            return;
         }
 
-        // 2. Obtener qué mesas están ocupadas actualmente
         const { data: ordenesActivas } = await db.from('ordenes')
             .select('mesa')
             .eq('restaurante_id', restauranteId)
             .not('estado', 'in', '("pagado","cancelado")');
             
-        // Extraemos solo los nombres (Ej: ["Mesa 1", "Mesa Barra"])
         const mesasOcupadas = (ordenesActivas || []).map(o => o.mesa);
 
-        // 3. Crear el lienzo con Konva
-        let stage;
-
-setTimeout(() => {
-    stage = Konva.Node.create(planoData.estructura, 'canvasPlanoCliente');
-
-    const container = document.getElementById('contenedorPlanoCliente');
-    if (!container) return;
-
-    const rect = container.getBoundingClientRect();
-
-    stage.width(rect.width);
-    stage.height(rect.height);
-
-    const dataBox = stage.getClientRect({ skipTransform: true });
-
-    const scaleX = rect.width / dataBox.width;
-    const scaleY = rect.height / dataBox.height;
-
-    const escala = Math.min(scaleX, scaleY);
-
-    stage.scale({ x: escala, y: escala });
-
-    stage.position({
-        x: (rect.width - dataBox.width * escala) / 2,
-        y: (rect.height - dataBox.height * escala) / 2
-    });
-
-    pintarMesas(stage, mesasOcupadas);
-
-}, 200);
-
-        // 4. Ajuste perfecto al contenedor móvil
+        // 2. UN SOLO setTimeout para evitar errores de sincronización
         setTimeout(() => {
             const container = document.getElementById('contenedorPlanoCliente');
-            if(!container) return;
-            
+            if (!container) return;
+
+            // Limpiamos el div antes de crear el nuevo stage
+            document.getElementById('canvasPlanoCliente').innerHTML = '';
+
+            // 3. Crear el Escenario
+            const stage = Konva.Node.create(planoData.estructura, 'canvasPlanoCliente');
+
+            // 4. Ajuste de tamaño y escala
             const rect = container.getBoundingClientRect();
+            if (rect.width === 0) return; // Si aún no es visible, no dibujamos
+
             stage.width(rect.width);
             stage.height(rect.height);
 
             const dataBox = stage.getClientRect({ skipTransform: true });
             const padding = 20;
-            const scaleX = (rect.width - padding) / (dataBox.width || 800);
-            const scaleY = (rect.height - padding) / (dataBox.height || 600);
-            const escala = Math.min(scaleX, scaleY);
+            const escala = Math.min(
+                (rect.width - padding) / (dataBox.width || 800),
+                (rect.height - padding) / (dataBox.height || 600)
+            );
 
             stage.scale({ x: escala, y: escala });
             
-            const xCentrado = (rect.width - (dataBox.width * escala)) / 2 - (dataBox.x * escala);
-            const yCentrado = (rect.height - (dataBox.height * escala)) / 2 - (dataBox.y * escala);
-            stage.position({ x: xCentrado, y: yCentrado });
-
-            // 5. ESTILIZACIÓN MINIMALISTA PARA EL CLIENTE
-            let mesas = stage.find('.mesa-interactiva');
-            if (mesas.length === 0) {
-                stage.find('Group').forEach(g => { if(g.id()) g.name('mesa-interactiva'); });
-                mesas = stage.find('.mesa-interactiva');
-            }
-
-            mesas.forEach(mesaGroup => {
-                const nombreDeEstaMesa = mesaGroup.id();
-                const estaOcupada = mesasOcupadas.includes(nombreDeEstaMesa);
-                
-                const shapeBase = mesaGroup.findOne('Rect') || mesaGroup.findOne('Circle') || mesaGroup.findOne('Line');
-                
-                if (shapeBase) {
-                    if (estaOcupada) {
-                        // Color estético para ocupado (Rojo coral suave)
-                        shapeBase.fill('#FF6B6B'); 
-                        shapeBase.stroke('#EE5253');
-                    } else {
-                        // Color estético para libre (Blanco limpio)
-                        shapeBase.fill('#FFFFFF'); 
-                        shapeBase.stroke('#DDDDDD');
-                    }
-                    shapeBase.strokeWidth(2);
-                }
-                
-                // Desactivar interacción (es solo de lectura para el cliente)
-                mesaGroup.listening(false);
+            // Centrado perfecto
+            stage.position({
+                x: (rect.width - dataBox.width * escala) / 2 - (dataBox.x * escala),
+                y: (rect.height - dataBox.height * escala) / 2 - (dataBox.y * escala)
             });
 
-            // Evitar que el cliente arrastre el mapa
-            stage.draggable(false);
-            stage.batchDraw();
-
-        }, 150);
+            // 5. Pintar las mesas (llamamos a tu función externa)
+            pintarMesas(stage, mesasOcupadas);
+            
+            console.log("📍 Plano de restaurante cargado correctamente.");
+        }, 300); // 300ms es ideal para esperar a que la vista 'detalle' termine de animar
 
     } catch (e) {
         console.error("Error al cargar el plano estético:", e);
