@@ -320,6 +320,17 @@ info.innerHTML = `
         </div>
         <small style="color:#999; display:block; margin-top:5px;">Toca una estrella para guardar</small>
     </div>
+    // ... tu código anterior de info.innerHTML ...
+    <div style="width: 100%; height: 6px; background: #eee; border-radius: 10px; margin: 15px 0 25px; overflow: hidden;">
+        <div style="width: ${porcentajeOcupado}%; height: 100%; background: ${porcentajeOcupado > 80 ? '#F44336' : '#000'}; transition: width 0.5s;"></div>
+    </div>
+
+    <h3 style="margin: 20px 0 10px; font-weight: 800; font-size: 16px;">🗺️ Distribución del Lugar</h3>
+    <div id="contenedorPlanoCliente" style="width: 100%; height: 250px; background: #f9f9f9; border-radius: 20px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #eaeaea; margin-bottom: 25px; overflow: hidden;">
+        <div id="canvasPlanoCliente"></div>
+    </div>
+    <div style="text-align: center; margin-bottom: 25px; background: #fff; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
+    // ... continúa tu código ...
 
     ${menuHTML}
 
@@ -340,6 +351,91 @@ info.innerHTML = `
     </button>`;
 
   cambiarVista('detalle');
+}
+// --- 9. RENDERIZAR PLANO ESTÉTICO (CLIENTES) ---
+async function cargarPlanoEsteticoCliente(restauranteId) {
+    try {
+        // 1. Obtener el plano estructural
+        const { data: planoData } = await db.from('planos').select('estructura').eq('restaurante_id', restauranteId).single();
+        
+        if (!planoData || !planoData.estructura) {
+            document.getElementById('contenedorPlanoCliente').style.display = 'none';
+            document.querySelector('h3:contains("Distribución")').style.display = 'none';
+            return; // Si no hay plano, lo ocultamos
+        }
+
+        // 2. Obtener qué mesas están ocupadas actualmente
+        const { data: ordenesActivas } = await db.from('ordenes')
+            .select('mesa')
+            .eq('restaurante_id', restauranteId)
+            .not('estado', 'in', '("pagado","cancelado")');
+            
+        // Extraemos solo los nombres (Ej: ["Mesa 1", "Mesa Barra"])
+        const mesasOcupadas = (ordenesActivas || []).map(o => o.mesa);
+
+        // 3. Crear el lienzo con Konva
+        const stage = Konva.Node.create(planoData.estructura, 'canvasPlanoCliente');
+
+        // 4. Ajuste perfecto al contenedor móvil
+        setTimeout(() => {
+            const container = document.getElementById('contenedorPlanoCliente');
+            if(!container) return;
+            
+            const rect = container.getBoundingClientRect();
+            stage.width(rect.width);
+            stage.height(rect.height);
+
+            const dataBox = stage.getClientRect({ skipTransform: true });
+            const padding = 20;
+            const scaleX = (rect.width - padding) / (dataBox.width || 800);
+            const scaleY = (rect.height - padding) / (dataBox.height || 600);
+            const escala = Math.min(scaleX, scaleY);
+
+            stage.scale({ x: escala, y: escala });
+            
+            const xCentrado = (rect.width - (dataBox.width * escala)) / 2 - (dataBox.x * escala);
+            const yCentrado = (rect.height - (dataBox.height * escala)) / 2 - (dataBox.y * escala);
+            stage.position({ x: xCentrado, y: yCentrado });
+
+            // 5. ESTILIZACIÓN MINIMALISTA PARA EL CLIENTE
+            let mesas = stage.find('.mesa-interactiva');
+            if (mesas.length === 0) {
+                stage.find('Group').forEach(g => { if(g.id()) g.name('mesa-interactiva'); });
+                mesas = stage.find('.mesa-interactiva');
+            }
+
+            mesas.forEach(mesaGroup => {
+                const nombreDeEstaMesa = `Mesa ${mesaGroup.id()}`;
+                const estaOcupada = mesasOcupadas.includes(nombreDeEstaMesa);
+                
+                const shapeBase = mesaGroup.findOne('Rect') || mesaGroup.findOne('Circle') || mesaGroup.findOne('Line');
+                
+                if (shapeBase) {
+                    if (estaOcupada) {
+                        // Color estético para ocupado (Rojo coral suave)
+                        shapeBase.fill('#FF6B6B'); 
+                        shapeBase.stroke('#EE5253');
+                    } else {
+                        // Color estético para libre (Blanco limpio)
+                        shapeBase.fill('#FFFFFF'); 
+                        shapeBase.stroke('#DDDDDD');
+                    }
+                    shapeBase.strokeWidth(2);
+                }
+                
+                // Desactivar interacción (es solo de lectura para el cliente)
+                mesaGroup.listening(false);
+            });
+
+            // Evitar que el cliente arrastre el mapa
+            stage.draggable(false);
+            stage.batchDraw();
+
+        }, 150);
+
+    } catch (e) {
+        console.error("Error al cargar el plano estético:", e);
+    }
 }
 
 // --- 6. FUNCIÓN DE CALIFICAR ---
