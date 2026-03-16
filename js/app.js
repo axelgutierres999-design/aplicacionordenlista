@@ -351,6 +351,8 @@ info.innerHTML = `
     </button>`;
 
   cambiarVista('detalle');
+  
+  cargarPlanoEsteticoCliente(res.id);
 }
 // --- 9. RENDERIZAR PLANO ESTÉTICO (CLIENTES) ---
 async function cargarPlanoEsteticoCliente(restauranteId) {
