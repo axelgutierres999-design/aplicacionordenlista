@@ -382,25 +382,19 @@ async function cargarPlanoEsteticoCliente(restauranteId) {
         setTimeout(() => {
             const container = document.getElementById('contenedorPlanoCliente');
             const canvasDiv = document.getElementById('canvasPlanoCliente');
+            if (!canvasDiv) return console.error("No existe el div del canvas");
 
-            // VALIDACIÓN CRÍTICA: Si el div no existe, salimos para evitar el error de Konva
-            if (!canvasDiv || !container) {
-                console.error("Error: No se encontró el div 'canvasPlanoCliente' en el DOM.");
-                return;
-            }
+            canvasDiv.innerHTML = ""; // Limpieza total
 
-            // Limpiamos el div por si había un plano anterior
-            canvasDiv.innerHTML = "";
-
-            // Convertimos la estructura a string si viene como objeto
-            const estructuraJSON = typeof planoData.estructura === 'object' 
-                ? JSON.stringify(planoData.estructura) 
+            // Asegurarnos de que el JSON sea un objeto, no un string
+            const rawData = typeof planoData.estructura === 'string' 
+                ? JSON.parse(planoData.estructura) 
                 : planoData.estructura;
 
-            // 4. CREAR EL STAGE DE KONVA
-            // Aquí es donde ocurría el error. Konva busca el ID 'canvasPlanoCliente'
-            const stage = Konva.Node.create(estructuraJSON, 'canvasPlanoCliente');
+           // Extraer la parte visual si existe
+           const stageData = rawData.visual || rawData;
 
+           const stage = Konva.Node.create(stageData, 'canvasPlanoCliente');
             // 5. AJUSTE DE TAMAÑO Y ESCALA AUTOMÁTICA
             const rect = container.getBoundingClientRect();
             if (rect.width === 0) return; // Evitar cálculos si el contenedor no es visible
