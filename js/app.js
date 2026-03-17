@@ -115,6 +115,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         controlRuta = null;
     }
   });
+  // --- ESCUCHA TIEMPO REAL: ACTUALIZAR MESAS ---
+  db.channel('cambios-mesas')
+    .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'ordenes' }, 
+        (payload) => {
+          console.log('Cambio en órdenes detectado:', payload);
+          // Si el cliente tiene abierto el detalle de UN restaurante...
+          if (idRestauranteActual) {
+            // ...y el cambio pertenece a ese restaurante, refrescamos el plano
+            if (payload.new.restaurante_id === idRestauranteActual || payload.old.restaurante_id === idRestauranteActual) {
+              cargarPlanoEsteticoCliente(idRestauranteActual);
+              // También refrescamos los locales para actualizar el contador de "Libres/Ocupadas"
+              cargarLocalesDesdeDB(); 
+            }
+          }
+        })
+    .subscribe();
 });
 
 // --- 3. CARGAR DATOS (V9.3 ACTUALIZADO) ---
