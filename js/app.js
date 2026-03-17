@@ -441,66 +441,57 @@ async function cargarPlanoEsteticoCliente(restauranteId) {
         console.error("Error fatal en cargarPlanoEsteticoCliente:", e);
     }
 }
-async function pintarMesas(stage, restauranteId) {
-    // 1. Consultamos las órdenes activas en la base de datos
-    const { data: ordenesActivas, error } = await db
-        .from('ordenes')
-        .select('mesa')
-        .eq('restaurante_id', restauranteId)
-        .not('estado', 'in', '("pagado","cancelado")'); // Solo mesas que realmente están comiendo
-
-    if (error) return console.error("Error al obtener mesas:", error);
-
-    // Creamos un Set para una búsqueda ultra rápida de mesas ocupadas
-    const setMesasOcupadas = new Set(ordenesActivas.map(o => o.mesa));
-
+function pintarMesas(stage, mesasOcupadas, restauranteId) {
     let mesas = stage.find('.mesa-interactiva');
 
-    // Si no tienen el nombre asignado, se lo ponemos a los grupos con ID
     if (mesas.length === 0) {
-        stage.find('Group').forEach(g => { if (g.id()) g.name('mesa-interactiva'); });
+        stage.find('Group').forEach(g => {
+            if (g.id()) g.name('mesa-interactiva');
+        });
         mesas = stage.find('.mesa-interactiva');
     }
 
     mesas.forEach(mesaGroup => {
         const nombreMesa = mesaGroup.id();
-        const estaOcupada = setMesasOcupadas.has(nombreMesa);
+        const ocupada = mesasOcupadas.includes(nombreMesa);
+
         const shape = mesaGroup.findOne('Rect') || mesaGroup.findOne('Circle') || mesaGroup.findOne('Line');
 
         if (shape) {
-            if (estaOcupada) {
-                // MESA OCUPADA - Color único por privacidad
-                shape.fill('#FF6B6B'); 
+            if (ocupada) {
+                shape.fill('#FF6B6B'); // Rojo coral (Ocupada)
                 shape.stroke('#EE5253');
             } else {
-                // MESA LIBRE
-                shape.fill('#FFFFFF'); 
-                shape.stroke('#10ad93'); 
+                shape.fill('#FFFFFF'); // Blanco
+                shape.stroke('#10ad93'); // Borde verde turquesa (Libre)
             }
             shape.strokeWidth(3);
         }
 
-        // Interacciones y Cursor
+        // 1. HABILITAR INTERACCIÓN
         mesaGroup.listening(true);
+
+        // 2. CAMBIAR CURSOR (Para PC)
         mesaGroup.on('mouseenter', () => document.body.style.cursor = 'pointer');
         mesaGroup.on('mouseleave', () => document.body.style.cursor = 'default');
 
-        // Evento de clic con animación
-        mesaGroup.off('click tap'); // Limpiamos eventos previos para evitar duplicados
-        mesaGroup.on('click tap', () => {
+        // 3. EVENTO AL TOCAR LA MESA
+        mesaGroup.on('click tap', (e) => {
+            // Animación de rebote (escala un poco y vuelve a su tamaño)
             mesaGroup.to({
-                scaleX: 1.05,
-                scaleY: 1.05,
+                scaleX: 1.1,
+                scaleY: 1.1,
                 duration: 0.1,
-                yoyo: true,
+                yoyo: true, // Hace que regrese a su tamaño original
                 repeat: 1
             });
-            
-            // Llamamos al modal de opciones
-            mostrarOpcionesMesaCliente(nombreMesa, estaOcupada, restauranteId);
+
+            // Llamar a nuestro nuevo Modal
+            mostrarOpcionesMesaCliente(nombreMesa, ocupada, restauranteId);
         });
     });
 
+    stage.draggable(false);
     stage.batchDraw();
 }        
 
