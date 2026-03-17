@@ -416,7 +416,7 @@ async function cargarPlanoEsteticoCliente(restauranteId) {
             stage.position({ x: xCentrado, y: yCentrado });
 
             // 6. COLOREAR MESAS SEGÚN ESTADO
-            pintarMesas(stage, mesasOcupadas);
+            pintarMesas(stage, mesasOcupadas, restauranteId);
 
         }, 100); // 100ms es suficiente después del render de innerHTML
 
@@ -424,7 +424,7 @@ async function cargarPlanoEsteticoCliente(restauranteId) {
         console.error("Error fatal en cargarPlanoEsteticoCliente:", e);
     }
 }
-function pintarMesas(stage, mesasOcupadas) {
+function pintarMesas(stage, mesasOcupadas, restauranteId) {
     let mesas = stage.find('.mesa-interactiva');
 
     if (mesas.length === 0) {
@@ -436,27 +436,42 @@ function pintarMesas(stage, mesasOcupadas) {
 
     mesas.forEach(mesaGroup => {
         const nombreMesa = mesaGroup.id();
-
         const ocupada = mesasOcupadas.includes(nombreMesa);
 
-        const shape =
-            mesaGroup.findOne('Rect') ||
-            mesaGroup.findOne('Circle') ||
-            mesaGroup.findOne('Line');
+        const shape = mesaGroup.findOne('Rect') || mesaGroup.findOne('Circle') || mesaGroup.findOne('Line');
 
         if (shape) {
             if (ocupada) {
-                shape.fill('#FF6B6B');
+                shape.fill('#FF6B6B'); // Rojo coral (Ocupada)
                 shape.stroke('#EE5253');
             } else {
-                shape.fill('#FFFFFF');
-                shape.stroke('#DDDDDD');
+                shape.fill('#FFFFFF'); // Blanco
+                shape.stroke('#10ad93'); // Borde verde turquesa (Libre)
             }
-
-            shape.strokeWidth(2);
+            shape.strokeWidth(3);
         }
 
-        mesaGroup.listening(false);
+        // 1. HABILITAR INTERACCIÓN
+        mesaGroup.listening(true);
+
+        // 2. CAMBIAR CURSOR (Para PC)
+        mesaGroup.on('mouseenter', () => document.body.style.cursor = 'pointer');
+        mesaGroup.on('mouseleave', () => document.body.style.cursor = 'default');
+
+        // 3. EVENTO AL TOCAR LA MESA
+        mesaGroup.on('click tap', (e) => {
+            // Animación de rebote (escala un poco y vuelve a su tamaño)
+            mesaGroup.to({
+                scaleX: 1.1,
+                scaleY: 1.1,
+                duration: 0.1,
+                yoyo: true, // Hace que regrese a su tamaño original
+                repeat: 1
+            });
+
+            // Llamar a nuestro nuevo Modal
+            mostrarOpcionesMesaCliente(nombreMesa, ocupada, restauranteId);
+        });
     });
 
     stage.draggable(false);
@@ -681,4 +696,59 @@ async function actualizarInfoUsuarioHeader() {
 
     stage.draggable(false);
     stage.batchDraw();
+}
+// --- 10. INTERACCIÓN DE MESAS PARA CLIENTES ---
+function mostrarOpcionesMesaCliente(nombreMesa, ocupada, restauranteId) {
+    // 1. Crear el elemento <dialog> nativo de HTML5
+    const dialog = document.createElement('dialog');
+    dialog.style = "padding:0; border-radius:20px; border:none; max-width:320px; width:90%; overflow:hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.2); margin: auto;";
+    
+    // 2. Configurar colores y textos según el estado
+    const headerColor = ocupada ? '#FF6B6B' : '#10ad93';
+    const estadoTexto = ocupada ? 'Mesa Ocupada' : 'Mesa Disponible';
+    const icono = ocupada ? '🔴' : '🟢';
+
+    // 3. Construir los botones
+    let botonesHTML = '';
+    if (ocupada) {
+        botonesHTML = `
+            <button onclick="alert('La función de Lista de Espera estará disponible pronto.')" style="width:100%; padding:15px; background:#f0f0f3; border:2px solid #ddd; border-radius:15px; margin-bottom:10px; font-weight:bold; color:#555; cursor:pointer;">
+                ⏱️ Unirse a Lista de Espera
+            </button>
+        `;
+    } else {
+        botonesHTML = `
+            <button onclick="alert('La función de Reservas estará disponible pronto.')" style="width:100%; padding:15px; background:#000; color:#fff; border:none; border-radius:15px; margin-bottom:10px; font-weight:bold; cursor:pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.2);">
+                📅 Reservar esta Mesa
+            </button>
+            <button onclick="window.location.href='menu.html?rid=${restauranteId}&mesa=${nombreMesa}'" style="width:100%; padding:15px; background:#10ad93; color:#fff; border:none; border-radius:15px; margin-bottom:10px; font-weight:bold; cursor:pointer;">
+                🍔 Ver Menú / Pedir Aquí
+            </button>
+        `;
+    }
+
+    // 4. Inyectar el HTML
+    dialog.innerHTML = `
+        <div style="background:${headerColor}; color:white; padding:20px; text-align:center;">
+            <h2 style="margin:0; font-size:22px;">${icono} ${nombreMesa}</h2>
+            <p style="margin:5px 0 0 0; font-size:14px; font-weight:500;">${estadoTexto}</p>
+        </div>
+        <div style="padding:20px; background:#fff;">
+            <p style="text-align:center; color:#888; font-size:14px; margin-top:0; margin-bottom: 20px;">¿Qué deseas hacer?</p>
+            ${botonesHTML}
+            <button onclick="this.closest('dialog').remove()" style="width:100%; padding:15px; background:transparent; border:none; color:#888; font-weight:bold; cursor:pointer;">Cancelar</button>
+        </div>
+    `;
+
+    // 5. Mostrar en pantalla
+    document.body.appendChild(dialog);
+    dialog.showModal();
+    
+    // 6. Cerrar automáticamente si el usuario toca fuera de la tarjeta blanca
+    dialog.addEventListener('click', (e) => {
+        const rect = dialog.getBoundingClientRect();
+        if (e.clientY < rect.top || e.clientY > rect.bottom || e.clientX < rect.left || e.clientX > rect.right) {
+            dialog.remove(); // Destruye el modal
+        }
+    });
 }
