@@ -659,43 +659,6 @@ async function actualizarInfoUsuarioHeader() {
     } catch (e) {
         console.error("Error al cargar perfil:", e);
     }
-}function pintarMesas(stage, mesasOcupadas) {
-    let mesas = stage.find('.mesa-interactiva');
-
-    if (mesas.length === 0) {
-        stage.find('Group').forEach(g => {
-            if (g.id()) g.name('mesa-interactiva');
-        });
-        mesas = stage.find('.mesa-interactiva');
-    }
-
-    mesas.forEach(mesaGroup => {
-        const nombreMesa = mesaGroup.id();
-
-        const ocupada = mesasOcupadas.includes(nombreMesa);
-
-        const shape =
-            mesaGroup.findOne('Rect') ||
-            mesaGroup.findOne('Circle') ||
-            mesaGroup.findOne('Line');
-
-        if (shape) {
-            if (ocupada) {
-                shape.fill('#FF6B6B');
-                shape.stroke('#EE5253');
-            } else {
-                shape.fill('#FFFFFF');
-                shape.stroke('#DDDDDD');
-            }
-
-            shape.strokeWidth(2);
-        }
-
-        mesaGroup.listening(false);
-    });
-
-    stage.draggable(false);
-    stage.batchDraw();
 }
 // --- 10. INTERACCIÓN DE MESAS PARA CLIENTES ---
 function mostrarOpcionesMesaCliente(nombreMesa, ocupada, restauranteId) {
