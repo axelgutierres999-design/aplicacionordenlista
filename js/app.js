@@ -691,14 +691,16 @@ function mostrarOpcionesMesaCliente(nombreMesa, ocupada, restauranteId) {
     // 3. Construir los botones
     let botonesHTML = '';
     if (ocupada) {
+        // Si está ocupada, tal vez solo puedan unirse a lista de espera (opcional)
         botonesHTML = `
-            <button onclick="solicitarReservacion('${restauranteId}', '${nombreMesa}')" style="width:100%; padding:15px; background:#000; color:#fff; border:none; border-radius:15px; margin-bottom:10px; font-weight:bold; cursor:pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.2);">
-                📅 Reservar esta Mesa
+            <button onclick="alert('Esta mesa ya está ocupada.')" style="width:100%; padding:15px; background:#ccc; color:#666; border:none; border-radius:15px; margin-bottom:10px; font-weight:bold; cursor:not-allowed;">
+                🚫 Mesa Ocupada
             </button>
         `;
     } else {
+        // SI ESTÁ LIBRE: Llamamos a nuestro nuevo formulario
         botonesHTML = `
-            <button onclick="alert('La función de Reservas estará disponible pronto.')" style="width:100%; padding:15px; background:#000; color:#fff; border:none; border-radius:15px; margin-bottom:10px; font-weight:bold; cursor:pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.2);">
+            <button onclick="mostrarFormularioReserva('${restauranteId}', '${nombreMesa}')" style="width:100%; padding:15px; background:#000; color:#fff; border:none; border-radius:15px; margin-bottom:10px; font-weight:bold; cursor:pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.2);">
                 📅 Reservar esta Mesa
             </button>
             <button onclick="window.location.href='menu.html?rid=${restauranteId}&mesa=${nombreMesa}'" style="width:100%; padding:15px; background:#10ad93; color:#fff; border:none; border-radius:15px; margin-bottom:10px; font-weight:bold; cursor:pointer;">
@@ -733,91 +735,120 @@ function mostrarOpcionesMesaCliente(nombreMesa, ocupada, restauranteId) {
     });
 }
 // --- NUEVA FUNCIÓN: ENVIAR RESERVACIÓN ---
-// --- FUNCIÓN EN app.js PARA ENVIAR LA RESERVA ---
-async function solicitarReservacion(restauranteId, nombreMesa) {
-    if (!usuarioId) return alert("🔒 Inicia sesión para reservar.");
+// --- NUEVA FUNCIÓN: MOSTRAR FORMULARIO VISUAL DE RESERVA ---
+async function mostrarFormularioReserva(restauranteId, nombreMesa) {
+    if (!usuarioId) {
+        alert("🔒 Por favor, inicia sesión para poder reservar.");
+        return;
+    }
 
-    // 1. Obtener datos del perfil del cliente para el restaurante
-    const { data: perfil } = await db.from('perfiles_clientes').select('nombre, telefono').eq('id', usuarioId).single();
-    
-    // 2. Pedir datos básicos (Esto podrías mejorarlo con un formulario bonito)
-    const fecha = prompt("Fecha (AAAA-MM-DD):", new Date().toISOString().split('T')[0]);
-    const hora = prompt("Hora (HH:MM):", "20:00");
-    const personas = prompt("¿Cuántas personas?", "2");
-
-    if (!fecha || !hora) return;
-
+    // 1. Intentar obtener datos previos del usuario para autocompletar
+    let nombrePrevio = "";
+    let telPrevio = "";
     try {
-        const { error } = await db.from('reservaciones').insert({
+        const { data: perfil } = await db.from('perfiles_clientes').select('nombre, telefono').eq('id', usuarioId).single();
+        if (perfil) {
+            nombrePrevio = perfil.nombre || "";
+            telPrevio = perfil.telefono || "";
+        }
+    } catch(e) { console.log("Usuario sin perfil previo"); }
+
+    // 2. Crear Modal HTML5
+    const dialog = document.createElement('dialog');
+    dialog.style = "padding:20px; border-radius:20px; border:none; width:90%; max-width:350px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); margin: auto;";
+    
+    // Obtener fecha de hoy para no permitir reservas en el pasado
+    const hoy = new Date().toISOString().split('T')[0];
+
+    dialog.innerHTML = `
+        <h3 style="margin-top:0; color:#10ad93;">📅 Reservar ${nombreMesa}</h3>
+        <form id="formNuevaReserva" style="display:flex; flex-direction:column; gap:12px; text-align:left;">
+            
+            <div>
+                <label style="font-size:13px; font-weight:bold; color:#555;">Tu Nombre</label>
+                <input type="text" id="resNombre" required value="${nombrePrevio}" style="width:100%; padding:10px; border:radius:10px; border:1px solid #ddd; box-sizing:border-box;">
+            </div>
+
+            <div>
+                <label style="font-size:13px; font-weight:bold; color:#555;">WhatsApp / Teléfono</label>
+                <input type="tel" id="resTel" required value="${telPrevio}" style="width:100%; padding:10px; border:radius:10px; border:1px solid #ddd; box-sizing:border-box;">
+            </div>
+
+            <div style="display:flex; gap:10px;">
+                <div style="flex:1;">
+                    <label style="font-size:13px; font-weight:bold; color:#555;">Fecha</label>
+                    <input type="date" id="resFecha" required min="${hoy}" style="width:100%; padding:10px; border:radius:10px; border:1px solid #ddd; box-sizing:border-box;">
+                </div>
+                <div style="flex:1;">
+                    <label style="font-size:13px; font-weight:bold; color:#555;">Hora</label>
+                    <input type="time" id="resHora" required style="width:100%; padding:10px; border:radius:10px; border:1px solid #ddd; box-sizing:border-box;">
+                </div>
+            </div>
+
+            <div>
+                <label style="font-size:13px; font-weight:bold; color:#555;">No. de Personas</label>
+                <input type="number" id="resPersonas" required min="1" max="20" value="2" style="width:100%; padding:10px; border:radius:10px; border:1px solid #ddd; box-sizing:border-box;">
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <button type="button" onclick="this.closest('dialog').remove()" style="flex:1; padding:12px; border-radius:10px; background:#f5f5f5; border:none; color:#555; font-weight:bold; cursor:pointer;">Cancelar</button>
+                <button type="submit" style="flex:1; padding:12px; border-radius:10px; background:#000; color:#fff; border:none; font-weight:bold; cursor:pointer;">Confirmar</button>
+            </div>
+        </form>
+    `;
+
+    // Cerrar el modal anterior de opciones (si sigue abierto)
+    const modalesViejos = document.querySelectorAll('dialog');
+    modalesViejos.forEach(m => m.remove());
+
+    document.body.appendChild(dialog);
+    dialog.showModal();
+
+    // 3. Manejar el envío del formulario
+    document.getElementById('formNuevaReserva').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        // Deshabilitar botón para evitar doble click
+        const btnSubmit = e.target.querySelector('button[type="submit"]');
+        btnSubmit.textContent = 'Procesando...';
+        btnSubmit.disabled = true;
+
+        const datosReserva = {
             restaurante_id: restauranteId,
             usuario_id: usuarioId,
-            nombre_cliente: perfil?.nombre || "Cliente Anónimo",
-            telefono: perfil?.telefono || "Sin teléfono",
+            nombre_cliente: document.getElementById('resNombre').value,
+            telefono: document.getElementById('resTel').value,
             mesa: nombreMesa,
-            personas: parseInt(personas),
-            fecha_reserva: fecha,
-            hora_reserva: hora,
+            fecha_reserva: document.getElementById('resFecha').value,
+            hora_reserva: document.getElementById('resHora').value,
+            personas: parseInt(document.getElementById('resPersonas').value),
             estado: 'pendiente'
-        });
+        };
 
-        if (error) throw error;
-        alert("🚀 Solicitud enviada. ¡El restaurante recibirá una notificación!");
-
-    } catch (err) {
-        console.error(err);
-        alert("Error al enviar: " + err.message);
-    }
+        await enviarReservaASupabase(datosReserva, dialog);
+    });
 }
-// --- VER MIS RESERVACIONES ---
-async function verMisReservaciones() {
-    if (!usuarioId) return;
-
+// --- FUNCIÓN QUE INSERTA EN LA BASE DE DATOS ---
+async function enviarReservaASupabase(datos, dialogElement) {
     try {
-        // Traemos las reservaciones del usuario junto con el nombre del restaurante
-        const { data, error } = await db.from('reservaciones')
-            .select(`
-                id, mesa, detalles_tiempo, estado,
-                restaurantes (nombre)
-            `)
-            .eq('usuario_id', usuarioId)
-            .order('created_at', { ascending: false });
+        const { error } = await db.from('reservaciones').insert(datos);
 
         if (error) throw error;
-
-        // Construir un modal o lista para mostrarlas
-        let html = '<h3 style="margin-bottom: 15px;">Mis Reservaciones</h3>';
         
-        if (data.length === 0) {
-            html += '<p>No tienes reservaciones activas.</p>';
-        } else {
-            data.forEach(res => {
-                // Elegir color según estado
-                let colorEstado = '#f5c518'; // pendiente (amarillo)
-                if (res.estado === 'aceptada') colorEstado = '#10ad93'; // verde
-                if (res.estado === 'rechazada') colorEstado = '#FF6B6B'; // rojo
-
-                html += `
-                <div style="background:#f9f9f9; padding:15px; border-radius:10px; margin-bottom:10px; border-left: 5px solid ${colorEstado};">
-                    <strong style="font-size: 16px;">${res.restaurantes.nombre}</strong><br>
-                    <span style="color:#555;">${res.mesa} - ${res.detalles_tiempo}</span><br>
-                    <span style="font-weight:bold; color:${colorEstado}; text-transform:uppercase; font-size:12px;">
-                        Estado: ${res.estado}
-                    </span>
-                </div>`;
-            });
-        }
-
-        // Mostrar en una alerta nativa o inyectarlo en tu div de perfil
-        // Aquí te pongo un Dialog rápido de HTML5 parecido al de las mesas:
-        const dialog = document.createElement('dialog');
-        dialog.style = "padding:20px; border-radius:20px; border:none; max-width:350px; width:90%; box-shadow: 0 15px 35px rgba(0,0,0,0.2); margin: auto;";
-        dialog.innerHTML = html + `<button onclick="this.closest('dialog').remove()" style="width:100%; padding:10px; margin-top:15px; border-radius:10px; background:#000; color:#fff; border:none;">Cerrar</button>`;
+        // Cerrar el modal
+        dialogElement.remove();
         
-        document.body.appendChild(dialog);
-        dialog.showModal();
+        // Notificar al usuario
+        alert("🚀 ¡Solicitud enviada! El restaurante recibirá una notificación en su panel.");
 
     } catch (err) {
-        console.error("Error cargando reservaciones:", err);
+        console.error("Error al insertar reserva:", err);
+        alert("Hubo un error al enviar tu reserva: " + err.message);
+        
+        // Rehabilitar el botón si falla
+        const btn = dialogElement.querySelector('button[type="submit"]');
+        btn.textContent = 'Confirmar';
+        btn.disabled = false;
     }
 }
 // --- MOSTRAR STATUS AL CLIENTE EN app.js ---
