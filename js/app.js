@@ -692,8 +692,8 @@ function mostrarOpcionesMesaCliente(nombreMesa, ocupada, restauranteId) {
     let botonesHTML = '';
     if (ocupada) {
         botonesHTML = `
-            <button onclick="alert('La función de Lista de Espera estará disponible pronto.')" style="width:100%; padding:15px; background:#f0f0f3; border:2px solid #ddd; border-radius:15px; margin-bottom:10px; font-weight:bold; color:#555; cursor:pointer;">
-                ⏱️ Unirse a Lista de Espera
+            <button onclick="solicitarReservacion('${restauranteId}', '${nombreMesa}')" style="width:100%; padding:15px; background:#000; color:#fff; border:none; border-radius:15px; margin-bottom:10px; font-weight:bold; cursor:pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.2);">
+                📅 Reservar esta Mesa
             </button>
         `;
     } else {
@@ -731,4 +731,122 @@ function mostrarOpcionesMesaCliente(nombreMesa, ocupada, restauranteId) {
             dialog.remove(); // Destruye el modal
         }
     });
+}
+// --- NUEVA FUNCIÓN: ENVIAR RESERVACIÓN ---
+// --- FUNCIÓN EN app.js PARA ENVIAR LA RESERVA ---
+async function solicitarReservacion(restauranteId, nombreMesa) {
+    if (!usuarioId) return alert("🔒 Inicia sesión para reservar.");
+
+    // 1. Obtener datos del perfil del cliente para el restaurante
+    const { data: perfil } = await db.from('perfiles_clientes').select('nombre, telefono').eq('id', usuarioId).single();
+    
+    // 2. Pedir datos básicos (Esto podrías mejorarlo con un formulario bonito)
+    const fecha = prompt("Fecha (AAAA-MM-DD):", new Date().toISOString().split('T')[0]);
+    const hora = prompt("Hora (HH:MM):", "20:00");
+    const personas = prompt("¿Cuántas personas?", "2");
+
+    if (!fecha || !hora) return;
+
+    try {
+        const { error } = await db.from('reservaciones').insert({
+            restaurante_id: restauranteId,
+            usuario_id: usuarioId,
+            nombre_cliente: perfil?.nombre || "Cliente Anónimo",
+            telefono: perfil?.telefono || "Sin teléfono",
+            mesa: nombreMesa,
+            personas: parseInt(personas),
+            fecha_reserva: fecha,
+            hora_reserva: hora,
+            estado: 'pendiente'
+        });
+
+        if (error) throw error;
+        alert("🚀 Solicitud enviada. ¡El restaurante recibirá una notificación!");
+
+    } catch (err) {
+        console.error(err);
+        alert("Error al enviar: " + err.message);
+    }
+}
+// --- VER MIS RESERVACIONES ---
+async function verMisReservaciones() {
+    if (!usuarioId) return;
+
+    try {
+        // Traemos las reservaciones del usuario junto con el nombre del restaurante
+        const { data, error } = await db.from('reservaciones')
+            .select(`
+                id, mesa, detalles_tiempo, estado,
+                restaurantes (nombre)
+            `)
+            .eq('usuario_id', usuarioId)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        // Construir un modal o lista para mostrarlas
+        let html = '<h3 style="margin-bottom: 15px;">Mis Reservaciones</h3>';
+        
+        if (data.length === 0) {
+            html += '<p>No tienes reservaciones activas.</p>';
+        } else {
+            data.forEach(res => {
+                // Elegir color según estado
+                let colorEstado = '#f5c518'; // pendiente (amarillo)
+                if (res.estado === 'aceptada') colorEstado = '#10ad93'; // verde
+                if (res.estado === 'rechazada') colorEstado = '#FF6B6B'; // rojo
+
+                html += `
+                <div style="background:#f9f9f9; padding:15px; border-radius:10px; margin-bottom:10px; border-left: 5px solid ${colorEstado};">
+                    <strong style="font-size: 16px;">${res.restaurantes.nombre}</strong><br>
+                    <span style="color:#555;">${res.mesa} - ${res.detalles_tiempo}</span><br>
+                    <span style="font-weight:bold; color:${colorEstado}; text-transform:uppercase; font-size:12px;">
+                        Estado: ${res.estado}
+                    </span>
+                </div>`;
+            });
+        }
+
+        // Mostrar en una alerta nativa o inyectarlo en tu div de perfil
+        // Aquí te pongo un Dialog rápido de HTML5 parecido al de las mesas:
+        const dialog = document.createElement('dialog');
+        dialog.style = "padding:20px; border-radius:20px; border:none; max-width:350px; width:90%; box-shadow: 0 15px 35px rgba(0,0,0,0.2); margin: auto;";
+        dialog.innerHTML = html + `<button onclick="this.closest('dialog').remove()" style="width:100%; padding:10px; margin-top:15px; border-radius:10px; background:#000; color:#fff; border:none;">Cerrar</button>`;
+        
+        document.body.appendChild(dialog);
+        dialog.showModal();
+
+    } catch (err) {
+        console.error("Error cargando reservaciones:", err);
+    }
+}
+// --- MOSTRAR STATUS AL CLIENTE EN app.js ---
+async function verStatusReservaciones() {
+    if (!usuarioId) return;
+
+    const { data, error } = await db
+        .from('reservaciones')
+        .select('mesa, fecha_reserva, hora_reserva, estado')
+        .eq('usuario_id', usuarioId)
+        .order('created_at', { ascending: false });
+
+    if (error) return console.error(error);
+
+    // Creamos un modal rápido para mostrar la lista
+    const dialog = document.createElement('dialog');
+    dialog.style = "padding:20px; border-radius:20px; border:none; width:90%; max-width:400px;";
+    
+    let contenido = `<h3>Mis Reservas</h3><hr>`;
+    data.forEach(res => {
+        const emoji = res.estado === 'confirmada' ? '✅' : (res.estado === 'pendiente' ? '⏳' : '❌');
+        contenido += `
+            <div style="margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
+                <strong>${res.mesa}</strong> - ${res.fecha_reserva} (${res.hora_reserva.slice(0,5)})<br>
+                <span style="font-weight:bold;">Estado: ${emoji} ${res.estado.toUpperCase()}</span>
+            </div>`;
+    });
+
+    dialog.innerHTML = contenido + `<button onclick="this.closest('dialog').remove()" style="width:100%; background:#000; color:#fff;">Cerrar</button>`;
+    document.body.appendChild(dialog);
+    dialog.showModal();
 }
