@@ -854,12 +854,18 @@ async function enviarReservaASupabase(datos, dialogElement) {
 // Asegúrate de que usuarioId esté disponible en este archivo
 // Generalmente lo obtienes de db.auth.getUser() al cargar la página
 
-async function verStatusReservaciones() {
-    // 1. Obtener el ID del usuario actual
+indow.verStatusReservaciones = async function() {
+    console.log("🔍 Consultando reservaciones..."); // Para que veas en consola que ya entra
+    
+    // 1. Obtener el ID del usuario actual (Asegúrate que 'db' esté inicializado)
     const { data: { user } } = await db.auth.getUser();
-    if (!user) return alert("Debes iniciar sesión");
+    
+    if (!user) {
+        alert("Debes iniciar sesión para ver tus reservas");
+        return;
+    }
 
-    // 2. Consultar reservaciones incluyendo el NOMBRE del restaurante
+    // El resto de tu código de la función sigue igual...
     const { data, error } = await db
         .from('reservaciones')
         .select(`
@@ -873,7 +879,7 @@ async function verStatusReservaciones() {
         .order('created_at', { ascending: false });
 
     if (error) {
-        console.error(error);
+        console.error("Error en Supabase:", error);
         return;
     }
 
