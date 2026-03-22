@@ -851,33 +851,96 @@ async function enviarReservaASupabase(datos, dialogElement) {
         btn.disabled = false;
     }
 }
-// --- MOSTRAR STATUS AL CLIENTE EN app.js ---
-async function verStatusReservaciones() {
-    if (!usuarioId) return;
+// Asegúrate de que usuarioId esté disponible en este archivo
+// Generalmente lo obtienes de db.auth.getUser() al cargar la página
 
+async function verStatusReservaciones() {
+    // 1. Obtener el ID del usuario actual
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return alert("Debes iniciar sesión");
+
+    // 2. Consultar reservaciones incluyendo el NOMBRE del restaurante
     const { data, error } = await db
         .from('reservaciones')
-        .select('mesa, fecha_reserva, hora_reserva, estado')
-        .eq('usuario_id', usuarioId)
+        .select(`
+            mesa, 
+            fecha_reserva, 
+            hora_reserva, 
+            estado, 
+            restaurantes ( nombre )
+        `)
+        .eq('usuario_id', user.id)
         .order('created_at', { ascending: false });
 
-    if (error) return console.error(error);
+    if (error) {
+        console.error(error);
+        return;
+    }
 
-    // Creamos un modal rápido para mostrar la lista
+    // 3. Crear el modal (Dialog)
     const dialog = document.createElement('dialog');
-    dialog.style = "padding:20px; border-radius:20px; border:none; width:90%; max-width:400px;";
+    dialog.style = `
+        padding: 0; 
+        border-radius: 25px; 
+        border: none; 
+        width: 90%; 
+        max-width: 400px; 
+        box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        background: #eef0f3;
+    `;
     
-    let contenido = `<h3>Mis Reservas</h3><hr>`;
-    data.forEach(res => {
-        const emoji = res.estado === 'confirmada' ? '✅' : (res.estado === 'pendiente' ? '⏳' : '❌');
-        contenido += `
-            <div style="margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
-                <strong>${res.mesa}</strong> - ${res.fecha_reserva} (${res.hora_reserva.slice(0,5)})<br>
-                <span style="font-weight:bold;">Estado: ${emoji} ${res.estado.toUpperCase()}</span>
-            </div>`;
-    });
+    let listaHTML = '';
+    
+    if (data.length === 0) {
+        listaHTML = `<p style="text-align:center; padding:20px; color:#888;">No tienes reservas aún.</p>`;
+    } else {
+        data.forEach(res => {
+            // Configuración de estado
+            let colorStatus = "#f5c518"; // Pendiente
+            let icono = "⏳";
+            
+            if(res.estado === 'confirmada' || res.estado === 'aceptada') {
+                colorStatus = "#10ad93";
+                icono = "✅";
+            } else if (res.estado === 'rechazada' || res.estado === 'cancelada') {
+                colorStatus = "#ff4757";
+                icono = "❌";
+            }
 
-    dialog.innerHTML = contenido + `<button onclick="this.closest('dialog').remove()" style="width:100%; background:#000; color:#fff;">Cerrar</button>`;
+            listaHTML += `
+                <div style="background: #eef0f3; margin-bottom: 15px; padding: 15px; border-radius: 15px; box-shadow: 4px 4px 8px #caced1, -4px -4px 8px #ffffff;">
+                    <div style="display:flex; justify-content:space-between; align-items:start;">
+                        <strong>${res.restaurantes?.nombre || 'Restaurante'}</strong>
+                        <span style="font-size:12px; font-weight:bold; color:${colorStatus}">${icono} ${res.estado.toUpperCase()}</span>
+                    </div>
+                    <div style="font-size: 13px; color: #666; margin-top: 5px;">
+                        📍 ${res.mesa} | 📅 ${res.fecha_reserva} | 🕒 ${res.hora_reserva.slice(0,5)}
+                    </div>
+                </div>`;
+        });
+    }
+
+    dialog.innerHTML = `
+        <div style="padding: 20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 style="margin:0;">Mis Reservas</h3>
+                <button onclick="this.closest('dialog').remove()" style="background:none; border:none; font-size:20px; cursor:pointer;">✕</button>
+            </div>
+            <div style="max-height: 400px; overflow-y: auto; padding: 5px;">
+                ${listaHTML}
+            </div>
+            <button onclick="this.closest('dialog').remove()" style="width:100%; margin-top:15px; padding:15px; border-radius:15px; border:none; background:#000; color:#fff; font-weight:bold; cursor:pointer;">Entendido</button>
+        </div>
+    `;
+
     document.body.appendChild(dialog);
     dialog.showModal();
+
+    // Cerrar al tocar fuera
+    dialog.addEventListener('click', (e) => {
+        const rect = dialog.getBoundingClientRect();
+        if (e.clientY < rect.top || e.clientY > rect.bottom || e.clientX < rect.left || e.clientX > rect.right) {
+            dialog.remove();
+        }
+    });
 }
