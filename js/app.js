@@ -829,35 +829,16 @@ async function mostrarFormularioReserva(restauranteId, nombreMesa) {
     });
 }
 // --- FUNCIÓN QUE INSERTA EN LA BASE DE DATOS ---
-async function enviarReservaASupabase(datos, dialogElement) {
-    try {
-        const { error } = await db.from('reservaciones').insert(datos);
-
-        if (error) throw error;
-        
-        // Cerrar el modal
-        dialogElement.remove();
-        
-        // Notificar al usuario
-        alert("🚀 ¡Solicitud enviada! El restaurante recibirá una notificación en su panel.");
-
-    } catch (err) {
-        console.error("Error al insertar reserva:", err);
-        alert("Hubo un error al enviar tu reserva: " + err.message);
-        
-        // Rehabilitar el botón si falla
-        const btn = dialogElement.querySelector('button[type="submit"]');
-        btn.textContent = 'Confirmar';
-        btn.disabled = false;
-    }
-}
-async function verStatusReservaciones() {
+window.verStatusReservaciones = async function() {
+    // Asegúrate de que 'db' esté inicializado antes de llamar a esta función
     const { data: { user } } = await db.auth.getUser();
 
     if (!user) {
         alert("Debes iniciar sesión");
         return;
     }
+
+    console.log("🔍 Consultando reservaciones para el usuario:", user.id);
 
     const { data, error } = await db
         .from('reservaciones')
