@@ -828,6 +828,36 @@ async function mostrarFormularioReserva(restauranteId, nombreMesa) {
         await enviarReservaASupabase(datosReserva, dialog);
     });
 }
+// Definimos la función de manera global para que app.js la reconozca
+window.enviarReservaASupabase = async function(datos, modalDialog) {
+    try {
+        console.log("Intentando enviar reserva:", datos);
+
+        // 1. Insertar en la tabla 'reservaciones' de Supabase
+        const { data, error } = await db
+            .from('reservaciones')
+            .insert([datos]); // Usamos el objeto que ya armaste en el formulario
+
+        if (error) throw error;
+
+        // 2. Si todo sale bien, avisamos al usuario
+        alert("✅ ¡Reservación enviada! El restaurante la revisará pronto.");
+        
+        // 3. Cerramos el modal
+        if (modalDialog) modalDialog.remove();
+
+    } catch (error) {
+        console.error("Error al guardar la reserva:", error);
+        alert("❌ Error al enviar la reserva: " + error.message);
+        
+        // 4. Si hay error, reactivamos el botón para que el usuario pueda reintentar
+        const btnSubmit = document.querySelector('#formNuevaReserva button[type="submit"]');
+        if (btnSubmit) {
+            btnSubmit.textContent = 'Confirmar';
+            btnSubmit.disabled = false;
+        }
+    }
+};
 window.verStatusReservaciones = async function() {
     // Asegúrate de que 'db' esté inicializado antes de llamar a esta función
     const { data: { user } } = await db.auth.getUser();
