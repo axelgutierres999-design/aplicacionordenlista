@@ -854,7 +854,7 @@ async function enviarReservaASupabase(datos, dialogElement) {
 // Asegúrate de que usuarioId esté disponible en este archivo
 // Generalmente lo obtienes de db.auth.getUser() al cargar la página
 
-indow.verStatusReservaciones = async function() {
+window.verStatusReservaciones = async function() {
     console.log("🔍 Consultando reservaciones..."); // Para que veas en consola que ya entra
     
     // 1. Obtener el ID del usuario actual (Asegúrate que 'db' esté inicializado)
