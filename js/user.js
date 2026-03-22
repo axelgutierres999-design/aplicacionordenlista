@@ -157,6 +157,9 @@ window.verStatusReservaciones = async function() {
 
     console.log("🔍 Consultando reservaciones para el usuario:", user.id);
 
+    const hoy = new Date().toLocaleDateString('en-CA'); 
+
+    // 2. Hacer la consulta con los filtros exactos
     const { data, error } = await db
         .from('reservaciones')
         .select(`
@@ -168,7 +171,13 @@ window.verStatusReservaciones = async function() {
             restaurantes(nombre)
         `)
         .eq('usuario_id', user.id)
-        .order('created_at', { ascending: false });
+        // 🔹 REGLA 1: Solo mostrar de hoy hacia el futuro
+        .gte('fecha_reserva', hoy) 
+        // 🔹 REGLA 2: Solo mostrar las que están "en espera" o "confirmadas"
+        .in('estado', ['pendiente', 'confirmada', 'aceptada']) 
+        // 🔹 Ordenar para que las más próximas salgan primero
+        .order('fecha_reserva', { ascending: true })
+        .order('hora_reserva', { ascending: true });
 
     if (error) {
         console.error("Error reservaciones:", error);
