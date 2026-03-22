@@ -851,102 +851,111 @@ async function enviarReservaASupabase(datos, dialogElement) {
         btn.disabled = false;
     }
 }
-// Asegúrate de que usuarioId esté disponible en este archivo
-// Generalmente lo obtienes de db.auth.getUser() al cargar la página
-
-window.verStatusReservaciones = async function() {
-    console.log("🔍 Consultando reservaciones..."); // Para que veas en consola que ya entra
-    
-    // 1. Obtener el ID del usuario actual (Asegúrate que 'db' esté inicializado)
+async function verStatusReservaciones() {
     const { data: { user } } = await db.auth.getUser();
-    
+
     if (!user) {
-        alert("Debes iniciar sesión para ver tus reservas");
+        alert("Debes iniciar sesión");
         return;
     }
 
-    // El resto de tu código de la función sigue igual...
     const { data, error } = await db
         .from('reservaciones')
         .select(`
-            mesa, 
-            fecha_reserva, 
-            hora_reserva, 
-            estado, 
-            restaurantes ( nombre )
+            mesa,
+            fecha_reserva,
+            hora_reserva,
+            estado,
+            restaurante_id,
+            restaurantes(nombre)
         `)
         .eq('usuario_id', user.id)
         .order('created_at', { ascending: false });
 
     if (error) {
-        console.error("Error en Supabase:", error);
+        console.error("Error reservaciones:", error);
         return;
     }
 
-    // 3. Crear el modal (Dialog)
+    console.log("Reservas encontradas:", data);
+
     const dialog = document.createElement('dialog');
     dialog.style = `
-        padding: 0; 
-        border-radius: 25px; 
-        border: none; 
-        width: 90%; 
-        max-width: 400px; 
-        box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-        background: #eef0f3;
+        padding:0;
+        border-radius:25px;
+        border:none;
+        width:90%;
+        max-width:400px;
+        background:#eef0f3;
     `;
-    
+
     let listaHTML = '';
-    
-    if (data.length === 0) {
-        listaHTML = `<p style="text-align:center; padding:20px; color:#888;">No tienes reservas aún.</p>`;
+
+    if (!data || data.length === 0) {
+        listaHTML = `<p style="text-align:center; padding:20px;">No tienes reservas aún</p>`;
     } else {
+
         data.forEach(res => {
-            // Configuración de estado
-            let colorStatus = "#f5c518"; // Pendiente
+
+            let colorStatus = "#f5c518";
             let icono = "⏳";
-            
-            if(res.estado === 'confirmada' || res.estado === 'aceptada') {
+
+            if (res.estado === 'aceptada' || res.estado === 'confirmada') {
                 colorStatus = "#10ad93";
                 icono = "✅";
-            } else if (res.estado === 'rechazada' || res.estado === 'cancelada') {
+            }
+
+            if (res.estado === 'rechazada' || res.estado === 'cancelada') {
                 colorStatus = "#ff4757";
                 icono = "❌";
             }
 
             listaHTML += `
-                <div style="background: #eef0f3; margin-bottom: 15px; padding: 15px; border-radius: 15px; box-shadow: 4px 4px 8px #caced1, -4px -4px 8px #ffffff;">
-                    <div style="display:flex; justify-content:space-between; align-items:start;">
+                <div style="
+                    background:white;
+                    margin-bottom:15px;
+                    padding:15px;
+                    border-radius:15px;
+                    box-shadow:4px 4px 8px #caced1;
+                ">
+                    <div style="display:flex; justify-content:space-between;">
                         <strong>${res.restaurantes?.nombre || 'Restaurante'}</strong>
-                        <span style="font-size:12px; font-weight:bold; color:${colorStatus}">${icono} ${res.estado.toUpperCase()}</span>
+                        <span style="color:${colorStatus}; font-size:12px; font-weight:bold;">
+                            ${icono} ${res.estado.toUpperCase()}
+                        </span>
                     </div>
-                    <div style="font-size: 13px; color: #666; margin-top: 5px;">
-                        📍 ${res.mesa} | 📅 ${res.fecha_reserva} | 🕒 ${res.hora_reserva.slice(0,5)}
+
+                    <div style="margin-top:8px; font-size:13px; color:#666;">
+                        📍 ${res.mesa}<br>
+                        📅 ${res.fecha_reserva}<br>
+                        🕒 ${res.hora_reserva.slice(0,5)}
                     </div>
-                </div>`;
+                </div>
+            `;
         });
     }
 
     dialog.innerHTML = `
-        <div style="padding: 20px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h3 style="margin:0;">Mis Reservas</h3>
-                <button onclick="this.closest('dialog').remove()" style="background:none; border:none; font-size:20px; cursor:pointer;">✕</button>
-            </div>
-            <div style="max-height: 400px; overflow-y: auto; padding: 5px;">
+        <div style="padding:20px;">
+            <h3>Mis Reservaciones</h3>
+            <div style="max-height:400px; overflow:auto;">
                 ${listaHTML}
             </div>
-            <button onclick="this.closest('dialog').remove()" style="width:100%; margin-top:15px; padding:15px; border-radius:15px; border:none; background:#000; color:#fff; font-weight:bold; cursor:pointer;">Entendido</button>
+            <button onclick="this.closest('dialog').remove()"
+                style="
+                    width:100%;
+                    margin-top:15px;
+                    padding:15px;
+                    background:black;
+                    color:white;
+                    border:none;
+                    border-radius:15px;
+                ">
+                Cerrar
+            </button>
         </div>
     `;
 
     document.body.appendChild(dialog);
     dialog.showModal();
-
-    // Cerrar al tocar fuera
-    dialog.addEventListener('click', (e) => {
-        const rect = dialog.getBoundingClientRect();
-        if (e.clientY < rect.top || e.clientY > rect.bottom || e.clientX < rect.left || e.clientX > rect.right) {
-            dialog.remove();
-        }
-    });
 }
