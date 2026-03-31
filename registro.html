@@ -217,7 +217,7 @@
         btnToggle.addEventListener('click', () => {
             const isHidden = passInput.type === 'password';
             passInput.type = isHidden ? 'text' : 'password';
-            btnToggle.textContent = isHidden ? '' : '👀';
+            btnToggle.textContent = isHidden ? '👀' : '👀';
 
             if(document.activeElement === passInput) {
                 avatar.classList.toggle('cover-eyes', !isHidden);
