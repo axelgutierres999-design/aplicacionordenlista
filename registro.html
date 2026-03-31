@@ -3,14 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Bienvenido - Registro Premium</title>
+    <title>Bienvenido Chef - Registro VIP</title>
     
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
     <style>
         :root {
             --bg-color: #eef0f3;
+            /* Colores neumórficos */
+            --light-shadow: #ffffff;
+            --dark-shadow: #caced1;
+            /* Colores del Chef */
+            --chef-skin: #f3d0b2;
+            --chef-hat-base: #f0f0f3;
+            --chef-eye-color: #000;
         }
+        
         body {
             background: var(--bg-color);
             display: flex;
@@ -20,33 +28,141 @@
             margin: 0;
             padding: 20px;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden; /* Evitar scroll en iPhone al animar */
         }
 
         .registro-card {
             width: 100%;
             max-width: 400px;
-            padding: 40px 30px;
+            padding: 20px 30px 40px; /* Reducido arriba para acomodar al chef */
             background: #eef0f3;
             border-radius: 40px;
             text-align: center;
             box-shadow: 20px 20px 60px #caced1, -20px -20px 60px #ffffff;
+            position: relative; /* Para posicionar al chef */
+            transition: all 0.3s ease;
         }
 
-        .logo-container {
-            width: 80px;
-            height: 80px;
+        /* --- CONTENEDOR DEL CHEF CSS --- */
+        .chef-container {
+            width: 120px;
+            height: 120px;
+            margin: -60px auto 20px; /* Neumórfico "flotante" hacia arriba */
             background: #eef0f3;
-            margin: 0 auto 20px;
-            border-radius: 25px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 40px;
             box-shadow: 8px 8px 16px #caced1, -8px -8px 16px #ffffff;
+            position: relative;
+            z-index: 10;
         }
 
-        h1 { color: #000; font-size: 26px; margin-bottom: 10px; font-weight: 800; }
-        p { color: #888; font-size: 14px; margin-bottom: 30px; }
+        /* --- DIBUJO DEL CHEF EN CSS puro --- */
+        .chef {
+            width: 90px;
+            height: 90px;
+            position: relative;
+        }
+
+        /* Cara */
+        .chef-face {
+            width: 60px;
+            height: 60px;
+            background: var(--chef-skin);
+            border-radius: 50%;
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.1);
+        }
+
+        /* Gorro */
+        .chef-hat {
+            width: 70px;
+            height: 60px;
+            background: var(--chef-hat-base);
+            border-radius: 50% 50% 10px 10px;
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: inset 4px 4px 8px #ffffff, inset -4px -4px 8px #caced1;
+            transition: all 0.3s ease;
+            overflow: hidden; /* Para el truco de la contraseña */
+        }
+        
+        /* Banda roja opcional para el gorro */
+        .chef-hat-band {
+            width: 100%; height: 10px; background: #FF4B4B;
+            position: absolute; bottom: 0; left: 0;
+            border-radius: 0 0 10px 10px;
+        }
+
+        /* Ojos */
+        .eyes {
+            width: 36px; height: 16px;
+            position: absolute; top: 22px; left: 12px;
+            display: flex; justify-content: space-between;
+            transition: all 0.2s ease;
+        }
+
+        .eye {
+            width: 14px; height: 14px;
+            background: #fff;
+            border-radius: 50%;
+            position: relative;
+            box-shadow: inset 1px 1px 3px rgba(0,0,0,0.2);
+            transition: all 0.3s ease; /* Para cambiar forma en pass */
+        }
+
+        .pupil {
+            width: 6px; height: 6px;
+            background: var(--chef-eye-color);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%); /* Centrado por defecto */
+            transition: transform 0.2s ease; /* Animación de la mirada */
+        }
+        
+        /* Bigote simple */
+        .moustache {
+            width: 30px; height: 6px; background: var(--chef-eye-color);
+            position: absolute; bottom: 12px; left: 15px;
+            border-radius: 10px; opacity: 0.7;
+        }
+
+
+        /* --- LÓGICA DE INTERACCIÓN DEL CHEF (CSS puro) --- */
+
+        /* 1. Mirada hacia abajo cuando enfocamos Nombre o Correo */
+        .registro-card:has(#reg-nombre:focus) .pupil,
+        .registro-card:has(#reg-correo:focus) .pupil {
+            transform: translate(-50%, 0%); /* Miran hacia abajo */
+        }
+
+        /* 2. Truco de la contraseña: Ojos cerrados (líneas) y gorro baja */
+        .registro-card:has(#reg-pass:focus) .pupil {
+            background: transparent; /* Pupilass ocultas */
+        }
+        .registro-card:has(#reg-pass:focus) .eye {
+            border-radius: 0; /* No redondos */
+            height: 2px; /* Líneas finas */
+            background: var(--chef-eye-color); /* Color de ojos */
+            top: 6px; /* Ajuste visual */
+        }
+        /* El gorro baja ligeramente */
+        .registro-card:has(#reg-pass:focus) .chef-hat {
+            transform: translateX(-50%) translateY(5px);
+            border-radius: 5px 5px 10px 10px;
+        }
+
+
+        /* --- RESTO DE TUS ESTILOS NEUMÓRFICOS (Inalterados) --- */
+        h1 { color: #000; font-size: 26px; margin-bottom: 5px; font-weight: 800; }
+        h1 + p { color: #888; font-size: 13px; margin-bottom: 30px; }
 
         .input-group { margin-bottom: 20px; text-align: left; }
         .input-group label {
@@ -60,7 +176,7 @@
             border: none; background: #eef0f3; color: #333;
             font-size: 16px; outline: none; box-sizing: border-box;
             box-shadow: inset 6px 6px 12px #caced1, inset -6px -6px 12px #ffffff;
-            transition: 0.3s;
+            transition: 0.3s ease;
         }
 
         input:focus { box-shadow: inset 2px 2px 5px #caced1, inset -2px -2px 5px #ffffff; }
@@ -68,7 +184,7 @@
         .btn-registrar {
             width: 100%; background: #000; color: white;
             border: none; padding: 18px; border-radius: 18px;
-            font-weight: 700; font-size: 16px; margin-top: 20px;
+            font-weight: 700; font-size: 16px; margin-top: 15px;
             cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.15);
             transition: 0.2s;
         }
@@ -86,23 +202,38 @@
 <body>
 
     <div class="registro-card">
-        <div class="logo-container">🍴</div>
-        <h1>Bienvenido</h1>
+        
+        <div class="chef-container">
+            <div class="chef">
+                <div class="chef-hat">
+                    <div class="chef-hat-band"></div>
+                </div>
+                <div class="chef-face">
+                    <div class="eyes">
+                        <div class="eye left-eye"><div class="pupil"></div></div>
+                        <div class="eye right-eye"><div class="pupil"></div></div>
+                    </div>
+                    <div class="moustache"></div>
+                </div>
+            </div>
+        </div>
+        
+        <h1>Bienvenido Chef</h1>
         <p>Crea tu cuenta VIP para explorar los mejores sabores.</p>
         
         <div class="input-group">
             <label>Nombre Completo</label>
-            <input type="text" id="reg-nombre" placeholder="Ej. Juan Pérez">
+            <input type="text" id="reg-nombre" placeholder="Ej. Juan Pérez" required>
         </div>
 
         <div class="input-group">
             <label>Email</label>
-            <input type="email" id="reg-correo" placeholder="tu@correo.com">
+            <input type="email" id="reg-correo" placeholder="tu@correo.com" required>
         </div>
 
         <div class="input-group">
             <label>Contraseña</label>
-            <input type="password" id="reg-pass" placeholder="Mínimo 6 caracteres">
+            <input type="password" id="reg-pass" placeholder="Mínimo 6 caracteres" required>
         </div>
         
         <button class="btn-registrar" id="btnRegistro" onclick="registrarUsuario()">Crear Cuenta</button>
@@ -112,14 +243,10 @@
     </div>
 
     <script>
-        // Configuración de Supabase con nombres de variables únicos
+        // Configuración de Supabase (Inalterado)
         const _supabaseUrl = "https://cpveuexgxwxjejurtwro.supabase.co";
         const _supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc";
-        
-        // Creamos la conexión (Usamos supabaseApp para evitar conflictos)
         const supabaseApp = window.supabase.createClient(_supabaseUrl, _supabaseKey);
-
-        // Hacemos el cliente accesible para otros archivos si es necesario
         window.supabaseClient = supabaseApp;
 
         async function registrarUsuario() {
@@ -144,29 +271,26 @@
                 const { data, error } = await supabaseApp.auth.signUp({
                     email: correo,
                     password: pass,
-                    options: {
-                        data: { nombre: nombre } // Esto lo recibe el Trigger SQL para 'perfiles_clientes'
-                    }
+                    options: { data: { nombre: nombre } }
                 });
 
                 if (error) throw error;
 
                 // 4. Manejo de éxito
-                alert("¡Registro exitoso! Ya puedes disfrutar de la experiencia.");
+                alert("¡Registro exitoso Chef! Ya puedes disfrutar de la experiencia.");
                 
-                // Animación visual de salida
-                document.querySelector('.registro-card').style.transform = "scale(0.9)";
+                // Animación visual de salida de la card
+                document.querySelector('.registro-card').style.transform = "scale(0.9) translateY(20px)";
                 document.querySelector('.registro-card').style.opacity = "0";
-                document.querySelector('.registro-card').style.transition = "0.5s ease";
+                document.querySelector('.registro-card').style.transition = "0.6s cubic-bezier(0.34, 1.56, 0.64, 1)";
 
                 setTimeout(() => {
                     window.location.href = 'index.html';
-                }, 500);
+                }, 600);
 
             } catch (err) {
                 console.error("Error capturado:", err);
                 
-                // Mensaje amigable al usuario
                 let msg = "Error al registrar: " + err.message;
                 if (err.message.includes("already registered")) {
                     msg = "Este correo ya está registrado. Intenta iniciar sesión.";
