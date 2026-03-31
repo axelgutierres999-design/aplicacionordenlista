@@ -131,9 +131,15 @@
         }
 
         input {
-            width: 100%; padding: 16px 20px; border-radius: 18px;
-            border: none; background: #eef0f3; color: #333;
-            font-size: 16px; outline: none; box-sizing: border-box;
+            width: 100%; 
+            padding: 16px 45px 16px 20px; /* Añadimos 45px de padding a la derecha */
+            border-radius: 18px;
+            border: none; 
+            background: #eef0f3; 
+            color: #333;
+            font-size: 16px; 
+            outline: none; 
+            box-sizing: border-box;
             box-shadow: inset 6px 6px 12px #caced1, inset -6px -6px 12px #ffffff;
             transition: 0.3s;
         }
@@ -165,6 +171,7 @@
     cursor: pointer;
     display: flex;
     align-items: center;
+    z-index: 10; /* Asegura que esté por encima del input */
 }
 
 .checkmark {
@@ -263,9 +270,9 @@ passInput.addEventListener('focus', () => {
 passInput.addEventListener('blur', () => avatar.classList.remove('cover-eyes', 'peek'));
 
         // 3. Lógica de la caja de selección (Sin emojis)
-checkMostrar.addEventListener('change', () => {
-    const isVisible = checkMostrar.checked;
-    passInput.type = isVisible ? 'text' : 'password';
+        checkMostrar.addEventListener('change', () => {
+         const isVisible = checkMostrar.checked;
+        passInput.type = isVisible ? 'text' : 'password';
 
     // Si el usuario está escribiendo, actualizamos al chef al instante
     if (document.activeElement === passInput) {
