@@ -3,14 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iniciar Sesión - Café App</title>
-    <link rel="stylesheet" href="css/style.css"> 
-    
+    <title>Iniciar Sesión - OrdenLista</title>
     <style>
-        /* --- ESTILOS GENERALES --- */
+        :root {
+            --bg-color: #f0f0f3;
+            --pan-color: #4a4a4a;
+            --handle-color: #d63031;
+            --fire-color: #ff9f43;
+            --food-raw: #ff7675;
+            --food-cooked: #8b4513;
+        }
+
         body { 
-            /* Un fondo oscuro hace que la tarjeta blanca resalte más (como en tu referencia) */
-            background: #1a1b20; 
+            background: var(--bg-color); 
             display: flex; 
             align-items: center; 
             justify-content: center; 
@@ -19,207 +24,254 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
         }
 
-        /* --- CONTENEDOR PRINCIPAL (La tarjeta dividida) --- */
-        .login-container {
-            display: flex;
-            background: #ffffff;
-            width: 90%;
-            max-width: 900px;
-            border-radius: 20px;
-            overflow: hidden; /* Para que la imagen no se salga de las curvas */
-            box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+        /* --- TARJETA NEUMÓRFICA --- */
+        .login-card {
+            background: var(--bg-color);
+            padding: 50px 30px 40px;
+            border-radius: 30px;
+            box-shadow: 20px 20px 60px #d1d9e6, -20px -20px 60px #ffffff;
+            width: 85%;
+            max-width: 350px;
+            text-align: center;
+            position: relative;
+            margin-top: 50px;
         }
 
-        /* --- LADO IZQUIERDO: IMAGEN --- */
-        .image-overlay {
-            flex: 1;
-            background-color: #f7e8d5; /* Un tono café con leche claro */
+        /* --- ANIMACIÓN DE LA SARTÉN --- */
+        .cooking-station {
+            width: 140px;
+            height: 140px;
+            margin: -110px auto 20px; /* Flota sobre la tarjeta */
+            background: var(--bg-color);
+            border-radius: 50%;
+            position: relative;
+            box-shadow: 10px 10px 20px #d1d9e6, -10px -10px 20px #ffffff;
             display: flex;
             align-items: center;
             justify-content: center;
-            flex-direction: column;
-            padding: 40px;
+            overflow: hidden;
+            border: 4px solid #fff;
         }
 
-        /* Aquí puedes darle estilo al ícono de café que subiste */
-        .image-overlay img {
-            max-width: 150px;
-            margin-bottom: 20px;
+        /* El fuego base */
+        .fire {
+            position: absolute;
+            bottom: 15px;
+            width: 40px;
+            height: 40px;
+            background: var(--fire-color);
+            border-radius: 50% 0 50% 50%;
+            transform: rotate(-45deg);
+            opacity: 0.4;
+            transition: all 0.3s ease;
         }
 
-        /* --- LADO DERECHO: FORMULARIO --- */
-        .login-panel { 
-            flex: 1;
-            padding: 50px 40px;
-            display: flex;
-            flex-direction: column; 
-            justify-content: center;
-            background: #ffffff;
+        /* La sartén */
+        .pan-container {
+            position: absolute;
+            bottom: 40px;
+            width: 80px;
+            height: 30px;
+            transition: transform 0.3s ease;
         }
 
-        .login-panel h2 { 
-            font-size: 2em; 
-            margin-bottom: 10px; 
-            color: #333; 
-            font-weight: 800;
-            margin-top: 0;
+        .pan-body {
+            width: 80px;
+            height: 40px;
+            background: var(--pan-color);
+            border-radius: 0 0 40px 40px;
+            position: absolute;
+            bottom: 0;
+            z-index: 5;
         }
+
+        .pan-handle {
+            width: 45px;
+            height: 8px;
+            background: var(--handle-color);
+            position: absolute;
+            right: -40px;
+            top: 5px;
+            border-radius: 0 10px 10px 0;
+            transform: rotate(-15deg);
+            z-index: 4;
+        }
+
+        /* La Comida */
+        .food {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: var(--food-raw);
+            border-radius: 50%;
+            bottom: 15px;
+            left: 30px;
+            z-index: 3;
+            transition: background 0.8s ease; /* Transición para cuando se cuece */
+        }
+
+        .veggie {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background: #55efc4;
+            border-radius: 50%;
+            bottom: 10px;
+            left: 50px;
+            z-index: 2;
+        }
+
+        /* --- ESTADOS DE ANIMACIÓN --- */
         
-        .login-panel p.subtitle { 
-            color: #666; 
-            margin-bottom: 30px; 
-            font-size: 0.95em;
-            margin-top: 0;
+        /* 1. Cuando el usuario está escribiendo (Cocinando) */
+        .cooking-station.is-cooking .fire {
+            opacity: 1;
+            background: #ff4757;
+            animation: burn 0.5s infinite alternate;
+            box-shadow: 0 0 20px #ff4757;
         }
 
-        /* --- INPUTS ESTILO FLAT --- */
-        .input-group { 
-            margin-bottom: 20px; 
-            text-align: left; 
+        .cooking-station.is-cooking .pan-container {
+            animation: toss-pan 0.4s infinite alternate;
         }
 
-        .input-group label { 
-            display: block; 
-            margin-bottom: 8px; 
-            font-size: 0.85em; 
-            color: #666; 
-            font-weight: 600;
+        .cooking-station.is-cooking .food {
+            animation: toss-food 0.4s infinite alternate;
         }
 
+        .cooking-station.is-cooking .veggie {
+            animation: toss-veggie 0.5s infinite alternate;
+        }
+
+        /* 2. Cuando el usuario le da a "Entrar" (Cocinado) */
+        .cooking-station.is-cooked .food {
+            background: var(--food-cooked); /* La carne se pone café */
+        }
+        .cooking-station.is-cooked .fire {
+            opacity: 0; /* Se apaga el fuego */
+        }
+
+        /* Keyframes */
+        @keyframes burn {
+            0% { transform: rotate(-45deg) scale(1); }
+            100% { transform: rotate(-45deg) scale(1.3); }
+        }
+        @keyframes toss-pan {
+            0% { transform: translateY(0) rotate(0deg); }
+            100% { transform: translateY(-5px) rotate(-5deg); }
+        }
+        @keyframes toss-food {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-25px) translateX(-5px) rotate(45deg); }
+        }
+        @keyframes toss-veggie {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-30px) translateX(10px); }
+        }
+
+        /* --- FORMULARIO NEUMÓRFICO --- */
+        .login-card h2 { color: #333; margin-bottom: 30px; font-weight: 800; margin-top: 0;}
+        .input-group { margin-bottom: 20px; text-align: left; }
+        .input-group label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: bold; color: #666; margin-left: 15px; text-transform: uppercase; letter-spacing: 1px;}
         .input-group input {
-            width: 100%; 
-            padding: 12px 15px; 
-            border: 1px solid #ddd; 
-            border-radius: 8px;
-            background: #fafafa; 
-            box-sizing: border-box; 
-            outline: none;
-            font-size: 1em;
-            transition: border-color 0.3s ease;
+            width: 100%; padding: 15px 20px; border: none; border-radius: 15px;
+            background: var(--bg-color); box-shadow: inset 6px 6px 12px #d1d9e6, inset -6px -6px 12px #ffffff;
+            box-sizing: border-box; outline: none; font-size: 15px; transition: 0.3s;
         }
-
-        .input-group input:focus {
-            border-color: #6c5ce7; /* Color de acento al seleccionar */
-            background: #ffffff;
-        }
-
-        /* --- BOTONES --- */
-        .btn-login {
-            width: 100%; 
-            padding: 15px; 
-            border: none; 
-            border-radius: 8px;
-            background: #6c5ce7; /* Color morado como en la referencia, puedes cambiarlo */
-            color: #fff; 
-            font-weight: bold; 
-            font-size: 1em;
-            margin-top: 10px;
-            cursor: pointer; 
-            transition: background 0.3s;
-        }
-
-        .btn-login:hover {
-            background: #5b4bc4;
-        }
-
-        .btn-login:disabled { 
-            background: #a29bfe; 
-            cursor: not-allowed; 
-        }
-
-        /* --- MENSAJE DE ERROR (Animado) --- */
-        .message {
-            padding: 15px; 
-            border-radius: 10px; 
-            margin-bottom: 20px; 
-            background: #ffeaa7; /* Fondo amarillo suave por defecto */
-            color: #d63031;
-            animation: slideIn 0.3s ease;
-            text-align: center; 
-            font-weight: 600;
-            display: none; /* Oculto por defecto */
-        }
-
-        @keyframes slideIn {
-            from { transform: translateY(-10px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        .register-link {
-            margin-top: 25px; 
-            font-size: 13px; 
-            color: #888;
-            text-align: center;
-        }
+        .input-group input:focus { box-shadow: inset 2px 2px 5px #d1d9e6, inset -2px -2px 5px #ffffff; }
         
-        .register-link a {
-            color: #6c5ce7; 
-            font-weight: bold; 
-            text-decoration: none;
+        .btn-login {
+            width: 100%; padding: 15px; border: none; border-radius: 15px;
+            background: #000; color: #fff; font-weight: bold; margin-top: 10px; font-size: 16px;
+            cursor: pointer; box-shadow: 5px 5px 15px rgba(0,0,0,0.2); transition: all 0.2s;
         }
-
-        /* --- RESPONSIVE (Móviles) --- */
-        @media (max-width: 768px) {
-            .image-overlay { 
-                display: none; /* Oculta la imagen en celulares, como pediste en el CSS */
-            }
-            .login-panel {
-                padding: 40px 25px;
-            }
-        }
+        .btn-login:active { transform: scale(0.97); }
+        .btn-login:disabled { background: #555; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
-<div class="login-container">
-    <div class="image-overlay">
-        <img src="tu-icono-de-cafe.png" alt="Icono Café">
-        <h3 style="color: #5c4033; margin: 0;">OrdenLista</h3>
-        <p style="color: #8b7355; text-align: center; font-size: 0.9em;">Gestiona tus mesas y pedidos</p>
-    </div>
-
-    <div class="login-panel">
-        <h2>Sign In</h2>
-        <p class="subtitle">Ingresa tus credenciales para continuar</p>
-
-        <div class="message" id="alert-msg">Login Failed!</div>
-
-        <form id="login-form">
-            <div class="input-group">
-                <label for="email">Email Address</label>
-                <input type="email" id="email" placeholder="user@domain.com" required>
+<div class="login-card">
+    <div class="cooking-station" id="station">
+        <div class="fire"></div>
+        <div class="pan-container">
+            <div class="pan-handle"></div>
+            <div class="pan-body">
+                <div class="food"></div>
+                <div class="veggie"></div>
             </div>
-            <div class="input-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" placeholder="••••••••" required>
-            </div>
-            
-            <button type="submit" class="btn-login" id="btn-entrar">Sign In</button>
-        </form>
-        
-        <div class="register-link">
-            ¿No tienes cuenta? <a href="registro.html">Regístrate</a>
         </div>
     </div>
+
+    <h2>Bienvenido Chef</h2>
+    
+    <form id="login-form">
+        <div class="input-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" placeholder="chef@ordenlista.com" required>
+        </div>
+        <div class="input-group">
+            <label for="password">Contraseña</label>
+            <input type="password" id="password" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn-login" id="btn-entrar">Servir Orden (Entrar)</button>
+    </form>
+    
+    <p style="margin-top: 25px; font-size: 13px; color: #888;">
+        ¿No tienes cuenta? 
+        <a href="registro.html" style="color: #000; font-weight: bold; text-decoration: none;">Regístrate</a>
+    </p>
 </div>
 
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-<script src="js/login.js"></script>
-
 <script>
-    // Pequeño script de prueba para ver la animación del mensaje de error
-    // (Puedes borrar esto y manejarlo desde tu js/login.js con Supabase)
-    /*
-    document.getElementById('login-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const msg = document.getElementById('alert-msg');
-        msg.style.display = 'block';
-        msg.textContent = 'Contraseña incorrecta 👻';
-        msg.style.background = '#ffcccc';
-        msg.style.color = '#cc0000';
+    const station = document.getElementById('station');
+    const inputs = document.querySelectorAll('input');
+    const form = document.getElementById('login-form');
+    const btnEntrar = document.getElementById('btn-entrar');
+
+    // 1. Cuando el usuario enfoca un input (empieza a escribir) -> COCINAR
+    inputs.forEach(input => {
+        input.addEventListener('focus', () => {
+            station.classList.remove('is-cooked'); // Quita el estado de cocido si vuelve a escribir
+            station.classList.add('is-cooking');
+        });
+
+        // Cuando sale del input, si ambos están vacíos, se detiene
+        input.addEventListener('blur', () => {
+            const emailVal = document.getElementById('email').value;
+            const passVal = document.getElementById('password').value;
+            
+            if(emailVal === '' && passVal === '') {
+                station.classList.remove('is-cooking');
+            }
+        });
     });
-    */
+
+    // 2. Cuando el usuario hace click en Entrar -> PLATO TERMINADO
+    form.addEventListener('submit', (e) => {
+        e.preventDefault(); // Evita recargar la página para ver la animación
+        
+        // Detener animación de salto y cambiar a estado "Cocido"
+        station.classList.remove('is-cooking');
+        station.classList.add('is-cooked');
+        
+        btnEntrar.textContent = "¡Plato Listo!";
+        btnEntrar.disabled = true;
+
+        // Aquí iría tu lógica de Supabase (login.js). 
+        // He puesto un temporizador simulando que entra al sistema.
+        setTimeout(() => {
+            alert("¡Login exitoso! Entrando a OrdenLista...");
+            // window.location.href = 'dashboard.html';
+            
+            // Resetear botón (por si falla el login en tu código real)
+            btnEntrar.textContent = "Servir Orden (Entrar)";
+            btnEntrar.disabled = false;
+            station.classList.remove('is-cooked');
+        }, 1500);
+    });
 </script>
 
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </body>
 </html>
