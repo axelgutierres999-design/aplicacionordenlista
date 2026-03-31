@@ -139,12 +139,6 @@
         }
         input:focus { box-shadow: inset 2px 2px 5px #caced1, inset -2px -2px 5px #ffffff; }
 
-        .btn-toggle {
-            position: absolute; right: 15px; top: 35px;
-            background: none; border: none; font-size: 18px;
-            cursor: pointer; color: #888; padding: 5px; z-index: 5;
-        }
-
         .btn-registrar {
             width: 100%; background: #000; color: white;
             border: none; padding: 18px; border-radius: 18px;
@@ -155,6 +149,53 @@
         .btn-registrar:active { transform: scale(0.97); }
 
         .login-link { margin-top: 15px; display: block; font-size: 14px; color: #000; text-decoration: none; font-weight: 600; }
+        /* Contenedor para alinear input y checkbox */
+.pass-wrapper {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+/* Escondemos el checkbox real, solo usaremos el visual */
+.custom-checkbox input { display: none; }
+
+.custom-checkbox {
+    position: absolute;
+    right: 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.checkmark {
+    width: 20px;
+    height: 20px;
+    background: #eef0f3;
+    border-radius: 6px;
+    box-shadow: 3px 3px 6px #caced1, -3px -3px 6px #ffffff;
+    position: relative;
+    transition: 0.3s;
+}
+
+/* Efecto cuando está seleccionado */
+.custom-checkbox input:checked + .checkmark {
+    box-shadow: inset 2px 2px 5px #caced1, inset -2px -2px 5px #ffffff;
+}
+
+/* El puntito negro interno */
+.checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+    left: 6px;
+    top: 6px;
+    width: 8px;
+    height: 8px;
+    background: #000;
+    border-radius: 2px;
+}
+
+.custom-checkbox input:checked + .checkmark:after { display: block; }
     </style>
 </head>
 <body>
@@ -185,11 +226,16 @@
             <input type="email" id="reg-correo" placeholder="chef@restaurante.com">
         </div>
 
-        <div class="input-group">
-            <label>Contraseña</label>
-            <input type="password" id="reg-pass" placeholder="Mínimo 6 caracteres">
-            <button type="button" class="btn-toggle" id="btnTogglePass">👀</button>
-        </div>
+       <div class="input-group">
+    <label>Contraseña</label>
+    <div class="pass-wrapper">
+        <input type="password" id="reg-pass" placeholder="Mínimo 6 caracteres">
+        <label class="custom-checkbox">
+            <input type="checkbox" id="checkMostrar">
+            <span class="checkmark"></span>
+        </label>
+    </div>
+</div>
         
         <button class="btn-registrar" id="btnRegistro" onclick="registrarUsuario()">Crear Cuenta</button>
         <a href="login.html" class="login-link">¿Ya tienes cuenta? Inicia sesión</a>
@@ -198,7 +244,7 @@
     <script>
         const avatar = document.getElementById('chef-avatar');
         const passInput = document.getElementById('reg-pass');
-        const btnToggle = document.getElementById('btnTogglePass');
+        const checkMostrar = document.getElementById('checkMostrar')
 
         // 1. Mirar abajo
         document.querySelectorAll('#reg-nombre, #reg-correo').forEach(el => {
@@ -206,24 +252,27 @@
             el.addEventListener('blur', () => avatar.classList.remove('look-down'));
         });
 
-        // 2. Lógica Yeti (Tapar ojos)
-        passInput.addEventListener('focus', () => {
-            if(passInput.type === 'password') avatar.classList.add('cover-eyes');
-            else avatar.classList.add('peek');
-        });
-        passInput.addEventListener('blur', () => avatar.classList.remove('cover-eyes', 'peek'));
+        // 2. Lógica Yeti (Tapar ojos o espiar)
+passInput.addEventListener('focus', () => {
+    if (checkMostrar.checked) {
+        avatar.classList.add('peek');
+    } else {
+        avatar.classList.add('cover-eyes');
+    }
+});
+passInput.addEventListener('blur', () => avatar.classList.remove('cover-eyes', 'peek'));
 
-        // 3. Botón Mostrar/Ocultar
-        btnToggle.addEventListener('click', () => {
-            const isHidden = passInput.type === 'password';
-            passInput.type = isHidden ? 'text' : 'password';
-            btnToggle.textContent = isHidden ? '👀' : '👀';
+        // 3. Lógica de la caja de selección (Sin emojis)
+checkMostrar.addEventListener('change', () => {
+    const isVisible = checkMostrar.checked;
+    passInput.type = isVisible ? 'text' : 'password';
 
-            if(document.activeElement === passInput) {
-                avatar.classList.toggle('cover-eyes', !isHidden);
-                avatar.classList.toggle('peek', isHidden);
-            }
-        });
+    // Si el usuario está escribiendo, actualizamos al chef al instante
+    if (document.activeElement === passInput) {
+        avatar.classList.toggle('cover-eyes', !isVisible);
+        avatar.classList.toggle('peek', isVisible);
+    }
+});
 
         // 4. Supabase
         const _supabaseUrl = "https://cpveuexgxwxjejurtwro.supabase.co";
