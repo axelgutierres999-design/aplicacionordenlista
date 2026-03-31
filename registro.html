@@ -1,349 +1,459 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Bienvenido - Registro Premium</title>
-    
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
-    <style>
-        :root {
-            --bg-color: #eef0f3;
-            --skin-color: #ffaa5e; /* Color de piel del chef de tu imagen */
-            --hat-color: #ffffff;
-            --outline: 3px solid #000; /* Borde grueso estilo dibujo */
-        }
-        
-        body {
-            background: var(--bg-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            padding: 20px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+<title>Registro Premium</title>
 
-        .registro-card {
-            width: 100%;
-            max-width: 400px;
-            padding: 30px 30px 40px;
-            background: #eef0f3;
-            border-radius: 40px;
-            text-align: center;
-            box-shadow: 20px 20px 60px #caced1, -20px -20px 60px #ffffff;
-            transition: all 0.5s ease;
-        }
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
-        /* --- DIBUJO DEL CHEF EN CSS --- */
-        .avatar-container {
-            width: 130px;
-            height: 130px;
-            margin: 0 auto 20px;
-            background: #8ecae6; /* Fondo azul claro para resaltar */
-            border-radius: 50%;
-            border: var(--outline);
-            position: relative;
-            overflow: hidden; /* Oculta lo que sale del círculo (las manos) */
-            box-shadow: inset 4px 4px 10px rgba(0,0,0,0.1), 8px 8px 16px #caced1, -8px -8px 16px #ffffff;
-        }
+<style>
 
-        .chef-body {
-            position: absolute; width: 90px; height: 50px;
-            background: white; border: var(--outline);
-            border-radius: 40px 40px 0 0;
-            bottom: -5px; left: 50%; transform: translateX(-50%);
-        }
+:root{
+    --bg:#eef0f3;
+    --skin:#f6b26b;
+    --dark:#111;
+    --red:#d62828;
+}
 
-        .chef-scarf {
-            position: absolute; width: 40px; height: 20px;
-            background: #d62828; /* Rojo de la bufanda */
-            border: var(--outline); border-radius: 10px;
-            bottom: 30px; left: 50%; transform: translateX(-50%);
-            z-index: 2;
-        }
-        
-        .chef-scarf-tail {
-            position: absolute; width: 15px; height: 30px;
-            background: #d62828; border: var(--outline); border-radius: 5px;
-            bottom: 5px; left: 50%; z-index: 3;
-        }
+body{
+    margin:0;
+    background:var(--bg);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+    font-family:'Segoe UI';
+    padding:20px;
+}
 
-        .chef-head {
-            position: absolute; width: 70px; height: 55px;
-            background: var(--skin-color); border: var(--outline);
-            border-radius: 35px; top: 45px; left: 50%; transform: translateX(-50%);
-            z-index: 4; transition: all 0.3s ease;
-        }
+/* CARD */
 
-        .ear {
-            position: absolute; width: 20px; height: 20px;
-            background: var(--skin-color); border: var(--outline);
-            border-radius: 50%; top: 60px; z-index: 3;
-        }
-        .ear.left { left: 15px; }
-        .ear.right { right: 15px; }
+.registro-card{
+    width:100%;
+    max-width:400px;
+    padding:35px 30px;
+    border-radius:35px;
+    background:#eef0f3;
+    box-shadow:20px 20px 60px #caced1,-20px -20px 60px #fff;
+    text-align:center;
+    animation:entrada 0.9s cubic-bezier(.175,.885,.32,1.275);
+}
 
-        .chef-hat-base {
-            position: absolute; width: 80px; height: 25px;
-            background: var(--hat-color); border: var(--outline);
-            border-radius: 10px; top: 30px; left: 50%; transform: translateX(-50%);
-            z-index: 5;
-        }
+@keyframes entrada{
+    from{
+        opacity:0;
+        transform:translateY(40px) scale(.92);
+    }
+    to{
+        opacity:1;
+        transform:translateY(0) scale(1);
+    }
+}
 
-        .chef-hat-top {
-            position: absolute; width: 90px; height: 50px;
-            background: var(--hat-color); border: var(--outline);
-            border-radius: 30px 30px 10px 10px; top: -5px; left: 50%; transform: translateX(-50%);
-            z-index: 4;
-        }
+/* CHEF */
 
-        /* Rasgos faciales */
-        .eyes {
-            position: absolute; top: 15px; width: 100%;
-            display: flex; justify-content: center; gap: 20px;
-            transition: transform 0.2s ease;
-        }
-        .eye { width: 6px; height: 6px; background: #000; border-radius: 50%; }
+.avatar{
+    width:150px;
+    height:150px;
+    margin:auto;
+    position:relative;
+    border-radius:50%;
+    background:#fff;
+    overflow:hidden;
+    box-shadow:10px 10px 25px #caced1,-10px -10px 25px #fff;
+}
 
-        .mustache {
-            position: absolute; top: 25px; left: 50%; transform: translateX(-50%);
-            display: flex; justify-content: center; z-index: 5;
-            transition: transform 0.2s ease;
-        }
-        .stache-part {
-            width: 25px; height: 12px; background: #222;
-        }
-        .stache-left { border-radius: 15px 0 15px 15px; transform: rotate(-10deg) translateY(2px); margin-right: -2px;}
-        .stache-right { border-radius: 0 15px 15px 15px; transform: rotate(10deg) translateY(2px); margin-left: -2px;}
+/* Gorro real */
 
-        /* Manos para la animación */
-        .hands {
-            position: absolute; bottom: -50px; width: 100%; height: 100%; z-index: 10;
-        }
-        .hand {
-            position: absolute; width: 35px; height: 45px;
-            background: var(--skin-color); border: var(--outline);
-            border-radius: 20px; bottom: -60px; /* Escondidas por defecto */
-            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-        }
-        .hand.left { left: 15px; }
-        .hand.right { right: 15px; }
+.hat-top{
+    width:105px;
+    height:55px;
+    background:white;
+    border-radius:35px 35px 18px 18px;
+    position:absolute;
+    top:0;
+    left:50%;
+    transform:translateX(-50%);
+}
 
+.hat-band{
+    width:90px;
+    height:15px;
+    background:#111;
+    position:absolute;
+    top:42px;
+    left:50%;
+    transform:translateX(-50%);
+}
 
-        /* --- ESTADOS DE ANIMACIÓN --- */
-        /* Escribiendo email/nombre (Mira abajo) */
-        .avatar-container.look-down .eyes { transform: translateY(4px); }
-        .avatar-container.look-down .mustache { transform: translateX(-50%) translateY(2px); }
+/* Cara */
 
-        /* Contraseña (Se tapa los ojos) */
-        .avatar-container.cover-eyes .hand { bottom: 35px; }
-        
-        /* Ver contraseña (Espía con un ojo) */
-        .avatar-container.peek .hand.left { bottom: 15px; transform: rotate(-20deg) translateX(-10px); }
-        .avatar-container.peek .hand.right { bottom: 35px; }
+.face{
+    width:80px;
+    height:80px;
+    background:var(--skin);
+    border-radius:50%;
+    position:absolute;
+    top:48px;
+    left:50%;
+    transform:translateX(-50%);
+}
 
+/* Orejas */
 
-        /* --- RESTO DE TU ESTILO --- */
-        h1 { color: #000; font-size: 26px; margin-bottom: 5px; font-weight: 800; }
-        h1 + p { color: #888; font-size: 13px; margin-bottom: 25px; }
+.ear{
+    width:16px;
+    height:22px;
+    background:var(--skin);
+    border-radius:50%;
+    position:absolute;
+    top:70px;
+}
 
-        .input-group { margin-bottom: 20px; text-align: left; position: relative; }
-        .input-group label {
-            display: block; margin-left: 15px; margin-bottom: 8px;
-            font-size: 11px; font-weight: 700; color: #555;
-            text-transform: uppercase; letter-spacing: 1px;
-        }
+.ear.left{ left:26px; }
+.ear.right{ right:26px; }
 
-        input {
-            width: 100%; padding: 18px 20px; border-radius: 18px;
-            border: none; background: #eef0f3; color: #333;
-            font-size: 16px; outline: none; box-sizing: border-box;
-            box-shadow: inset 6px 6px 12px #caced1, inset -6px -6px 12px #ffffff;
-            transition: 0.3s;
-        }
-        input:focus { box-shadow: inset 2px 2px 5px #caced1, inset -2px -2px 5px #ffffff; }
-        
-        /* Ajuste para el botón de ojito */
-        #reg-pass { padding-right: 50px; } 
+/* Ojos */
 
-        .btn-toggle-pass {
-            position: absolute; right: 15px; top: 38px;
-            background: none; border: none; font-size: 18px;
-            cursor: pointer; color: #888; outline: none;
-            padding: 5px; border-radius: 50%; transition: 0.2s;
-        }
-        .btn-toggle-pass:active { transform: scale(0.8); }
+.eyes{
+    position:absolute;
+    top:24px;
+    left:50%;
+    transform:translateX(-50%);
+    display:flex;
+    gap:18px;
+    transition:.2s;
+}
 
-        .btn-registrar {
-            width: 100%; background: #000; color: white;
-            border: none; padding: 18px; border-radius: 18px;
-            font-weight: 700; font-size: 16px; margin-top: 10px;
-            cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.15);
-            transition: 0.2s;
-        }
-        .btn-registrar:active { transform: scale(0.97); }
-        .btn-registrar:disabled { background: #555; cursor: not-allowed; }
+.eye{
+    width:8px;
+    height:8px;
+    background:black;
+    border-radius:50%;
+}
 
-        .footer-text { margin-top: 25px; font-size: 12px; color: #888; }
-        .login-link { 
-            margin-top: 15px; display: block; font-size: 14px; 
-            color: #000; text-decoration: none; font-weight: 600;
-        }
-    </style>
+/* Bigote exacto */
+
+.mustache{
+    position:absolute;
+    top:45px;
+    left:50%;
+    transform:translateX(-50%);
+    display:flex;
+    gap:2px;
+    transition:.2s;
+}
+
+.stache{
+    width:22px;
+    height:12px;
+    background:#111;
+}
+
+.stache.left{
+    border-radius:20px 0 20px 20px;
+    transform:rotate(-10deg);
+}
+
+.stache.right{
+    border-radius:0 20px 20px 20px;
+    transform:rotate(10deg);
+}
+
+/* Cuello */
+
+.tie{
+    width:12px;
+    height:35px;
+    background:var(--red);
+    position:absolute;
+    bottom:10px;
+    left:50%;
+    transform:translateX(-50%);
+    clip-path:polygon(50% 0%,100% 30%,70% 100%,30% 100%,0% 30%);
+}
+
+/* Manos cartoon */
+
+.hand{
+    width:34px;
+    height:34px;
+    background:var(--skin);
+    border-radius:50%;
+    position:absolute;
+    bottom:-35px;
+    transition:.55s cubic-bezier(.175,.885,.32,1.275);
+}
+
+.hand.left{ left:15px; }
+.hand.right{ right:15px; }
+
+/* Animaciones */
+
+.avatar.look-down .eyes{
+    transform:translate(-50%,5px);
+}
+
+.avatar.look-down .mustache{
+    transform:translate(-50%,3px);
+}
+
+.avatar.cover-eyes .hand.left{
+    bottom:55px;
+    transform:rotate(25deg);
+}
+
+.avatar.cover-eyes .hand.right{
+    bottom:55px;
+    transform:rotate(-25deg);
+}
+
+.avatar.peek .hand.left{
+    bottom:20px;
+    transform:rotate(-25deg);
+}
+
+.avatar.peek .hand.right{
+    bottom:55px;
+}
+
+/* Inputs */
+
+h1{
+    font-size:26px;
+    margin-top:20px;
+}
+
+p{
+    color:#777;
+    font-size:14px;
+}
+
+.input-group{
+    margin-bottom:18px;
+    text-align:left;
+    position:relative;
+}
+
+label{
+    display:block;
+    margin-left:12px;
+    margin-bottom:8px;
+    font-size:11px;
+    font-weight:700;
+}
+
+input{
+    width:100%;
+    padding:18px;
+    border:none;
+    border-radius:18px;
+    background:#eef0f3;
+    box-shadow:inset 6px 6px 12px #caced1,inset -6px -6px 12px #fff;
+    font-size:16px;
+    outline:none;
+    box-sizing:border-box;
+}
+
+#reg-pass{
+    padding-right:45px;
+}
+
+.toggle{
+    position:absolute;
+    right:15px;
+    top:38px;
+    border:none;
+    background:none;
+    font-size:18px;
+    cursor:pointer;
+    color:#666;
+}
+
+/* Botón */
+
+.btn-registrar{
+    width:100%;
+    background:black;
+    color:white;
+    border:none;
+    padding:18px;
+    border-radius:18px;
+    font-weight:700;
+    cursor:pointer;
+    margin-top:10px;
+    transition:.2s;
+}
+
+.btn-registrar:active{
+    transform:scale(.97);
+}
+
+</style>
 </head>
 <body>
 
-    <div class="registro-card">
-        
-        <div class="avatar-container" id="chef-avatar">
-            <div class="chef-hat-top"></div>
-            <div class="chef-hat-base"></div>
-            <div class="ear left"></div>
-            <div class="ear right"></div>
-            
-            <div class="chef-head">
-                <div class="eyes">
-                    <div class="eye"></div>
-                    <div class="eye"></div>
-                </div>
-                <div class="mustache">
-                    <div class="stache-part stache-left"></div>
-                    <div class="stache-part stache-right"></div>
-                </div>
-            </div>
-            
-            <div class="chef-body"></div>
-            <div class="chef-scarf"></div>
-            <div class="chef-scarf-tail"></div>
-            
-            <div class="hands">
-                <div class="hand left"></div>
-                <div class="hand right"></div>
-            </div>
-        </div>
+<div class="registro-card">
 
-        <h1>Bienvenido</h1>
-        <p>Crea tu cuenta VIP para explorar los mejores sabores.</p>
-        
-        <div class="input-group">
-            <label>Nombre Completo</label>
-            <input type="text" id="reg-nombre" placeholder="Ej. Juan Pérez">
-        </div>
+<div class="avatar" id="chef">
 
-        <div class="input-group">
-            <label>Email</label>
-            <input type="email" id="reg-correo" placeholder="tu@correo.com">
-        </div>
+<div class="hat-top"></div>
+<div class="hat-band"></div>
 
-        <div class="input-group">
-            <label>Contraseña</label>
-            <input type="password" id="reg-pass" placeholder="Mínimo 6 caracteres">
-            <button type="button" class="btn-toggle-pass" id="btnTogglePass" title="Mostrar/Ocultar contraseña">👁️</button>
-        </div>
-        
-        <button class="btn-registrar" id="btnRegistro" onclick="registrarUsuario()">Crear Cuenta</button>
+<div class="ear left"></div>
+<div class="ear right"></div>
 
-        <a href="login.html" class="login-link">¿Ya tienes cuenta? Inicia sesión</a>
-        <p class="footer-text">Al continuar, aceptas nuestros términos.</p>
-    </div>
+<div class="face">
 
-    <script>
-        // --- ANIMACIÓN DEL CHEF ---
-        const chefAvatar = document.getElementById('chef-avatar');
-        const inputsText = document.querySelectorAll('#reg-nombre, #reg-correo');
-        const passInput = document.getElementById('reg-pass');
-        const btnTogglePass = document.getElementById('btnTogglePass');
+<div class="eyes">
+<div class="eye"></div>
+<div class="eye"></div>
+</div>
 
-        // 1. Mirar abajo al escribir texto normal
-        inputsText.forEach(input => {
-            input.addEventListener('focus', () => chefAvatar.classList.add('look-down'));
-            input.addEventListener('blur', () => chefAvatar.classList.remove('look-down'));
-        });
+<div class="mustache">
+<div class="stache left"></div>
+<div class="stache right"></div>
+</div>
 
-        // 2. Taparse los ojos al escribir contraseña
-        passInput.addEventListener('focus', () => {
-            if (passInput.type === 'password') {
-                chefAvatar.classList.add('cover-eyes');
-            } else {
-                chefAvatar.classList.add('peek');
-            }
-        });
-        
-        passInput.addEventListener('blur', () => {
-            chefAvatar.classList.remove('cover-eyes', 'peek');
-        });
+</div>
 
-        // 3. Lógica del botón Mostrar/Ocultar (El ojito)
-        btnTogglePass.addEventListener('click', () => {
-            if (passInput.type === 'password') {
-                passInput.type = 'text'; // Muestra la contraseña
-                btnTogglePass.textContent = '🙈'; // Cambia el icono
-                
-                // Si el input está seleccionado, cambia la animación a "espiar"
-                if (document.activeElement === passInput) {
-                    chefAvatar.classList.remove('cover-eyes');
-                    chefAvatar.classList.add('peek');
-                }
-            } else {
-                passInput.type = 'password'; // Oculta la contraseña
-                btnTogglePass.textContent = '👁️'; // Cambia el icono
-                
-                // Si el input está seleccionado, vuelve a tapar los dos ojos
-                if (document.activeElement === passInput) {
-                    chefAvatar.classList.remove('peek');
-                    chefAvatar.classList.add('cover-eyes');
-                }
-            }
-        });
+<div class="tie"></div>
 
-        // --- LÓGICA DE SUPABASE (Inalterada) ---
-        const _supabaseUrl = "https://cpveuexgxwxjejurtwro.supabase.co";
-        const _supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc";
-        const supabaseApp = window.supabase.createClient(_supabaseUrl, _supabaseKey);
-        window.supabaseClient = supabaseApp;
+<div class="hand left"></div>
+<div class="hand right"></div>
 
-        async function registrarUsuario() {
-            const nombre = document.getElementById('reg-nombre').value.trim();
-            const correo = document.getElementById('reg-correo').value.trim();
-            const pass = document.getElementById('reg-pass').value;
-            const btn = document.getElementById('btnRegistro');
+</div>
 
-            if (!nombre || !correo || pass.length < 6) {
-                return alert("Por favor, llena todos los campos. La contraseña debe tener al menos 6 caracteres.");
-            }
+<h1>Bienvenido</h1>
+<p>Crea tu cuenta VIP para explorar sabores.</p>
 
-            btn.textContent = "Procesando...";
-            btn.disabled = true;
+<div class="input-group">
+<label>Nombre Completo</label>
+<input type="text" id="reg-nombre">
+</div>
 
-            try {
-                const { data, error } = await supabaseApp.auth.signUp({
-                    email: correo,
-                    password: pass,
-                    options: { data: { nombre: nombre } }
-                });
+<div class="input-group">
+<label>Email</label>
+<input type="email" id="reg-correo">
+</div>
 
-                if (error) throw error;
+<div class="input-group">
+<label>Contraseña</label>
+<input type="password" id="reg-pass">
+<button class="toggle" id="togglePass">◉</button>
+</div>
 
-                alert("¡Registro exitoso! Ya puedes disfrutar de la experiencia.");
-                
-                document.querySelector('.registro-card').style.transform = "scale(0.9)";
-                document.querySelector('.registro-card').style.opacity = "0";
+<button class="btn-registrar" id="btnRegistro" onclick="registrarUsuario()">Crear Cuenta</button>
 
-                setTimeout(() => { window.location.href = 'index.html'; }, 500);
+</div>
 
-            } catch (err) {
-                let msg = "Error al registrar: " + err.message;
-                if (err.message.includes("already registered")) {
-                    msg = "Este correo ya está registrado. Intenta iniciar sesión.";
-                }
-                alert(msg);
-                btn.textContent = "Crear Cuenta";
-                btn.disabled = false;
-            }
-        }
-    </script>
+<script>
+
+const chef=document.getElementById('chef');
+const textInputs=document.querySelectorAll('#reg-nombre,#reg-correo');
+const pass=document.getElementById('reg-pass');
+const toggle=document.getElementById('togglePass');
+
+textInputs.forEach(input=>{
+
+input.addEventListener('focus',()=>{
+chef.classList.add('look-down');
+});
+
+input.addEventListener('blur',()=>{
+chef.classList.remove('look-down');
+});
+
+input.addEventListener('input',()=>{
+
+let move=Math.min(input.value.length*2,12);
+
+document.querySelector('.eyes').style.transform=
+`translate(calc(-50% + ${move}px),5px)`;
+
+document.querySelector('.mustache').style.transform=
+`translate(calc(-50% + ${move}px),3px)`;
+
+});
+
+});
+
+pass.addEventListener('focus',()=>{
+if(pass.type==="password"){
+chef.classList.add('cover-eyes');
+}else{
+chef.classList.add('peek');
+}
+});
+
+pass.addEventListener('blur',()=>{
+chef.classList.remove('cover-eyes','peek');
+});
+
+toggle.addEventListener('click',()=>{
+
+if(pass.type==="password"){
+pass.type="text";
+chef.classList.remove('cover-eyes');
+chef.classList.add('peek');
+}else{
+pass.type="password";
+chef.classList.remove('peek');
+chef.classList.add('cover-eyes');
+}
+
+});
+
+/* TU SUPABASE */
+
+const _supabaseUrl="https://cpveuexgxwxjejurtwro.supabase.co";
+const _supabaseKey="TU_KEY";
+const supabaseApp=window.supabase.createClient(_supabaseUrl,_supabaseKey);
+
+async function registrarUsuario(){
+
+const nombre=document.getElementById('reg-nombre').value.trim();
+const correo=document.getElementById('reg-correo').value.trim();
+const passw=document.getElementById('reg-pass').value;
+const btn=document.getElementById('btnRegistro');
+
+if(!nombre || !correo || passw.length<6){
+return alert("Completa correctamente los campos");
+}
+
+btn.textContent="Procesando...";
+btn.disabled=true;
+
+try{
+
+const {error}=await supabaseApp.auth.signUp({
+email:correo,
+password:passw,
+options:{data:{nombre:nombre}}
+});
+
+if(error) throw error;
+
+document.querySelector('.registro-card').style.transform="scale(.92)";
+document.querySelector('.registro-card').style.opacity="0";
+
+setTimeout(()=>{
+window.location.href='index.html';
+},500);
+
+}catch(err){
+
+alert(err.message);
+btn.textContent="Crear Cuenta";
+btn.disabled=false;
+
+}
+
+}
+
+</script>
+
 </body>
 </html>
