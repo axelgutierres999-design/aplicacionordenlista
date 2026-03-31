@@ -173,7 +173,7 @@
         </div>
 
         <h1>Bienvenido</h1>
-        <p>Crea tu cuenta.</p>
+        <p>Crea tu cuenta</p>
         
         <div class="input-group">
             <label>Nombre Completo</label>
@@ -188,7 +188,7 @@
         <div class="input-group">
             <label>Contraseña</label>
             <input type="password" id="reg-pass" placeholder="Mínimo 6 caracteres">
-            <button type="button" class="btn-toggle" id="btnTogglePass">👁️</button>
+            <button type="button" class="btn-toggle" id="btnTogglePass">👀</button>
         </div>
         
         <button class="btn-registrar" id="btnRegistro" onclick="registrarUsuario()">Crear Cuenta</button>
@@ -217,7 +217,7 @@
         btnToggle.addEventListener('click', () => {
             const isHidden = passInput.type === 'password';
             passInput.type = isHidden ? 'text' : 'password';
-            btnToggle.textContent = isHidden ? '🙈' : '👁️';
+            btnToggle.textContent = isHidden ? '' : '👀';
 
             if(document.activeElement === passInput) {
                 avatar.classList.toggle('cover-eyes', !isHidden);
