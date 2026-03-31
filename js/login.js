@@ -1,14 +1,10 @@
-// 1. Configuración de Supabase
 const supabaseUrl = 'https://cpveuexgxwxjejurtwro.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc';
 
 const client = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-// 2. Referencias a los elementos visuales de la animación
-const station = document.getElementById('station'); // El círculo de la sartén
-const alertMsg = document.getElementById('alert-msg'); // Si usas el div de mensajes
+const station = document.getElementById('station');
 
-// 3. Función para iniciar sesión
 async function iniciarSesion(e) {
     e.preventDefault(); 
 
@@ -19,7 +15,6 @@ async function iniciarSesion(e) {
     const email = emailInput.value;
     const password = passwordInput.value;
 
-    // ESTADO: Iniciando proceso
     if (btnEntrar) {
         btnEntrar.innerText = "Cocinando...";
         btnEntrar.disabled = true;
@@ -32,24 +27,22 @@ async function iniciarSesion(e) {
         });
 
         if (error) {
-            // ERROR: Detener animación y mostrar fallo
             station.classList.remove('is-cooking');
             alert("Error: " + error.message);
-            
             if (btnEntrar) {
                 btnEntrar.innerText = "Reintentar Orden";
                 btnEntrar.disabled = false;
             }
         } else {
-            // ÉXITO: Activar animación de "Plato Terminado"
+            // ÉXITO
             console.log("Sesión iniciada:", data);
             
             station.classList.remove('is-cooking');
-            station.classList.add('is-cooked'); // La comida cambia de color
+            station.classList.add('is-cooked'); 
             
             if (btnEntrar) btnEntrar.innerText = "¡Orden Lista!";
 
-            // Pequeña pausa para que el usuario vea la comida lista antes de redirigir
+            // Redirigir después de 1 segundo para mostrar la comida cocinada
             setTimeout(() => {
                 window.location.replace('index.html');
             }, 1000);
@@ -65,7 +58,6 @@ async function iniciarSesion(e) {
     }
 }
 
-// 4. Control de animaciones mientras el usuario escribe
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('login-form');
     const inputs = document.querySelectorAll('input');
@@ -74,7 +66,6 @@ document.addEventListener('DOMContentLoaded', () => {
         loginForm.addEventListener('submit', iniciarSesion);
     }
 
-    // Iniciar animación cuando el usuario toca un campo
     inputs.forEach(input => {
         input.addEventListener('focus', () => {
             if (station) {
@@ -83,7 +74,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Detener animación si deja los campos vacíos
         input.addEventListener('blur', () => {
             const emailVal = document.getElementById('email').value;
             const passVal = document.getElementById('password').value;
