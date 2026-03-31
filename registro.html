@@ -2,19 +2,15 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Registro Premium</title>
 
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
 <style>
-
 :root{
     --bg:#eef0f3;
     --skin:#f6b26b;
-    --dark:#111;
-    --red:#d62828;
 }
 
 body{
@@ -23,108 +19,63 @@ body{
     display:flex;
     justify-content:center;
     align-items:center;
-    min-height:100vh;
+    height:100vh;
     font-family:'Segoe UI';
-    padding:20px;
 }
 
-/* CARD */
-
 .registro-card{
-    width:100%;
-    max-width:400px;
-    padding:35px 30px;
+    width:380px;
+    padding:35px;
     border-radius:35px;
     background:#eef0f3;
     box-shadow:20px 20px 60px #caced1,-20px -20px 60px #fff;
     text-align:center;
-    animation:entrada 0.9s cubic-bezier(.175,.885,.32,1.275);
 }
-
-@keyframes entrada{
-    from{
-        opacity:0;
-        transform:translateY(40px) scale(.92);
-    }
-    to{
-        opacity:1;
-        transform:translateY(0) scale(1);
-    }
-}
-
-/* CHEF */
 
 .avatar{
-    width:150px;
-    height:150px;
+    width:140px;
+    height:140px;
     margin:auto;
     position:relative;
     border-radius:50%;
     background:#fff;
     overflow:hidden;
-    box-shadow:10px 10px 25px #caced1,-10px -10px 25px #fff;
-}
-
-/* Gorro real */
-
-.hat-top{
-    width:105px;
-    height:55px;
-    background:white;
-    border-radius:35px 35px 18px 18px;
-    position:absolute;
-    top:0;
-    left:50%;
-    transform:translateX(-50%);
-}
-
-.hat-band{
-    width:90px;
-    height:15px;
-    background:#111;
-    position:absolute;
-    top:42px;
-    left:50%;
-    transform:translateX(-50%);
+    box-shadow:8px 8px 20px #caced1,-8px -8px 20px #fff;
 }
 
 /* Cara */
-
 .face{
     width:80px;
     height:80px;
     background:var(--skin);
     border-radius:50%;
     position:absolute;
-    top:48px;
+    bottom:20px;
     left:50%;
     transform:translateX(-50%);
 }
 
-/* Orejas */
-
-.ear{
-    width:16px;
-    height:22px;
-    background:var(--skin);
-    border-radius:50%;
+/* Gorro */
+.hat{
+    width:100px;
+    height:55px;
+    background:white;
+    border-radius:40px 40px 10px 10px;
     position:absolute;
-    top:70px;
+    top:5px;
+    left:50%;
+    transform:translateX(-50%);
 }
 
-.ear.left{ left:26px; }
-.ear.right{ right:26px; }
-
 /* Ojos */
-
 .eyes{
     position:absolute;
-    top:24px;
+    top:28px;
     left:50%;
     transform:translateX(-50%);
     display:flex;
     gap:18px;
-    transition:.2s;
+    transition:0.2s;
 }
 
 .eye{
@@ -134,63 +85,44 @@ body{
     border-radius:50%;
 }
 
-/* Bigote exacto */
-
+/* Bigote */
 .mustache{
     position:absolute;
-    top:45px;
+    top:48px;
     left:50%;
     transform:translateX(-50%);
     display:flex;
-    gap:2px;
-    transition:.2s;
+    gap:4px;
+    transition:0.2s;
 }
 
 .stache{
-    width:22px;
-    height:12px;
-    background:#111;
+    width:20px;
+    height:10px;
+    background:black;
+    border-radius:20px;
 }
 
-.stache.left{
-    border-radius:20px 0 20px 20px;
-    transform:rotate(-10deg);
-}
-
-.stache.right{
-    border-radius:0 20px 20px 20px;
-    transform:rotate(10deg);
-}
-
-/* Cuello */
-
-.tie{
-    width:12px;
-    height:35px;
-    background:var(--red);
-    position:absolute;
-    bottom:10px;
-    left:50%;
-    transform:translateX(-50%);
-    clip-path:polygon(50% 0%,100% 30%,70% 100%,30% 100%,0% 30%);
-}
-
-/* Manos cartoon */
-
+/* Manos */
 .hand{
-    width:34px;
-    height:34px;
+    width:35px;
+    height:35px;
     background:var(--skin);
     border-radius:50%;
     position:absolute;
-    bottom:-35px;
-    transition:.55s cubic-bezier(.175,.885,.32,1.275);
+    bottom:-40px;
+    transition:0.5s cubic-bezier(.175,.885,.32,1.275);
 }
 
-.hand.left{ left:15px; }
-.hand.right{ right:15px; }
+.hand.left{
+    left:15px;
+}
 
-/* Animaciones */
+.hand.right{
+    right:15px;
+}
+
+/* Estados */
 
 .avatar.look-down .eyes{
     transform:translate(-50%,5px);
@@ -201,13 +133,13 @@ body{
 }
 
 .avatar.cover-eyes .hand.left{
-    bottom:55px;
-    transform:rotate(25deg);
+    bottom:50px;
+    transform:rotate(20deg);
 }
 
 .avatar.cover-eyes .hand.right{
-    bottom:55px;
-    transform:rotate(-25deg);
+    bottom:50px;
+    transform:rotate(-20deg);
 }
 
 .avatar.peek .hand.left{
@@ -216,20 +148,10 @@ body{
 }
 
 .avatar.peek .hand.right{
-    bottom:55px;
+    bottom:50px;
 }
 
 /* Inputs */
-
-h1{
-    font-size:26px;
-    margin-top:20px;
-}
-
-p{
-    color:#777;
-    font-size:14px;
-}
 
 .input-group{
     margin-bottom:18px;
@@ -239,9 +161,8 @@ p{
 
 label{
     display:block;
-    margin-left:12px;
     margin-bottom:8px;
-    font-size:11px;
+    font-size:12px;
     font-weight:700;
 }
 
@@ -254,11 +175,10 @@ input{
     box-shadow:inset 6px 6px 12px #caced1,inset -6px -6px 12px #fff;
     font-size:16px;
     outline:none;
-    box-sizing:border-box;
 }
 
 #reg-pass{
-    padding-right:45px;
+    padding-right:50px;
 }
 
 .toggle{
@@ -269,26 +189,18 @@ input{
     background:none;
     font-size:18px;
     cursor:pointer;
-    color:#666;
 }
-
-/* Botón */
 
 .btn-registrar{
     width:100%;
+    padding:18px;
+    border:none;
+    border-radius:18px;
     background:black;
     color:white;
-    border:none;
-    padding:18px;
-    border-radius:18px;
-    font-weight:700;
+    font-weight:bold;
     cursor:pointer;
-    margin-top:10px;
-    transition:.2s;
-}
-
-.btn-registrar:active{
-    transform:scale(.97);
+    margin-top:15px;
 }
 
 </style>
@@ -299,11 +211,7 @@ input{
 
 <div class="avatar" id="chef">
 
-<div class="hat-top"></div>
-<div class="hat-band"></div>
-
-<div class="ear left"></div>
-<div class="ear right"></div>
+<div class="hat"></div>
 
 <div class="face">
 
@@ -313,24 +221,21 @@ input{
 </div>
 
 <div class="mustache">
-<div class="stache left"></div>
-<div class="stache right"></div>
+<div class="stache"></div>
+<div class="stache"></div>
 </div>
 
 </div>
-
-<div class="tie"></div>
 
 <div class="hand left"></div>
 <div class="hand right"></div>
 
 </div>
 
-<h1>Bienvenido</h1>
-<p>Crea tu cuenta VIP para explorar sabores.</p>
+<h2>Bienvenido</h2>
 
 <div class="input-group">
-<label>Nombre Completo</label>
+<label>Nombre</label>
 <input type="text" id="reg-nombre">
 </div>
 
@@ -342,19 +247,19 @@ input{
 <div class="input-group">
 <label>Contraseña</label>
 <input type="password" id="reg-pass">
-<button class="toggle" id="togglePass">◉</button>
+<button class="toggle" id="togglePass">👁️</button>
 </div>
 
-<button class="btn-registrar" id="btnRegistro" onclick="registrarUsuario()">Crear Cuenta</button>
+<button class="btn-registrar">Crear Cuenta</button>
 
 </div>
 
 <script>
 
-const chef=document.getElementById('chef');
-const textInputs=document.querySelectorAll('#reg-nombre,#reg-correo');
-const pass=document.getElementById('reg-pass');
-const toggle=document.getElementById('togglePass');
+const chef = document.getElementById('chef');
+const textInputs = document.querySelectorAll('#reg-nombre,#reg-correo');
+const pass = document.getElementById('reg-pass');
+const toggle = document.getElementById('togglePass');
 
 textInputs.forEach(input=>{
 
@@ -381,11 +286,13 @@ document.querySelector('.mustache').style.transform=
 });
 
 pass.addEventListener('focus',()=>{
+
 if(pass.type==="password"){
 chef.classList.add('cover-eyes');
 }else{
 chef.classList.add('peek');
 }
+
 });
 
 pass.addEventListener('blur',()=>{
@@ -396,62 +303,22 @@ toggle.addEventListener('click',()=>{
 
 if(pass.type==="password"){
 pass.type="text";
+toggle.textContent="🙈";
+
 chef.classList.remove('cover-eyes');
 chef.classList.add('peek');
+
 }else{
+
 pass.type="password";
+toggle.textContent="👁️";
+
 chef.classList.remove('peek');
 chef.classList.add('cover-eyes');
+
 }
 
 });
-
-/* TU SUPABASE */
-
-const _supabaseUrl="https://cpveuexgxwxjejurtwro.supabase.co";
-const _supabaseKey="TU_KEY";
-const supabaseApp=window.supabase.createClient(_supabaseUrl,_supabaseKey);
-
-async function registrarUsuario(){
-
-const nombre=document.getElementById('reg-nombre').value.trim();
-const correo=document.getElementById('reg-correo').value.trim();
-const passw=document.getElementById('reg-pass').value;
-const btn=document.getElementById('btnRegistro');
-
-if(!nombre || !correo || passw.length<6){
-return alert("Completa correctamente los campos");
-}
-
-btn.textContent="Procesando...";
-btn.disabled=true;
-
-try{
-
-const {error}=await supabaseApp.auth.signUp({
-email:correo,
-password:passw,
-options:{data:{nombre:nombre}}
-});
-
-if(error) throw error;
-
-document.querySelector('.registro-card').style.transform="scale(.92)";
-document.querySelector('.registro-card').style.opacity="0";
-
-setTimeout(()=>{
-window.location.href='index.html';
-},500);
-
-}catch(err){
-
-alert(err.message);
-btn.textContent="Crear Cuenta";
-btn.disabled=false;
-
-}
-
-}
 
 </script>
 
