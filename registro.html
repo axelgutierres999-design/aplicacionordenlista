@@ -1,326 +1,259 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Registro Premium</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Registro VIP - OrdenLista</title>
+    
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg-color: #eef0f3;
+            --skin-color: #ffaa5e; 
+            --hat-color: #ffffff;
+            --outline: 3px solid #000;
+        }
+        
+        body {
+            background: var(--bg-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
 
-<style>
-:root{
-    --bg:#eef0f3;
-    --skin:#f6b26b;
-}
+        /* --- CARD NEUMÓRFICA --- */
+        .registro-card {
+            width: 100%;
+            max-width: 400px;
+            padding: 20px 30px 40px;
+            background: #eef0f3;
+            border-radius: 40px;
+            text-align: center;
+            box-shadow: 20px 20px 60px #caced1, -20px -20px 60px #ffffff;
+            position: relative;
+            transition: all 0.4s ease;
+        }
 
-body{
-    margin:0;
-    background:var(--bg);
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    height:100vh;
-    font-family:'Segoe UI';
-}
+        /* --- EL CHEF (Basado en tu referencia) --- */
+        .chef-box {
+            width: 130px;
+            height: 130px;
+            margin: -70px auto 20px; /* Flota sobre la card */
+            background: #8ecae6; /* Fondo circular azul */
+            border-radius: 50%;
+            border: var(--outline);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 8px 8px 16px #caced1, -8px -8px 16px #ffffff;
+        }
 
-.registro-card{
-    width:380px;
-    padding:35px;
-    border-radius:35px;
-    background:#eef0f3;
-    box-shadow:20px 20px 60px #caced1,-20px -20px 60px #fff;
-    text-align:center;
-}
+        .chef-body {
+            position: absolute; width: 90px; height: 50px;
+            background: white; border: var(--outline);
+            border-radius: 40px 40px 0 0;
+            bottom: -5px; left: 50%; transform: translateX(-50%);
+        }
 
-.avatar{
-    width:140px;
-    height:140px;
-    margin:auto;
-    position:relative;
-    border-radius:50%;
-    background:#fff;
-    overflow:hidden;
-    box-shadow:8px 8px 20px #caced1,-8px -8px 20px #fff;
-}
+        .chef-scarf {
+            position: absolute; width: 40px; height: 20px;
+            background: #d62828; border: var(--outline); border-radius: 10px;
+            bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 2;
+        }
 
-/* Cara */
-.face{
-    width:80px;
-    height:80px;
-    background:var(--skin);
-    border-radius:50%;
-    position:absolute;
-    bottom:20px;
-    left:50%;
-    transform:translateX(-50%);
-}
+        .chef-head {
+            position: absolute; width: 70px; height: 55px;
+            background: var(--skin-color); border: var(--outline);
+            border-radius: 35px; top: 45px; left: 50%; transform: translateX(-50%);
+            z-index: 4; transition: transform 0.3s ease;
+        }
 
-/* Gorro */
-.hat{
-    width:100px;
-    height:55px;
-    background:white;
-    border-radius:40px 40px 10px 10px;
-    position:absolute;
-    top:5px;
-    left:50%;
-    transform:translateX(-50%);
-}
+        .chef-hat-top {
+            position: absolute; width: 90px; height: 50px;
+            background: var(--hat-color); border: var(--outline);
+            border-radius: 30px 30px 10px 10px; top: -5px; left: 50%; transform: translateX(-50%);
+            z-index: 4;
+        }
 
-/* Ojos */
-.eyes{
-    position:absolute;
-    top:28px;
-    left:50%;
-    transform:translateX(-50%);
-    display:flex;
-    gap:18px;
-    transition:0.2s;
-}
+        .chef-hat-base {
+            position: absolute; width: 80px; height: 25px;
+            background: var(--hat-color); border: var(--outline);
+            border-radius: 10px; top: 30px; left: 50%; transform: translateX(-50%);
+            z-index: 5;
+        }
 
-.eye{
-    width:8px;
-    height:8px;
-    background:black;
-    border-radius:50%;
-}
+        .eyes {
+            position: absolute; top: 15px; width: 100%;
+            display: flex; justify-content: center; gap: 20px;
+            transition: transform 0.2s ease;
+        }
+        .eye { width: 6px; height: 6px; background: #000; border-radius: 50%; }
 
-/* Bigote */
-.mustache{
-    position:absolute;
-    top:48px;
-    left:50%;
-    transform:translateX(-50%);
-    display:flex;
-    gap:4px;
-    transition:0.2s;
-}
+        .mustache {
+            position: absolute; top: 25px; left: 50%; transform: translateX(-50%);
+            display: flex; justify-content: center; z-index: 5;
+        }
+        .stache-part { width: 25px; height: 12px; background: #222; }
+        .stache-left { border-radius: 15px 0 15px 15px; transform: rotate(-10deg); margin-right: -2px;}
+        .stache-right { border-radius: 0 15px 15px 15px; transform: rotate(10deg); margin-left: -2px;}
 
-.stache{
-    width:20px;
-    height:10px;
-    background:black;
-    border-radius:20px;
-}
+        /* MANOS (Interacción Yeti) */
+        .hands { position: absolute; bottom: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
+        .hand {
+            position: absolute; width: 32px; height: 42px;
+            background: var(--skin-color); border: var(--outline);
+            border-radius: 15px; bottom: -50px; /* Escondidas */
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .hand.left { left: 18px; }
+        .hand.right { right: 18px; }
 
-/* Manos */
-.hand{
-    width:35px;
-    height:35px;
-    background:var(--skin);
-    border-radius:50%;
-    position:absolute;
-    bottom:-40px;
-    transition:0.5s cubic-bezier(.175,.885,.32,1.275);
-}
+        /* --- ESTADOS ANIMACIÓN --- */
+        .chef-box.look-down .eyes { transform: translateY(4px); }
+        .chef-box.cover-eyes .hand { bottom: 35px; }
+        .chef-box.peek .hand.left { bottom: 15px; transform: rotate(-20deg) translateX(-8px); }
+        .chef-box.peek .hand.right { bottom: 35px; }
 
-.hand.left{
-    left:15px;
-}
+        /* --- INPUTS Y BOTONES --- */
+        h1 { color: #000; font-size: 24px; margin: 0; font-weight: 800; }
+        p { color: #888; font-size: 13px; margin-bottom: 25px; }
 
-.hand.right{
-    right:15px;
-}
+        .input-group { margin-bottom: 18px; text-align: left; position: relative; }
+        .input-group label {
+            display: block; margin-left: 15px; margin-bottom: 8px;
+            font-size: 11px; font-weight: 700; color: #555;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
 
-/* Estados */
+        input {
+            width: 100%; padding: 16px 20px; border-radius: 18px;
+            border: none; background: #eef0f3; color: #333;
+            font-size: 16px; outline: none; box-sizing: border-box;
+            box-shadow: inset 6px 6px 12px #caced1, inset -6px -6px 12px #ffffff;
+            transition: 0.3s;
+        }
+        input:focus { box-shadow: inset 2px 2px 5px #caced1, inset -2px -2px 5px #ffffff; }
 
-.avatar.look-down .eyes{
-    transform:translate(-50%,5px);
-}
+        .btn-toggle {
+            position: absolute; right: 15px; top: 35px;
+            background: none; border: none; font-size: 18px;
+            cursor: pointer; color: #888; padding: 5px; z-index: 5;
+        }
 
-.avatar.look-down .mustache{
-    transform:translate(-50%,3px);
-}
+        .btn-registrar {
+            width: 100%; background: #000; color: white;
+            border: none; padding: 18px; border-radius: 18px;
+            font-weight: 700; font-size: 16px; margin-top: 10px;
+            cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+            transition: 0.2s;
+        }
+        .btn-registrar:active { transform: scale(0.97); }
 
-.avatar.cover-eyes .hand.left{
-    bottom:50px;
-    transform:rotate(20deg);
-}
-
-.avatar.cover-eyes .hand.right{
-    bottom:50px;
-    transform:rotate(-20deg);
-}
-
-.avatar.peek .hand.left{
-    bottom:20px;
-    transform:rotate(-25deg);
-}
-
-.avatar.peek .hand.right{
-    bottom:50px;
-}
-
-/* Inputs */
-
-.input-group{
-    margin-bottom:18px;
-    text-align:left;
-    position:relative;
-}
-
-label{
-    display:block;
-    margin-bottom:8px;
-    font-size:12px;
-    font-weight:700;
-}
-
-input{
-    width:100%;
-    padding:18px;
-    border:none;
-    border-radius:18px;
-    background:#eef0f3;
-    box-shadow:inset 6px 6px 12px #caced1,inset -6px -6px 12px #fff;
-    font-size:16px;
-    outline:none;
-}
-
-#reg-pass{
-    padding-right:50px;
-}
-
-.toggle{
-    position:absolute;
-    right:15px;
-    top:38px;
-    border:none;
-    background:none;
-    font-size:18px;
-    cursor:pointer;
-}
-
-.btn-registrar{
-    width:100%;
-    padding:18px;
-    border:none;
-    border-radius:18px;
-    background:black;
-    color:white;
-    font-weight:bold;
-    cursor:pointer;
-    margin-top:15px;
-}
-
-</style>
+        .login-link { margin-top: 15px; display: block; font-size: 14px; color: #000; text-decoration: none; font-weight: 600; }
+    </style>
 </head>
 <body>
 
-<div class="registro-card">
+    <div class="registro-card">
+        <div class="chef-box" id="chef-avatar">
+            <div class="chef-hat-top"></div>
+            <div class="chef-hat-base"></div>
+            <div class="chef-head">
+                <div class="eyes"><div class="eye"></div><div class="eye"></div></div>
+                <div class="mustache"><div class="stache-part stache-left"></div><div class="stache-part stache-right"></div></div>
+            </div>
+            <div class="chef-body"></div>
+            <div class="chef-scarf"></div>
+            <div class="hands"><div class="hand left"></div><div class="hand right"></div></div>
+        </div>
 
-<div class="avatar" id="chef">
+        <h1>Bienvenido Chef</h1>
+        <p>Crea tu cuenta VIP para OrdenLista.</p>
+        
+        <div class="input-group">
+            <label>Nombre Completo</label>
+            <input type="text" id="reg-nombre" placeholder="Tu nombre aquí">
+        </div>
 
-<div class="hat"></div>
+        <div class="input-group">
+            <label>Email</label>
+            <input type="email" id="reg-correo" placeholder="chef@restaurante.com">
+        </div>
 
-<div class="face">
+        <div class="input-group">
+            <label>Contraseña</label>
+            <input type="password" id="reg-pass" placeholder="Mínimo 6 caracteres">
+            <button type="button" class="btn-toggle" id="btnTogglePass">👁️</button>
+        </div>
+        
+        <button class="btn-registrar" id="btnRegistro" onclick="registrarUsuario()">Crear Cuenta</button>
+        <a href="login.html" class="login-link">¿Ya tienes cuenta? Inicia sesión</a>
+    </div>
 
-<div class="eyes">
-<div class="eye"></div>
-<div class="eye"></div>
-</div>
+    <script>
+        const avatar = document.getElementById('chef-avatar');
+        const passInput = document.getElementById('reg-pass');
+        const btnToggle = document.getElementById('btnTogglePass');
 
-<div class="mustache">
-<div class="stache"></div>
-<div class="stache"></div>
-</div>
+        // 1. Mirar abajo
+        document.querySelectorAll('#reg-nombre, #reg-correo').forEach(el => {
+            el.addEventListener('focus', () => avatar.classList.add('look-down'));
+            el.addEventListener('blur', () => avatar.classList.remove('look-down'));
+        });
 
-</div>
+        // 2. Lógica Yeti (Tapar ojos)
+        passInput.addEventListener('focus', () => {
+            if(passInput.type === 'password') avatar.classList.add('cover-eyes');
+            else avatar.classList.add('peek');
+        });
+        passInput.addEventListener('blur', () => avatar.classList.remove('cover-eyes', 'peek'));
 
-<div class="hand left"></div>
-<div class="hand right"></div>
+        // 3. Botón Mostrar/Ocultar
+        btnToggle.addEventListener('click', () => {
+            const isHidden = passInput.type === 'password';
+            passInput.type = isHidden ? 'text' : 'password';
+            btnToggle.textContent = isHidden ? '🙈' : '👁️';
 
-</div>
+            if(document.activeElement === passInput) {
+                avatar.classList.toggle('cover-eyes', !isHidden);
+                avatar.classList.toggle('peek', isHidden);
+            }
+        });
 
-<h2>Bienvenido</h2>
+        // 4. Supabase
+        const _supabaseUrl = "https://cpveuexgxwxjejurtwro.supabase.co";
+        const _supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc";
+        const supabaseApp = window.supabase.createClient(_supabaseUrl, _supabaseKey);
 
-<div class="input-group">
-<label>Nombre</label>
-<input type="text" id="reg-nombre">
-</div>
+        async function registrarUsuario() {
+            const nombre = document.getElementById('reg-nombre').value.trim();
+            const correo = document.getElementById('reg-correo').value.trim();
+            const pass = document.getElementById('reg-pass').value;
+            const btn = document.getElementById('btnRegistro');
 
-<div class="input-group">
-<label>Email</label>
-<input type="email" id="reg-correo">
-</div>
+            if (!nombre || !correo || pass.length < 6) return alert("Completa los datos correctamente.");
+            
+            btn.textContent = "Cocinando cuenta...";
+            btn.disabled = true;
 
-<div class="input-group">
-<label>Contraseña</label>
-<input type="password" id="reg-pass">
-<button class="toggle" id="togglePass">👁️</button>
-</div>
-
-<button class="btn-registrar">Crear Cuenta</button>
-
-</div>
-
-<script>
-
-const chef = document.getElementById('chef');
-const textInputs = document.querySelectorAll('#reg-nombre,#reg-correo');
-const pass = document.getElementById('reg-pass');
-const toggle = document.getElementById('togglePass');
-
-textInputs.forEach(input=>{
-
-input.addEventListener('focus',()=>{
-chef.classList.add('look-down');
-});
-
-input.addEventListener('blur',()=>{
-chef.classList.remove('look-down');
-});
-
-input.addEventListener('input',()=>{
-
-let move=Math.min(input.value.length*2,12);
-
-document.querySelector('.eyes').style.transform=
-`translate(calc(-50% + ${move}px),5px)`;
-
-document.querySelector('.mustache').style.transform=
-`translate(calc(-50% + ${move}px),3px)`;
-
-});
-
-});
-
-pass.addEventListener('focus',()=>{
-
-if(pass.type==="password"){
-chef.classList.add('cover-eyes');
-}else{
-chef.classList.add('peek');
-}
-
-});
-
-pass.addEventListener('blur',()=>{
-chef.classList.remove('cover-eyes','peek');
-});
-
-toggle.addEventListener('click',()=>{
-
-if(pass.type==="password"){
-pass.type="text";
-toggle.textContent="🙈";
-
-chef.classList.remove('cover-eyes');
-chef.classList.add('peek');
-
-}else{
-
-pass.type="password";
-toggle.textContent="👁️";
-
-chef.classList.remove('peek');
-chef.classList.add('cover-eyes');
-
-}
-
-});
-
-</script>
-
+            try {
+                const { error } = await supabaseApp.auth.signUp({
+                    email: correo, password: pass, options: { data: { nombre: nombre } }
+                });
+                if (error) throw error;
+                alert("¡Registro exitoso Chef!");
+                window.location.href = 'index.html';
+            } catch (err) {
+                alert(err.message);
+                btn.textContent = "Crear Cuenta";
+                btn.disabled = false;
+            }
+        }
+    </script>
 </body>
 </html>
