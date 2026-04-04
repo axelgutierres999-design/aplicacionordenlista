@@ -46,67 +46,63 @@
         <button class="send-btn" onclick="enviarMensaje()">➔</button>
     </div>
 
-   <script>
-    // 1. Configuración de Supabase
+<script>
+    // 1. Solo declaramos las constantes UNA VEZ
     const supabaseUrl = 'https://cpveuexgxwxjejurtwro.supabase.co';
-    // AQUÍ pegamos tu clave anon que ya conocemos de los pasos anteriores
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc';
     
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+    // Usamos 'window.supabase.createClient' para asegurarnos de que use la librería cargada
+    const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
     const chatContainer = document.getElementById('chat-container');
     const userInput = document.getElementById('user-input');
     const typingIndicator = document.getElementById('typing-indicator');
 
+    // 2. Definimos la función de enviar
     async function enviarMensaje() {
         const text = userInput.value.trim();
         if (!text) return;
 
-        // Mostrar mensaje del usuario en pantalla
+        // Mostrar mensaje del usuario
         appendMessage(text, 'user');
         userInput.value = '';
         
-        // Mostrar que el Chef está "pensando"
+        // Mostrar indicador de carga
         typingIndicator.style.display = 'block';
 
         try {
-            // LLAMADA A LA IA: Solo usamos el nombre 'chef-ia'
-            const { data, error } = await supabase.functions.invoke('chef-ia', {
+            // Llamada a la Edge Function
+            const { data, error } = await supabaseClient.functions.invoke('chef-ia', {
                 body: { prompt: text }
             });
 
             typingIndicator.style.display = 'none';
 
-            if (error) {
-                console.error("Error de Supabase:", error);
-                throw error;
-            }
+            if (error) throw error;
 
-            // Mostrar respuesta de la IA
             if (data && data.response) {
                 appendMessage(data.response, 'bot');
             } else {
-                appendMessage("El Chef se quedó sin palabras. Intenta de nuevo.", 'bot');
+                appendMessage("El Chef se distrajo un momento. ¿Puedes repetir eso?", 'bot');
             }
 
         } catch (err) {
             console.error("Error completo:", err);
-            appendMessage("Perdón, se me quemó el arroz (error de conexión).", 'bot');
+            appendMessage("Lo siento, hubo un problema en la cocina. Revisa la consola.", 'bot');
             typingIndicator.style.display = 'none';
         }
     }
 
+    // 3. Función para añadir burbujas de texto
     function appendMessage(text, side) {
         const div = document.createElement('div');
         div.classList.add('bubble', side);
         div.innerText = text;
         chatContainer.appendChild(div);
-        
-        // Auto-scroll hacia abajo para ver el nuevo mensaje
         chatContainer.scrollTop = chatContainer.scrollHeight;
     }
 
-    // Permitir enviar el mensaje al presionar la tecla Enter
+    // 4. Escuchar la tecla Enter
     userInput.addEventListener("keypress", (e) => {
         if (e.key === "Enter") enviarMensaje();
     });
