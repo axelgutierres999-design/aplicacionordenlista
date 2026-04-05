@@ -47,65 +47,63 @@
     </div>
 
 <script>
-    // 1. Solo declaramos las constantes UNA VEZ
-    const supabaseUrl = 'https://cpveuexgxwxjejurtwro.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc';
-    
-    // Usamos 'window.supabase.createClient' para asegurarnos de que use la librería cargada
-    const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+const supabaseUrl = 'https://cpveuexgxwxjejurtwro.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc';
 
-    const chatContainer = document.getElementById('chat-container');
-    const userInput = document.getElementById('user-input');
-    const typingIndicator = document.getElementById('typing-indicator');
+const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-    // 2. Definimos la función de enviar
-    async function enviarMensaje() {
-        const text = userInput.value.trim();
-        if (!text) return;
+const chatContainer = document.getElementById('chat-container');
+const userInput = document.getElementById('user-input');
+const typingIndicator = document.getElementById('typing-indicator');
+const sendBtn = document.querySelector('.send-btn');
 
-        // Mostrar mensaje del usuario
-        appendMessage(text, 'user');
-        userInput.value = '';
-        
-        // Mostrar indicador de carga
-        typingIndicator.style.display = 'block';
+async function enviarMensaje() {
+    const text = userInput.value.trim();
+    if (!text) return;
 
-        try {
-            // Llamada a la Edge Function
-            const { data, error } = await supabaseClient.functions.invoke('chef-ia', {
-                body: { prompt: text }
-            });
+    appendMessage(text, 'user');
+    userInput.value = '';
 
-            typingIndicator.style.display = 'none';
+    typingIndicator.style.display = 'block';
+    sendBtn.disabled = true;
 
-            if (error) throw error;
+    try {
+        const { data, error } = await supabaseClient.functions.invoke('chef-ia', {
+            body: { prompt: text }
+        });
 
-            if (data && data.response) {
-                appendMessage(data.response, 'bot');
-            } else {
-                appendMessage("El Chef se distrajo un momento. ¿Puedes repetir eso?", 'bot');
-            }
+        typingIndicator.style.display = 'none';
+        sendBtn.disabled = false;
 
-        } catch (err) {
-            console.error("Error completo:", err);
-            appendMessage("Lo siento, hubo un problema en la cocina. Revisa la consola.", 'bot');
-            typingIndicator.style.display = 'none';
-        }
+        if (error) throw error;
+
+        appendMessage(data.response || "No entendí bien tu pedido.", 'bot');
+
+    } catch (err) {
+        typingIndicator.style.display = 'none';
+        sendBtn.disabled = false;
+
+        appendMessage("Error: " + err.message, 'bot');
+        console.error(err);
     }
+}
 
-    // 3. Función para añadir burbujas de texto
-    function appendMessage(text, side) {
-        const div = document.createElement('div');
-        div.classList.add('bubble', side);
-        div.innerText = text;
-        chatContainer.appendChild(div);
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-    }
+function appendMessage(text, side) {
+    const div = document.createElement('div');
+    div.classList.add('bubble', side);
+    div.style.whiteSpace = 'pre-wrap';
+    div.innerText = text;
+    chatContainer.appendChild(div);
 
-    // 4. Escuchar la tecla Enter
-    userInput.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") enviarMensaje();
+    chatContainer.scrollTo({
+        top: chatContainer.scrollHeight,
+        behavior: 'smooth'
     });
+}
+
+userInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') enviarMensaje();
+});
 </script>
 </body>
 </html>>
