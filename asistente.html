@@ -70,6 +70,8 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 
 const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
+let historialChat = [];
+
 const chatContainer = document.getElementById('chat-container');
 const userInput = document.getElementById('user-input');
 const typingIndicator = document.getElementById('typing-indicator');
