@@ -2,48 +2,66 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Chef IA - OrdenLista</title>
-    <link rel="stylesheet" href="css/style.css">
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        body { background: #f0f0f3; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         
-        .header-ia { padding: 40px 20px 20px; text-align: center; background: #f0f0f3; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
-        .back-btn { position: absolute; left: 20px; top: 45px; background: #f0f0f3; border: none; padding: 10px; border-radius: 50%; box-shadow: 4px 4px 10px #d1d9e6, -4px -4px 10px #ffffff; cursor: pointer; }
-
-        #chat-container { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
-
-        .bubble { padding: 15px; border-radius: 20px; max-width: 80%; font-size: 14px; line-height: 1.4; }
-        .user { align-self: flex-end; background: #000; color: #fff; box-shadow: 5px 5px 15px #d1d9e6; }
-        .bot { align-self: flex-start; background: #f0f0f3; color: #333; box-shadow: 7px 7px 15px #d1d9e6, -7px -7px 15px #ffffff; }
-
-        .input-area { padding: 20px; background: #f0f0f3; display: flex; gap: 10px; padding-bottom: 30px; }
-        .input-ia { flex: 1; border: none; padding: 15px; border-radius: 15px; background: #f0f0f3; box-shadow: inset 4px 4px 8px #d1d9e6, inset -4px -4px 8px #ffffff; outline: none; }
-        .send-btn { background: #000; color: white; border: none; width: 50px; height: 50px; border-radius: 15px; cursor: pointer; box-shadow: 4px 4px 10px #d1d9e6; }
+        /* Uso de 100dvh para evitar que se descuadre en móviles con la barra de navegación */
+        body { background: #f0f0f3; margin: 0; display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
         
-        /* Animación de carga */
-        .typing { font-style: italic; color: #888; font-size: 12px; margin-left: 10px; display: none; }
+        .header-ia { padding: 50px 20px 20px; text-align: center; background: #f0f0f3; box-shadow: 0 5px 15px rgba(0,0,0,0.03); z-index: 10; position: relative; }
+        .back-btn { position: absolute; left: 20px; top: 50px; background: #f0f0f3; border: none; padding: 12px; border-radius: 50%; box-shadow: 4px 4px 10px #d1d9e6, -4px -4px 10px #ffffff; cursor: pointer; color: #333; font-weight: bold; }
+
+        #chat-container { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; }
+
+        /* Diseño de burbujas y animación de entrada */
+        .bubble { padding: 15px 20px; border-radius: 20px; max-width: 85%; font-size: 15px; line-height: 1.5; animation: slideUp 0.4s ease-out forwards; opacity: 0; transform: translateY(15px); }
+        .user { align-self: flex-end; background: #2c2c2e; color: #fff; box-shadow: 4px 4px 10px #d1d9e6; border-bottom-right-radius: 5px; }
+        .bot { align-self: flex-start; background: #f0f0f3; color: #333; box-shadow: 5px 5px 15px #d1d9e6, -5px -5px 15px #ffffff; border-bottom-left-radius: 5px; }
+        
+        /* Formato especial dentro de la respuesta del bot */
+        .bot strong { color: #000; font-weight: 700; }
+
+        .input-area { padding: 15px 20px 30px; background: #f0f0f3; display: flex; gap: 10px; z-index: 10; box-shadow: 0 -5px 15px rgba(0,0,0,0.03); }
+        .input-ia { flex: 1; border: none; padding: 15px 20px; border-radius: 25px; background: #f0f0f3; box-shadow: inset 4px 4px 8px #d1d9e6, inset -4px -4px 8px #ffffff; outline: none; font-size: 15px; transition: all 0.3s ease; }
+        .input-ia:focus { box-shadow: inset 6px 6px 12px #d1d9e6, inset -6px -6px 12px #ffffff; }
+        .send-btn { background: #2c2c2e; color: white; border: none; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; box-shadow: 4px 4px 10px #d1d9e6; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: transform 0.2s; }
+        .send-btn:active { transform: scale(0.95); }
+
+        /* Animaciones */
+        @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
+
+        /* Indicador de escritura animado (3 puntos) */
+        .typing-indicator { display: none; align-self: flex-start; background: transparent; padding: 15px 20px; }
+        .dot { display: inline-block; width: 8px; height: 8px; background-color: #a0a0a0; border-radius: 50%; margin: 0 3px; animation: bounce 1.4s infinite ease-in-out both; }
+        .dot:nth-child(1) { animation-delay: -0.32s; }
+        .dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
     </style>
 </head>
 <body>
 
     <header class="header-ia">
-        <button class="back-btn" onclick="window.location.href='index.html'">←</button>
-        <div style="font-size: 40px;">👨‍🍳</div>
-        <h2 style="margin: 10px 0 0 0; font-weight: 800;">Chef Asistente IA</h2>
-        <p style="font-size: 12px; color: #888;">Dietas, antojos y consejos gourmet</p>
+        <button class="back-btn" onclick="window.location.href='index.html'">✕</button>
+        <div style="font-size: 35px; line-height: 1;">👨‍🍳</div>
+        <h2 style="margin: 8px 0 2px 0; font-weight: 800; font-size: 20px;">Chef</h2>
+        <p style="font-size: 13px; color: #888; margin: 0;">Dietas, antojos y recomendaciones</p>
     </header>
 
     <main id="chat-container">
-        <div class="bubble bot">¡Hola Chef! Soy adrian tu asistente de OrdenLista. ¿Que antojo tienes hoy?</div>
+        <div class="bubble bot" style="opacity: 1; transform: translateY(0);">¡Hola! Soy ADRIAN tu asistente en OrdenLista. ¿Qué se te antoja hoy?</div>
     </main>
 
-    <div id="typing-indicator" class="typing">un segundo estoy pensando..........</div>
+    <!-- Nuevo indicador de escritura elegante -->
+    <div id="typing-indicator" class="typing-indicator">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    </div>
 
     <div class="input-area">
-        <input type="text" id="user-input" class="input-ia" placeholder="Ej: Quiero una hamburguesa sana...">
-        <button class="send-btn" onclick="enviarMensaje()">➔</button>
+        <input type="text" id="user-input" class="input-ia" placeholder="Ej: Quiero cenar ligero...">
+        <button class="send-btn" onclick="enviarMensaje()">↑</button>
     </div>
 
 <script>
@@ -64,12 +82,24 @@ async function enviarMensaje() {
     appendMessage(text, 'user');
     userInput.value = '';
 
+    // Guardamos lo que dijo el usuario en la memoria
+    historialChat.push({ role: 'user', text: text });
+    
+    // Si el historial es muy largo, borramos los más viejos para no saturar a la IA (dejamos los últimos 6)
+    if (historialChat.length > 6) historialChat.shift();
+
     typingIndicator.style.display = 'block';
+    chatContainer.appendChild(typingIndicator); 
+    scrollToBottom();
+    
     sendBtn.disabled = true;
 
     try {
         const { data, error } = await supabaseClient.functions.invoke('chef-ia', {
-            body: { prompt: text }
+            body: { 
+                prompt: text,
+                history: historialChat // ¡Enviamos la memoria aquí!
+            }
         });
 
         typingIndicator.style.display = 'none';
@@ -77,13 +107,16 @@ async function enviarMensaje() {
 
         if (error) throw error;
 
-        appendMessage(data.response || "No entendí bien tu pedido.", 'bot');
+        const respuestaChef = data.response || "No entendí bien tu pedido.";
+        appendMessage(respuestaChef, 'bot');
+
+        // Guardamos lo que respondió el Chef en la memoria
+        historialChat.push({ role: 'bot', text: respuestaChef });
 
     } catch (err) {
         typingIndicator.style.display = 'none';
         sendBtn.disabled = false;
-
-        appendMessage("Error: " + err.message, 'bot');
+        appendMessage("Disculpa, la cocina está muy ocupada. ¿Puedes repetir?", 'bot');
         console.error(err);
     }
 }
@@ -91,14 +124,21 @@ async function enviarMensaje() {
 function appendMessage(text, side) {
     const div = document.createElement('div');
     div.classList.add('bubble', side);
-    div.style.whiteSpace = 'pre-wrap';
-    div.innerText = text;
+    
+    // MAGIA AQUÍ: Convertimos los **asteriscos** en negritas y los saltos de línea en <br>
+    let formattedText = text
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n/g, '<br>');
+    
+    div.innerHTML = formattedText;
     chatContainer.appendChild(div);
+    scrollToBottom();
+}
 
-    chatContainer.scrollTo({
-        top: chatContainer.scrollHeight,
-        behavior: 'smooth'
-    });
+function scrollToBottom() {
+    setTimeout(() => {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }, 50);
 }
 
 userInput.addEventListener('keypress', (e) => {
