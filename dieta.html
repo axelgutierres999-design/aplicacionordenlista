@@ -6,9 +6,9 @@
     <title>Salud y Dieta - OrdenLista</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        :root { --bg: #f0f0f3; --dark: #2c2c2e; --accent: #4caf50; }
+        :root { --bg: #f0f0f3; --dark: #2c2c2e; --accent: #4caf50; --error: #ff5252; }
         * { box-sizing: border-box; font-family: -apple-system, system-ui, sans-serif; }
-        body { background: var(--bg); margin: 0; padding-bottom: 80px; }
+        body { background: var(--bg); margin: 0; padding-bottom: 100px; }
 
         /* Header */
         .header { padding: 50px 20px 20px; text-align: center; position: sticky; top: 0; background: var(--bg); z-index: 100; }
@@ -22,16 +22,7 @@
         }
         .progress-circle { font-size: 32px; font-weight: 800; color: var(--dark); margin: 10px 0; }
         .progress-bar { width: 100%; height: 12px; background: #e0e0e0; border-radius: 10px; overflow: hidden; margin-top: 15px; box-shadow: inset 2px 2px 5px #d1d9e6; }
-        .progress-fill { width: 65%; height: 100%; background: var(--accent); border-radius: 10px; }
-
-        /* Calendar Row */
-        .calendar-row { display: flex; overflow-x: auto; padding: 10px 20px; gap: 15px; scrollbar-width: none; }
-        .day-card { 
-            min-width: 60px; padding: 15px 10px; border-radius: 20px; background: var(--bg);
-            box-shadow: 4px 4px 10px #d1d9e6, -4px -4px 10px #ffffff;
-            text-align: center; transition: 0.3s;
-        }
-        .day-card.active { background: var(--dark); color: white; }
+        .progress-fill { width: 65%; height: 100%; background: var(--accent); border-radius: 10px; transition: 0.5s; }
 
         /* Food List */
         .section-title { padding: 0 25px; font-size: 18px; font-weight: 700; margin-top: 30px; }
@@ -40,15 +31,44 @@
             box-shadow: 4px 4px 10px #d1d9e6, -4px -4px 10px #ffffff;
             display: flex; align-items: center; gap: 15px;
         }
-        .food-img { width: 50px; height: 50px; border-radius: 12px; background: #ddd; object-fit: cover; }
+        .food-img { width: 50px; height: 50px; border-radius: 12px; background: #ddd; display: flex; align-items: center; justify-content: center; font-size: 24px; }
 
-        /* Camera Button */
-        .cam-btn {
-            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            width: 70px; height: 70px; border-radius: 50%; background: var(--dark);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2); color: white; border: none;
-            font-size: 28px; display: flex; align-items: center; justify-content: center; z-index: 1000;
+        /* Botones Flotantes */
+        .action-buttons { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; z-index: 1000; }
+        .btn-round {
+            width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 24px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1); transition: 0.3s;
         }
+        .cam-btn { background: var(--dark); color: white; }
+        .manual-btn { background: var(--bg); color: var(--dark); box-shadow: 4px 4px 10px #d1d9e6, -4px -4px 10px #ffffff; }
+
+        /* Modal Formulario Manual */
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(240, 240, 243, 0.9); z-index: 2000; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: var(--bg); width: 90%; max-width: 400px; padding: 30px; border-radius: 30px;
+            box-shadow: 10px 10px 30px #d1d9e6, -10px -10px 30px #ffffff;
+        }
+        .modal-content h3 { margin-top: 0; text-align: center; }
+        .modal-content input {
+            width: 100%; padding: 15px; margin: 10px 0; border: none; border-radius: 15px;
+            background: var(--bg); box-shadow: inset 2px 2px 5px #d1d9e6, inset -2px -2px 5px #ffffff;
+            outline: none; font-size: 16px;
+        }
+        .modal-content button {
+            width: 100%; padding: 15px; margin-top: 20px; border: none; border-radius: 15px;
+            background: var(--accent); color: white; font-weight: bold; cursor: pointer;
+        }
+
+        /* Loading */
+        #loading-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(240,240,243,0.9); z-index: 3000; justify-content: center; align-items: center; flex-direction: column;
+        }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
     </style>
 </head>
 <body>
@@ -61,106 +81,133 @@
 
     <div class="card-calories">
         <div style="font-size: 14px; color: #888;">Calorías de hoy</div>
-        <div class="progress-circle">1,250 <span style="font-size: 16px; color: #aaa;">/ 2,000 kcal</span></div>
-        <div class="progress-bar"><div class="progress-fill"></div></div>
-        <div style="display: flex; justify-content: space-around; margin-top: 20px; font-size: 12px;">
-            <div><strong>45g</strong><br>Prot</div>
-            <div><strong>120g</strong><br>Carbs</div>
-            <div><strong>30g</strong><br>Grasas</div>
-        </div>
-    </div>
-
-    <div class="calendar-row">
-        <div class="day-card"><span>Lun</span><br><strong>06</strong></div>
-        <div class="day-card active"><span>Mar</span><br><strong>07</strong></div>
-        <div class="day-card"><span>Mié</span><br><strong>08</strong></div>
-        <div class="day-card"><span>Jue</span><br><strong>09</strong></div>
-        <div class="day-card"><span>Vie</span><br><strong>10</strong></div>
+        <div class="progress-circle" id="total-calories">1,250 <span style="font-size: 16px; color: #aaa;">/ 2,000 kcal</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="bar-fill"></div></div>
     </div>
 
     <h3 class="section-title">Comidas del día</h3>
     <div id="food-list">
-        <div class="food-item">
-            <div class="food-img">🥗</div>
-            <div style="flex:1">
-                <div style="font-weight: bold;">Ensalada Cesar</div>
-                <div style="font-size: 12px; color: #888;">320 kcal • 12:30 PM</div>
-            </div>
+        <!-- Aquí se cargan las comidas -->
+    </div>
+
+    <!-- Botones de Acción -->
+    <div class="action-buttons">
+        <button class="btn-round manual-btn" onclick="toggleModal(true)">📝</button>
+        <button class="btn-round cam-btn" onclick="abrirCamara()">📸</button>
+    </div>
+
+    <!-- Modal Formulario Manual -->
+    <div id="manual-modal" class="modal">
+        <div class="modal-content">
+            <h3>Agregar Comida</h3>
+            <input type="text" id="manual-nombre" placeholder="¿Qué comiste? (ej: Manzana)">
+            <input type="number" id="manual-cal" placeholder="Calorías aproximadas">
+            <button onclick="guardarManual()">Guardar Registro</button>
+            <button onclick="toggleModal(false)" style="background:none; color:#888; font-weight:normal; box-shadow:none;">Cancelar</button>
         </div>
     </div>
 
-   <!-- Input oculto para abrir la cámara -->
     <input type="file" id="camera-input" accept="image/*" capture="environment" style="display: none;">
-    <button class="cam-btn" onclick="abrirCamara()">📸</button>
 
-    <!-- Pantalla de carga mientras la IA "mira" la foto -->
-    <div id="loading-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(240,240,243,0.9); z-index:2000; justify-content:center; align-items:center; flex-direction:column;">
+    <div id="loading-overlay">
         <div style="font-size: 40px; animation: bounce 1s infinite;">🤖</div>
         <p style="font-weight: bold; margin-top: 10px;">Analizando macros...</p>
     </div>
 
     <script>
-        const supabaseUrl = '[https://cpveuexgxwxjejurtwro.supabase.co](https://cpveuexgxwxjejurtwro.supabase.co)';
+        // 1. CONFIGURACIÓN INICIAL (URL CORREGIDA)
+        const supabaseUrl = 'https://cpveuexgxwxjejurtwro.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc';
         const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
+        // Referencias del DOM definidas al inicio para evitar errores de inicialización
         const cameraInput = document.getElementById('camera-input');
         const loadingOverlay = document.getElementById('loading-overlay');
         const foodList = document.getElementById('food-list');
+        const manualModal = document.getElementById('manual-modal');
 
+        // 2. FUNCIONES DE CÁMARA
         function abrirCamara() {
-            cameraInput.click(); // Esto abre la cámara del móvil
+            if (cameraInput) {
+                cameraInput.click();
+            } else {
+                console.error("No se encontró el input de cámara");
+            }
         }
 
         cameraInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
 
-            // Mostrar pantalla de carga
             loadingOverlay.style.display = 'flex';
-
-            // Convertir la imagen a Base64
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onload = async () => {
-                const base64String = reader.result.split(',')[1]; // Quitamos el encabezado
-
+                const base64String = reader.result.split(',')[1];
                 try {
-                    // Llamamos a la misma función del Chef, pero le pasamos la foto
                     const { data, error } = await supabaseClient.functions.invoke('chef-ia', {
                         body: { imagenBase64: base64String }
                     });
-
                     if (error) throw error;
-
-                    // Agregar el nuevo platillo a la lista visualmente
                     agregarPlatilloALaLista(data);
-                    
-                    // Aquí en el futuro agregaremos el código SQL para guardarlo en la base de datos
-                    console.log("Datos de la IA:", data);
-
                 } catch (err) {
-                    alert("Error analizando la comida: " + err.message);
+                    alert("Error con la IA: " + err.message);
                 } finally {
-                    // Ocultar carga y limpiar el input
                     loadingOverlay.style.display = 'none';
                     cameraInput.value = ''; 
                 }
             };
         });
 
+        // 3. FUNCIONES MANUALES
+        function toggleModal(show) {
+            manualModal.style.display = show ? 'flex' : 'none';
+        }
+
+        function guardarManual() {
+            const nombre = document.getElementById('manual-nombre').value;
+            const calorias = document.getElementById('manual-cal').value;
+
+            if (!nombre || !calorias) return alert("Completa ambos campos");
+
+            const datos = {
+                nombre_alimento: nombre,
+                calorias: parseInt(calorias),
+                proteinas: '?', 
+                carbohidratos: '?',
+                emoji: '🍴'
+            };
+
+            agregarPlatilloALaLista(datos);
+            toggleModal(false);
+            
+            // Limpiar inputs
+            document.getElementById('manual-nombre').value = '';
+            document.getElementById('manual-cal').value = '';
+        }
+
+        // 4. RENDERIZADO
         function agregarPlatilloALaLista(datosA) {
             const nuevoDiv = document.createElement('div');
             nuevoDiv.classList.add('food-item');
             nuevoDiv.innerHTML = `
-                <div class="food-img" style="display:flex; justify-content:center; align-items:center; font-size:24px;">${datosA.emoji || '🍽️'}</div>
+                <div class="food-img">${datosA.emoji || '🍴'}</div>
                 <div style="flex:1">
-                    <div style="font-weight: bold;">${datosA.nombre_alimento || 'Comida'}</div>
-                    <div style="font-size: 12px; color: #888;">${datosA.calorias || 0} kcal • Prot: ${datosA.proteinas}g • Carbs: ${datosA.carbohidratos}g</div>
+                    <div style="font-weight: bold;">${datosA.nombre_alimento}</div>
+                    <div style="font-size: 12px; color: #888;">${datosA.calorias} kcal • Prot: ${datosA.proteinas}g</div>
                 </div>
             `;
-            // Lo ponemos al principio de la lista
             foodList.insertBefore(nuevoDiv, foodList.firstChild);
+            actualizarBarra(datosA.calorias);
+        }
+
+        let totalHoy = 1250;
+        function actualizarBarra(nuevasCal) {
+            totalHoy += nuevasCal;
+            document.getElementById('total-calories').innerHTML = `${totalHoy.toLocaleString()} <span style="font-size: 16px; color: #aaa;">/ 2,000 kcal</span>`;
+            const porc = (totalHoy / 2000) * 100;
+            document.getElementById('bar-fill').style.width = `${Math.min(porc, 100)}%`;
+            if (porc > 100) document.getElementById('bar-fill').style.background = 'var(--error)';
         }
     </script>
 </body>
