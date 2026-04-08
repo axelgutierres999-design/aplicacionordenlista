@@ -127,14 +127,13 @@
         <p style="font-weight: bold; margin-top: 20px;" id="loading-text">Analizando alimento...</p>
     </div>
 
-    <script>
-    // 1. CONFIGURACIÓN SUPABASE
-    // Eliminamos el conflicto de declaración. Usamos variables únicas.
+<script>
+    // 1. CONFIGURACIÓN SUPABASE (Nombre cambiado para evitar el "already declared")
     const urlDB = 'https://cpveuexgxwxjejurtwro.supabase.co';
-    const keyDB = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc'; // <-- ASEGÚRATE DE PONER TU ANON KEY REAL AQUÍ
+    const keyDB = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc'; 
     
-    // Inicializamos el cliente globalmente una sola vez
-    const supabase = window.supabase.createClient(urlDB, keyDB);
+    // Usamos supabaseClient para que no choque con la palabra 'supabase' de la librería
+    const supabaseClient = window.supabase.createClient(urlDB, keyDB);
 
     let totales = { cal: 0, prot: 0, carbs: 0, fats: 0 };
     let listaAlimentosHoy = []; 
@@ -145,16 +144,15 @@
         const hace24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
         
         try {
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('registros_dieta')
                 .select('*')
-                .gt('created_at', hace24h) // Nota: Verifica si en tu tabla es creado_at o created_at
+                .gt('created_at', hace24h)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
 
             if (data) {
-                // Limpiamos antes de cargar para evitar duplicados visuales
                 document.getElementById('food-list').innerHTML = '';
                 data.reverse().forEach(item => renderizarPlatillo(item));
             }
@@ -165,7 +163,7 @@
         }
     };
 
-    // 3. ANÁLISIS DE IMAGEN
+    // 3. ANÁLISIS DE IMAGEN (📸)
     document.getElementById('camera-input').addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -176,14 +174,12 @@
         reader.onload = async () => {
             const base64 = reader.result.split(',')[1];
             try {
-                // IMPORTANTE: El nombre de la función debe ser 'chef-ia' como en tu index.ts
-                const { data, error } = await supabase.functions.invoke('chef-ia', {
+                const { data, error } = await supabaseClient.functions.invoke('chef-ia', {
                     body: { tipo: 'imagen', imagenBase64: base64 }
                 });
                 if (error) throw error;
                 await guardarEnBD(data);
             } catch (err) {
-                console.error(err);
                 alert("Error con la foto: " + err.message);
             } finally {
                 mostrarCarga(false);
@@ -192,17 +188,17 @@
         };
     });
 
-    // 4. ANÁLISIS DE TEXTO
+    // 4. ANÁLISIS DE TEXTO (✍️)
     async function analizarTextoIA() {
         const nombre = document.getElementById('ai-food-name').value;
         const peso = document.getElementById('ai-food-weight').value;
         if (!nombre) return alert("Por favor ingresa qué comiste.");
 
         document.getElementById('text-modal').style.display = 'none';
-        mostrarCarga(true, "Calculando macros exactos...");
+        mostrarCarga(true, "Calculando macros...");
 
         try {
-            const { data, error } = await supabase.functions.invoke('chef-ia', {
+            const { data, error } = await supabaseClient.functions.invoke('chef-ia', {
                 body: { tipo: 'texto', alimento: nombre, cantidad: peso }
             });
             if (error) throw error;
@@ -211,7 +207,7 @@
             document.getElementById('ai-food-name').value = '';
             document.getElementById('ai-food-weight').value = '';
         } catch (err) {
-            alert("Error calculando: " + err.message);
+            alert("Error: " + err.message);
         } finally {
             mostrarCarga(false);
         }
@@ -227,7 +223,7 @@
             grasas: parseFloat(infoIA.grasas) || 0
         };
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('registros_dieta')
             .insert([nuevoRegistro])
             .select();
@@ -279,16 +275,15 @@
         document.getElementById('total-fats').innerText = totales.fats.toFixed(1) + 'g';
     }
 
-    // 6. COACH METABÓLICO
+    // 6. COACH METABÓLICO (🧠)
     async function pedirConsejoCoach() {
         if (listaAlimentosHoy.length === 0) return alert("Aún no has registrado comidas hoy.");
         
         document.getElementById('coach-modal').style.display = 'flex';
-        document.getElementById('coach-response').innerHTML = "⏳ Analizando tu carga glucémica y energética...";
+        document.getElementById('coach-response').innerHTML = "⏳ Analizando tu carga glucémica...";
 
         try {
-            // Usamos la misma función 'chef-ia' pero con tipo 'coach'
-            const { data, error } = await supabase.functions.invoke('chef-ia', {
+            const { data, error } = await supabaseClient.functions.invoke('chef-ia', {
                 body: { 
                     tipo: 'coach',
                     calorias: totales.cal, 
@@ -304,7 +299,7 @@
         }
     }
 
-    // Utilidades de UI (Estas DEBEN estar definidas para que los botones funcionen)
+    // 7. UTILIDADES DE INTERFAZ (Para que openModal funcione)
     function openModal(id) { 
         document.getElementById(id).style.display = 'flex'; 
     }
