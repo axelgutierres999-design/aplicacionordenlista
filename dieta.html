@@ -3,224 +3,204 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Salud y Dieta - OrdenLista</title>
+    <title>BioBalance - Salud y Dieta</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        :root { --bg: #f0f0f3; --dark: #2c2c2e; --accent: #4caf50; --error: #ff5252; --blue: #2196f3; }
+        :root { --bg: #f0f0f3; --dark: #2c2c2e; --accent: #4caf50; --blue: #3498db; --error: #ff5252; }
         * { box-sizing: border-box; font-family: -apple-system, system-ui, sans-serif; }
-        body { background: var(--bg); margin: 0; padding-bottom: 120px; }
+        body { background: var(--bg); margin: 0; padding-bottom: 120px; color: var(--dark); }
 
-        /* Header Neumórfico */
+        /* Header */
         .header { padding: 50px 20px 20px; text-align: center; position: sticky; top: 0; background: var(--bg); z-index: 100; }
-        .back-btn { position: absolute; left: 20px; top: 50px; background: var(--bg); border: none; padding: 12px; border-radius: 50%; box-shadow: 4px 4px 10px #d1d9e6, -4px -4px 10px #ffffff; cursor: pointer; }
+        .back-btn { position: absolute; left: 20px; top: 50px; background: var(--bg); border: none; padding: 12px; border-radius: 50%; box-shadow: 4px 4px 10px #d1d9e6, -4px -4px 10px #ffffff; }
 
-        /* Tarjeta de Macros Detallada */
-        .card-calories { 
-            margin: 20px; padding: 25px; border-radius: 30px; 
-            background: var(--bg); box-shadow: 8px 8px 20px #d1d9e6, -8px -8px 20px #ffffff;
-            text-align: center;
+        /* Cards Estilo Neumórfico */
+        .card { 
+            margin: 15px 20px; padding: 20px; border-radius: 25px; 
+            background: var(--bg); box-shadow: 8px 8px 16px #d1d9e6, -8px -8px 16px #ffffff;
         }
-        .progress-circle { font-size: 32px; font-weight: 800; color: var(--dark); margin: 10px 0; }
-        .progress-bar { width: 100%; height: 12px; background: #e0e0e0; border-radius: 10px; overflow: hidden; margin: 10px 0; box-shadow: inset 2px 2px 5px #d1d9e6; }
-        .progress-fill { width: 0%; height: 100%; background: var(--accent); border-radius: 10px; transition: 0.5s; }
 
-        .macro-grid { display: flex; justify-content: space-between; margin-top: 15px; font-size: 12px; border-top: 1px solid #ddd; padding-top: 15px; }
-        .macro-item { flex: 1; }
-        .macro-item strong { display: block; font-size: 14px; color: var(--dark); }
+        /* Macros Grid */
+        .macros-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+        .macro-item { text-align: center; }
+        .macro-val { font-weight: 800; font-size: 16px; display: block; }
+        .macro-label { font-size: 10px; color: #888; text-transform: uppercase; }
 
-        /* Lista de Actividades (Comida y Ejercicio) */
-        .section-title { padding: 0 25px; font-size: 18px; font-weight: 700; margin-top: 30px; }
+        /* Exercise Proposal Card */
+        .exercise-card { background: linear-gradient(145deg, #ffffff, #e6e6e6); border-left: 5px solid var(--blue); }
+        .exercise-title { font-size: 14px; font-weight: bold; color: var(--blue); margin-bottom: 5px; display: flex; align-items: center; gap: 5px; }
+
+        /* List Items */
         .food-item {
-            margin: 10px 20px; padding: 15px; border-radius: 20px; background: var(--bg);
-            box-shadow: 4px 4px 10px #d1d9e6, -4px -4px 10px #ffffff;
-            display: flex; align-items: center; gap: 15px;
+            margin: 10px 20px; padding: 12px; border-radius: 18px; background: var(--bg);
+            box-shadow: 4px 4px 8px #d1d9e6, -4px -4px 8px #ffffff;
+            display: flex; align-items: center; gap: 12px;
         }
-        .food-img { width: 45px; height: 45px; border-radius: 12px; background: #e0e0e0; display: flex; align-items: center; justify-content: center; font-size: 20px; }
-        .exercise-item { border-left: 4px solid var(--blue); }
+        .food-img { font-size: 22px; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; background: #e9e9ed; border-radius: 12px; }
 
-        /* Botones Flotantes */
-        .action-buttons { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; z-index: 1000; }
-        .btn-round {
-            width: 55px; height: 55px; border-radius: 50%; border: none; font-size: 22px;
-            display: flex; align-items: center; justify-content: center; cursor: pointer;
-            box-shadow: 4px 4px 10px #d1d9e6, -4px -4px 10px #ffffff; transition: 0.2s;
-        }
-        .cam-btn { background: var(--dark); color: white; }
-        .manual-btn { background: white; color: var(--dark); }
-        .exercise-btn { background: var(--blue); color: white; }
-
-        /* Modales */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(240, 240, 243, 0.95); z-index: 2000; justify-content: center; align-items: center; padding: 20px; }
-        .modal-content { background: var(--bg); width: 100%; max-width: 400px; padding: 25px; border-radius: 30px; box-shadow: 10px 10px 30px #d1d9e6; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: none; border-radius: 12px; background: var(--bg); box-shadow: inset 2px 2px 5px #d1d9e6, inset -2px -2px 5px #ffffff; outline: none; }
-        .primary-btn { width: 100%; padding: 15px; margin-top: 15px; border: none; border-radius: 15px; background: var(--accent); color: white; font-weight: bold; cursor: pointer; }
+        /* UI Elements */
+        .progress-bar { width: 100%; height: 10px; background: #e0e0e0; border-radius: 10px; margin: 15px 0; overflow: hidden; }
+        .progress-fill { width: 0%; height: 100%; background: var(--accent); transition: 1s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        
+        .action-buttons { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; }
+        .btn-round { width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 24px; cursor: pointer; box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
+        
+        /* Modal */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(240,240,243,0.95); z-index: 2000; align-items: center; justify-content: center; }
+        .modal-content { width: 85%; background: var(--bg); padding: 25px; border-radius: 25px; box-shadow: 10px 10px 20px #d1d9e6; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: none; border-radius: 12px; background: var(--bg); box-shadow: inset 2px 2px 5px #d1d9e6; }
     </style>
 </head>
 <body>
 
     <header class="header">
         <button class="back-btn" onclick="window.location.href='index.html'">✕</button>
-        <h2 style="margin: 0; font-weight: 800;">Mi Salud</h2>
+        <h2 style="margin: 0; font-weight: 800;">Mi Nutrición AI</h2>
     </header>
 
-    <div class="card-calories">
-        <div style="font-size: 14px; color: #888;">Balance Energético (Hoy)</div>
-        <div class="progress-circle" id="net-calories">0 <span style="font-size: 16px; color: #aaa;">/ 2,000 kcal</span></div>
+    <!-- Panel de Calorías y Macros -->
+    <div class="card">
+        <div style="font-size: 13px; color: #888;">Consumo Diario</div>
+        <div style="font-size: 28px; font-weight: 800;" id="total-calories">0 <span style="font-size: 14px; color: #aaa;">/ 2,000 kcal</span></div>
         <div class="progress-bar"><div class="progress-fill" id="bar-fill"></div></div>
         
-        <div class="macro-grid">
-            <div class="macro-item"><strong id="sum-prot">0g</strong>Prot</div>
-            <div class="macro-item"><strong id="sum-carbs">0g</strong>Carbs</div>
-            <div class="macro-item"><strong id="sum-fats">0g</strong>Grasas</div>
+        <div class="macros-grid">
+            <div class="macro-item">
+                <span class="macro-val" id="total-prot" style="color: #e67e22;">0g</span>
+                <span class="macro-label">Proteína</span>
+            </div>
+            <div class="macro-item">
+                <span class="macro-val" id="total-carbs" style="color: #3498db;">0g</span>
+                <span class="macro-label">Carbs</span>
+            </div>
+            <div class="macro-item">
+                <span class="macro-val" id="total-fats" style="color: #f1c40f;">0g</span>
+                <span class="macro-label">Grasas</span>
+            </div>
         </div>
     </div>
 
-    <h3 class="section-title">Actividad Reciente</h3>
-    <div id="activity-list"></div>
+    <!-- Propuesta de Ejercicio -->
+    <div class="card exercise-card" id="exercise-suggestion" style="display: none;">
+        <div class="exercise-title">🏃‍♂️ Propuesta de Actividad</div>
+        <p id="exercise-text" style="font-size: 13px; margin: 5px 0; line-height: 1.4; color: #555;">Calculando recomendación según tu ingesta...</p>
+    </div>
+
+    <h3 style="margin-left: 25px; font-size: 16px;">Registro de Hoy</h3>
+    <div id="food-list"></div>
 
     <div class="action-buttons">
-        <button class="btn-round manual-btn" onclick="openModal('food')">🥗</button>
-        <button class="btn-round cam-btn" onclick="abrirCamara()">📸</button>
-        <button class="btn-round exercise-btn" onclick="openModal('exercise')">🏃‍♂️</button>
+        <button class="btn-round" style="background: white;" onclick="document.getElementById('manual-modal').style.display='flex'">📝</button>
+        <button class="btn-round" style="background: var(--dark); color: white;" onclick="document.getElementById('camera-input').click()">📸</button>
     </div>
 
-    <!-- Modal Dinámico -->
-    <div id="main-modal" class="modal">
-        <div class="modal-content" id="modal-body"></div>
-    </div>
-
+    <!-- Modales e Inputs Ocultos -->
     <input type="file" id="camera-input" accept="image/*" capture="environment" style="display: none;">
+    
+    <div id="manual-modal" class="modal">
+        <div class="modal-content">
+            <h3>Registro Manual</h3>
+            <input type="text" id="m-name" placeholder="Nombre del alimento">
+            <input type="number" id="m-cal" placeholder="Calorías">
+            <input type="number" id="m-prot" placeholder="Proteína (g)">
+            <input type="number" id="m-carbs" placeholder="Carbohidratos (g)">
+            <input type="number" id="m-fats" placeholder="Grasas (g)">
+            <button onclick="guardarManual()" style="width:100%; padding:15px; background:var(--accent); color:white; border:none; border-radius:12px; font-weight:bold; margin-top:10px;">Guardar</button>
+            <button onclick="this.parentElement.parentElement.style.display='none'" style="width:100%; background:none; border:none; color:#888; margin-top:10px;">Cerrar</button>
+        </div>
+    </div>
 
     <script>
-    // 1. CONFIGURACIÓN (He cambiado 'supabase' por 'sbClient' para evitar el SyntaxError)
-    const sbUrl = 'https://cpveuexgxwxjejurtwro.supabase.co';
-    const sbKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc';
-    const sbClient = window.supabase.createClient(sbUrl, sbKey);
+        const supabaseUrl = 'https://cpveuexgxwxjejurtwro.supabase.co';
+        const supabaseKey = 'TU_KEY_AQUI'; // Usa la que ya tienes
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-    let totals = { cal: 0, prot: 0, carbs: 0, fats: 0 };
+        // Estado Global
+        let totales = { cal: 0, prot: 0, carbs: 0, fats: 0 };
 
-    // 2. CARGA INICIAL
-    window.onload = cargarDatosHoy;
+        // 1. PROCESAMIENTO DE IMAGEN (IA)
+        document.getElementById('camera-input').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
 
-    async function cargarDatosHoy() {
-        const hace24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-        
-        try {
-            const { data, error } = await sbClient
-                .from('registros_dieta')
-                .select('*')
-                .gt('creado_at', hace24h)
-                .order('creado_at', { ascending: false });
+            // Aquí mostrarías un loading...
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = async () => {
+                const base64 = reader.result.split(',')[1];
+                try {
+                    // Llamamos a la función "chef-ia"
+                    // Nota: Asegúrate que tu Edge Function devuelva: 
+                    // { nombre_alimento, calorias, proteinas, carbohidratos, grasas, emoji, sugerencia_ejercicio }
+                    const { data, error } = await supabase.functions.invoke('chef-ia', {
+                        body: { imagenBase64: base64 }
+                    });
 
-            if (error) throw error;
+                    if (error) throw error;
+                    procesarNuevoRegistro(data);
+                    
+                } catch (err) {
+                    alert("Error IA: " + err.message);
+                }
+            };
+        });
 
-            if (data) {
-                document.getElementById('activity-list').innerHTML = '';
-                totals = { cal: 0, prot: 0, carbs: 0, fats: 0 };
-                data.forEach(item => renderItem(item));
-                updateUI();
-            }
-        } catch (err) {
-            console.error("Error cargando datos:", err.message);
+        function guardarManual() {
+            const data = {
+                nombre_alimento: document.getElementById('m-name').value,
+                calorias: parseInt(document.getElementById('m-cal').value) || 0,
+                proteinas: parseFloat(document.getElementById('m-prot').value) || 0,
+                carbohidratos: parseFloat(document.getElementById('m-carbs').value) || 0,
+                grasas: parseFloat(document.getElementById('m-fats').value) || 0,
+                emoji: '🍴',
+                sugerencia_ejercicio: "Caminata ligera de 15 min para estabilizar glucosa." // Default manual
+            };
+            procesarNuevoRegistro(data);
+            document.getElementById('manual-modal').style.display = 'none';
         }
-    }
 
-    // 3. FUNCIONES DE INTERFAZ (Modales y Cámara)
-    function openModal(type) {
-        const body = document.getElementById('modal-body');
-        if(type === 'food') {
-            body.innerHTML = `
-                <h3>Registrar Alimento</h3>
-                <input type="text" id="m-name" placeholder="Ej: Pechuga de Pollo">
-                <input type="number" id="m-cal" placeholder="Calorías">
-                <input type="number" id="m-prot" placeholder="Proteína (g)">
-                <input type="number" id="m-carbs" placeholder="Carbs (g)">
-                <input type="number" id="m-fats" placeholder="Grasas (g)">
-                <button class="primary-btn" onclick="saveData('food')">Guardar Alimento</button>
-            `;
-        } else {
-            body.innerHTML = `
-                <h3>Registrar Ejercicio</h3>
-                <input type="text" id="m-name" placeholder="Ej: Correr 5km">
-                <input type="number" id="m-cal" placeholder="Calorías Quemadas">
-                <button class="primary-btn" style="background:var(--blue)" onclick="saveData('exercise')">Restar Calorías</button>
-            `;
-        }
-        document.getElementById('main-modal').style.display = 'flex';
-    }
+        function procesarNuevoRegistro(item) {
+            // Actualizar Totales
+            totales.cal += item.calorias;
+            totales.prot += item.proteinas;
+            totales.carbs += item.carbohidratos;
+            totales.fats += item.grasas;
 
-    // Función para cerrar modal si se hace clic fuera
-    window.onclick = function(event) {
-        const modal = document.getElementById('main-modal');
-        if (event.target == modal) modal.style.display = "none";
-    }
-
-    function abrirCamara() { 
-        document.getElementById('camera-input').click(); 
-    }
-
-    // 4. GUARDADO DE DATOS
-    async function saveData(type) {
-        const nombre = document.getElementById('m-name').value;
-        let cal = parseInt(document.getElementById('m-cal').value) || 0;
-        
-        if (!nombre || cal === 0) return alert("Por favor llena los campos básicos.");
-
-        if(type === 'exercise') cal = -Math.abs(cal);
-
-        const newRecord = {
-            nombre_alimento: nombre,
-            calorias: cal,
-            proteinas: parseFloat(document.getElementById('m-prot')?.value) || 0,
-            carbohidratos: parseFloat(document.getElementById('m-carbs')?.value) || 0,
-            grasas: parseFloat(document.getElementById('m-fats')?.value) || 0
-            // El usuario_id se maneja mejor si tienes auth, si no, puedes omitirlo o usar uno fijo
-        };
-
-        const { data, error } = await sbClient.from('registros_dieta').insert([newRecord]).select();
-        
-        if (error) {
-            alert("Error al guardar: " + error.message);
-        } else {
-            renderItem(data[0]);
-            updateUI();
-            document.getElementById('main-modal').style.display = 'none';
-        }
-    }
-
-    function renderItem(item) {
-        const isEx = item.calorias < 0;
-        const div = document.createElement('div');
-        div.className = `food-item ${isEx ? 'exercise-item' : ''}`;
-        div.innerHTML = `
-            <div class="food-img">${isEx ? '🏃‍♂️' : '🥗'}</div>
-            <div style="flex:1">
-                <div style="font-weight:bold">${item.nombre_alimento}</div>
-                <div style="font-size:11px; color:#888;">
-                    ${Math.abs(item.calorias)} kcal ${!isEx ? `• P: ${item.proteinas}g • C: ${item.carbohidratos}g` : 'Quemadas'}
+            // Renderizar en lista
+            const div = document.createElement('div');
+            div.className = 'food-item';
+            div.innerHTML = `
+                <div class="food-img">${item.emoji || '🥗'}</div>
+                <div style="flex:1">
+                    <div style="font-weight:bold">${item.nombre_alimento}</div>
+                    <div style="font-size:11px; color:#888;">
+                        ${item.calorias} kcal • P: ${item.proteinas}g • C: ${item.carbohidratos}g • G: ${item.grasas}g
+                    </div>
                 </div>
-            </div>
-            <div style="font-weight:bold; color:${isEx ? 'var(--blue)' : 'var(--dark)'}">
-                ${isEx ? '-' : '+'}${Math.abs(item.calorias)}
-            </div>
-        `;
-        document.getElementById('activity-list').prepend(div);
-        
-        totals.cal += item.calorias;
-        totals.prot += item.proteinas || 0;
-        totals.carbs += item.carbohidratos || 0;
-        totals.fats += item.grasas || 0;
-    }
+            `;
+            document.getElementById('food-list').prepend(div);
 
-    function updateUI() {
-        document.getElementById('net-calories').innerHTML = `${totals.cal.toLocaleString()} <span style="font-size: 16px; color: #aaa;">/ 2,000 kcal</span>`;
-        document.getElementById('sum-prot').innerText = totals.prot.toFixed(1) + 'g';
-        document.getElementById('sum-carbs').innerText = totals.carbs.toFixed(1) + 'g';
-        document.getElementById('sum-fats').innerText = totals.fats.toFixed(1) + 'g';
-        
-        const porc = (totals.cal / 2000) * 100;
-        document.getElementById('bar-fill').style.width = `${Math.min(Math.max(porc, 0), 100)}%`;
-    }
-</script>
+            // Actualizar UI General
+            updateUI(item.sugerencia_ejercicio);
+        }
+
+        function updateUI(sugerencia) {
+            // Actualizar Texto y Barra
+            document.getElementById('total-calories').innerHTML = `${totales.cal.toLocaleString()} <span style="font-size: 14px; color: #aaa;">/ 2,000 kcal</span>`;
+            document.getElementById('total-prot').innerText = totales.prot.toFixed(1) + 'g';
+            document.getElementById('total-carbs').innerText = totales.carbs.toFixed(1) + 'g';
+            document.getElementById('total-fats').innerText = totales.fats.toFixed(1) + 'g';
+
+            const porc = (totales.cal / 2000) * 100;
+            document.getElementById('bar-fill').style.width = `${Math.min(porc, 100)}%`;
+
+            // Mostrar Sugerencia de Ejercicio
+            if (sugerencia) {
+                const card = document.getElementById('exercise-suggestion');
+                card.style.display = 'block';
+                document.getElementById('exercise-text').innerText = sugerencia;
+            }
+        }
+    </script>
 </body>
 </html>
