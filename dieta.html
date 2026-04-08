@@ -147,8 +147,8 @@
             const { data, error } = await supabaseClient
                 .from('registros_dieta')
                 .select('*')
-                .gt('created_at', hace24h)
-                .order('created_at', { ascending: false });
+                .gt('creadod_at', hace24h)
+                .order('creado_at', { ascending: false });
 
             if (error) throw error;
 
@@ -214,26 +214,36 @@
     }
 
     // 5. GUARDAR Y RENDERIZAR
-    async function guardarEnBD(infoIA) {
-        const nuevoRegistro = {
-            nombre_alimento: infoIA.nombre_alimento,
-            calorias: parseInt(infoIA.calorias) || 0,
-            proteinas: parseFloat(infoIA.proteinas) || 0,
-            carbohidratos: parseFloat(infoIA.carbohidratos) || 0,
-            grasas: parseFloat(infoIA.grasas) || 0
-        };
+async function guardarEnBD(infoIA) {
+    // 1. Obtenemos al usuario actual
+    const { data: { user } } = await supabaseClient.auth.getUser();
 
-        const { data, error } = await supabaseClient
-            .from('registros_dieta')
-            .insert([nuevoRegistro])
-            .select();
-
-        if (error) {
-            alert("Error al guardar: " + error.message);
-        } else {
-            renderizarPlatillo(data[0]);
-        }
+    if (!user) {
+        alert("Debes iniciar sesión para guardar alimentos.");
+        return;
     }
+
+    const nuevoRegistro = {
+        usuario_id: user.id, // <--- ESTO ES VITAL para que la RLS te deje pasar
+        nombre_alimento: infoIA.nombre_alimento,
+        calorias: parseInt(infoIA.calorias) || 0,
+        proteinas: parseFloat(infoIA.proteinas) || 0,
+        carbohidratos: parseFloat(infoIA.carbohidratos) || 0,
+        grasas: parseFloat(infoIA.grasas) || 0
+    };
+
+    const { data, error } = await supabaseClient
+        .from('registros_dieta')
+        .insert([nuevoRegistro])
+        .select();
+
+    if (error) {
+        console.error("Detalle del error:", error); // Para ver más info en consola
+        alert("Error al guardar: " + error.message);
+    } else {
+        renderizarPlatillo(data[0]);
+    }
+}
 
     function renderizarPlatillo(item) {
         totales.cal += item.calorias;
