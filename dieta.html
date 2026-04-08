@@ -3,211 +3,314 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Salud y Dieta - OrdenLista</title>
+    <title>Salud y Dieta AI</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        :root { --bg: #f0f0f3; --dark: #2c2c2e; --accent: #4caf50; --error: #ff5252; }
-        * { box-sizing: border-box; font-family: -apple-system, system-ui, sans-serif; }
-        body { background: var(--bg); margin: 0; padding-bottom: 100px; }
+        :root { 
+            --bg: #f4f5f8; --dark: #1d1d1f; --accent: #000000; 
+            --prot: #ff4d4d; --carb: #ff9f0a; --fat: #32ade6; 
+        }
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background: var(--bg); margin: 0; padding-bottom: 100px; color: var(--dark); }
 
         /* Header */
-        .header { padding: 50px 20px 20px; text-align: center; position: sticky; top: 0; background: var(--bg); z-index: 100; }
-        .back-btn { position: absolute; left: 20px; top: 50px; background: var(--bg); border: none; padding: 12px; border-radius: 50%; box-shadow: 4px 4px 10px #d1d9e6, -4px -4px 10px #ffffff; cursor: pointer; }
+        .header { padding: 50px 20px 20px; text-align: center; position: sticky; top: 0; background: rgba(244,245,248,0.9); backdrop-filter: blur(10px); z-index: 100; }
+        
+        /* Dashboard Totales */
+        .card-calories { background: white; margin: 20px; padding: 25px; border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; }
+        .progress-circle { font-size: 36px; font-weight: 800; margin: 10px 0; }
+        .macros-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px; }
+        .macro-item { background: var(--bg); padding: 10px; border-radius: 15px; }
+        .macro-val { font-weight: 800; font-size: 16px; display: block; }
+        .macro-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px;}
 
-        /* Calorie Card */
-        .card-calories { 
-            margin: 20px; padding: 25px; border-radius: 30px; 
-            background: var(--bg); box-shadow: 8px 8px 20px #d1d9e6, -8px -8px 20px #ffffff;
-            text-align: center;
-        }
-        .progress-circle { font-size: 32px; font-weight: 800; color: var(--dark); margin: 10px 0; }
-        .progress-bar { width: 100%; height: 12px; background: #e0e0e0; border-radius: 10px; overflow: hidden; margin-top: 15px; box-shadow: inset 2px 2px 5px #d1d9e6; }
-        .progress-fill { width: 65%; height: 100%; background: var(--accent); border-radius: 10px; transition: 0.5s; }
-
-        /* Food List */
-        .section-title { padding: 0 25px; font-size: 18px; font-weight: 700; margin-top: 30px; }
-        .food-item {
-            margin: 15px 25px; padding: 15px; border-radius: 20px; background: var(--bg);
-            box-shadow: 4px 4px 10px #d1d9e6, -4px -4px 10px #ffffff;
-            display: flex; align-items: center; gap: 15px;
-        }
-        .food-img { width: 50px; height: 50px; border-radius: 12px; background: #ddd; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+        /* Lista de Alimentos (Estilo Cal AI) */
+        .food-item { background: white; margin: 15px 20px; padding: 20px; border-radius: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.03); }
+        .food-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .food-title { font-weight: 700; font-size: 16px; }
+        .food-cal { font-size: 24px; font-weight: 800; display: flex; align-items: center; gap: 5px; }
+        
+        /* Chips de Macros */
+        .chips-container { display: flex; gap: 10px; }
+        .macro-chip { flex: 1; padding: 10px; border-radius: 16px; border: 1px solid #eee; text-align: left; }
+        .chip-label { font-size: 11px; color: #888; display: flex; align-items: center; gap: 5px; margin-bottom: 4px; }
+        .chip-val { font-weight: 700; font-size: 14px; }
 
         /* Botones Flotantes */
-        .action-buttons { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; z-index: 1000; }
-        .btn-round {
-            width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 24px;
-            display: flex; align-items: center; justify-content: center; cursor: pointer;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1); transition: 0.3s;
-        }
-        .cam-btn { background: var(--dark); color: white; }
-        .manual-btn { background: var(--bg); color: var(--dark); box-shadow: 4px 4px 10px #d1d9e6, -4px -4px 10px #ffffff; }
+        .action-buttons { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; z-index: 1000; }
+        .btn-round { width: 60px; height: 60px; border-radius: 30px; border: none; font-size: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 10px 25px rgba(0,0,0,0.15); transition: transform 0.2s; }
+        .btn-round:active { transform: scale(0.95); }
+        .cam-btn { background: var(--accent); color: white; width: 80px; }
+        .text-btn { background: white; color: var(--dark); }
+        .coach-btn { background: #5856d6; color: white; }
 
-        /* Modal Formulario Manual */
-        .modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(240, 240, 243, 0.9); z-index: 2000; justify-content: center; align-items: center;
-        }
-        .modal-content {
-            background: var(--bg); width: 90%; max-width: 400px; padding: 30px; border-radius: 30px;
-            box-shadow: 10px 10px 30px #d1d9e6, -10px -10px 30px #ffffff;
-        }
-        .modal-content h3 { margin-top: 0; text-align: center; }
-        .modal-content input {
-            width: 100%; padding: 15px; margin: 10px 0; border: none; border-radius: 15px;
-            background: var(--bg); box-shadow: inset 2px 2px 5px #d1d9e6, inset -2px -2px 5px #ffffff;
-            outline: none; font-size: 16px;
-        }
-        .modal-content button {
-            width: 100%; padding: 15px; margin-top: 20px; border: none; border-radius: 15px;
-            background: var(--accent); color: white; font-weight: bold; cursor: pointer;
-        }
+        /* Modales */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(5px); z-index: 2000; justify-content: center; align-items: flex-end; }
+        .modal-content { background: white; width: 100%; padding: 30px; border-radius: 30px 30px 0 0; animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .modal input { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #eee; border-radius: 15px; background: var(--bg); outline: none; font-size: 16px; }
+        .primary-btn { width: 100%; padding: 16px; margin-top: 15px; border: none; border-radius: 15px; background: var(--accent); color: white; font-weight: bold; font-size: 16px; cursor: pointer; }
 
-        /* Loading */
-        #loading-overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(240,240,243,0.9); z-index: 3000; justify-content: center; align-items: center; flex-direction: column;
-        }
-        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        /* Pantalla de Carga */
+        #loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 3000; justify-content: center; align-items: center; flex-direction: column; }
+        .spinner { font-size: 50px; animation: spin 1.5s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
     <header class="header">
-        <button class="back-btn" onclick="window.location.href='index.html'">✕</button>
-        <h2 style="margin: 0; font-weight: 800;">Mi Dieta</h2>
-        <p style="font-size: 14px; color: #888;">Seguimiento nutricional</p>
+        <h2 style="margin: 0; font-weight: 800;">Resumen Diario</h2>
     </header>
 
+    <!-- Tarjeta Dashboard -->
     <div class="card-calories">
-        <div style="font-size: 14px; color: #888;">Calorías de hoy</div>
-        <div class="progress-circle" id="total-calories">1,250 <span style="font-size: 16px; color: #aaa;">/ 2,000 kcal</span></div>
-        <div class="progress-bar"><div class="progress-fill" id="bar-fill"></div></div>
-    </div>
-
-    <h3 class="section-title">Comidas del día</h3>
-    <div id="food-list">
-        <!-- Aquí se cargan las comidas -->
-    </div>
-
-    <!-- Botones de Acción -->
-    <div class="action-buttons">
-        <button class="btn-round manual-btn" onclick="toggleModal(true)">📝</button>
-        <button class="btn-round cam-btn" onclick="abrirCamara()">📸</button>
-    </div>
-
-    <!-- Modal Formulario Manual -->
-    <div id="manual-modal" class="modal">
-        <div class="modal-content">
-            <h3>Agregar Comida</h3>
-            <input type="text" id="manual-nombre" placeholder="¿Qué comiste? (ej: Manzana)">
-            <input type="number" id="manual-cal" placeholder="Calorías aproximadas">
-            <button onclick="guardarManual()">Guardar Registro</button>
-            <button onclick="toggleModal(false)" style="background:none; color:#888; font-weight:normal; box-shadow:none;">Cancelar</button>
+        <div style="font-size: 14px; color: #888;">Calorías Consumidas</div>
+        <div class="progress-circle" id="total-calories">0 <span style="font-size: 16px; color: #aaa; font-weight: 500;">/ 2000 kcal</span></div>
+        
+        <div class="macros-grid">
+            <div class="macro-item">
+                <span class="macro-val" id="total-prot" style="color: var(--prot);">0g</span>
+                <span class="macro-label">Proteína</span>
+            </div>
+            <div class="macro-item">
+                <span class="macro-val" id="total-carbs" style="color: var(--carb);">0g</span>
+                <span class="macro-label">Carbs</span>
+            </div>
+            <div class="macro-item">
+                <span class="macro-val" id="total-fats" style="color: var(--fat);">0g</span>
+                <span class="macro-label">Grasas</span>
+            </div>
         </div>
     </div>
 
+    <!-- Lista de Platillos -->
+    <div id="food-list">
+        <!-- Los items se cargarán aquí -->
+    </div>
+
+    <!-- Botones Flotantes -->
+    <div class="action-buttons">
+        <button class="btn-round text-btn" onclick="openModal('text-modal')">✍️</button>
+        <button class="btn-round cam-btn" onclick="document.getElementById('camera-input').click()">📸</button>
+        <button class="btn-round coach-btn" onclick="pedirConsejoCoach()">🧠</button>
+    </div>
+
+    <!-- Inputs Ocultos -->
     <input type="file" id="camera-input" accept="image/*" capture="environment" style="display: none;">
 
+    <!-- Modal de Texto IA -->
+    <div id="text-modal" class="modal" onclick="closeModal(event, 'text-modal')">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">Buscar con IA</h3>
+            <p style="font-size: 14px; color: #666;">Describe lo que comiste y su peso aproximado.</p>
+            <input type="text" id="ai-food-name" placeholder="Ej: Dos rebanadas de pan con aguacate">
+            <input type="text" id="ai-food-weight" placeholder="Peso o cantidad (Ej: 150g o 1 porción)">
+            <button class="primary-btn" onclick="analizarTextoIA()">Analizar y Guardar</button>
+        </div>
+    </div>
+
+    <!-- Modal Coach -->
+    <div id="coach-modal" class="modal" onclick="closeModal(event, 'coach-modal')">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">👨‍⚕️ Coach Metabólico</h3>
+            <div id="coach-response" style="line-height: 1.5; color: #444; min-height: 100px;">
+                Analizando tu ingesta del día...
+            </div>
+            <button class="primary-btn" onclick="document.getElementById('coach-modal').style.display='none'">Entendido</button>
+        </div>
+    </div>
+
+    <!-- Overlay de Carga -->
     <div id="loading-overlay">
-        <div style="font-size: 40px; animation: bounce 1s infinite;">🤖</div>
-        <p style="font-weight: bold; margin-top: 10px;">Analizando macros...</p>
+        <div class="spinner">⏳</div>
+        <p style="font-weight: bold; margin-top: 20px;" id="loading-text">Analizando alimento...</p>
     </div>
 
     <script>
-        // 1. CONFIGURACIÓN INICIAL (URL CORREGIDA)
+        // 1. CONFIGURACIÓN SUPABASE
         const supabaseUrl = 'https://cpveuexgxwxjejurtwro.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc';
-        const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+        const supabaseKey = 'TU_LLAVE_AQUI'; // ¡Pon tu anon key real!
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        // Referencias del DOM definidas al inicio para evitar errores de inicialización
-        const cameraInput = document.getElementById('camera-input');
-        const loadingOverlay = document.getElementById('loading-overlay');
-        const foodList = document.getElementById('food-list');
-        const manualModal = document.getElementById('manual-modal');
+        let totales = { cal: 0, prot: 0, carbs: 0, fats: 0 };
+        let listaAlimentosHoy = []; // Guardamos los textos para el coach
 
-        // 2. FUNCIONES DE CÁMARA
-        function abrirCamara() {
-            if (cameraInput) {
-                cameraInput.click();
-            } else {
-                console.error("No se encontró el input de cámara");
+        // 2. CARGA INICIAL (Persistencia)
+        window.onload = async () => {
+            mostrarCarga(true, "Cargando tu día...");
+            const hace24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+            
+            try {
+                // Requiere que el usuario esté logueado, o que la política RLS permita lecturas anónimas
+                const { data, error } = await supabase
+                    .from('registros_dieta')
+                    .select('*')
+                    .gt('creado_at', hace24h)
+                    .order('creado_at', { ascending: false });
+
+                if (error) throw error;
+
+                if (data) {
+                    data.reverse().forEach(item => renderizarPlatillo(item));
+                }
+            } catch (err) {
+                console.error("Error al cargar:", err);
+            } finally {
+                mostrarCarga(false);
             }
-        }
+        };
 
-        cameraInput.addEventListener('change', async (e) => {
+        // 3. ANÁLISIS DE IMAGEN CON IA
+        document.getElementById('camera-input').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
 
-            loadingOverlay.style.display = 'flex';
+            mostrarCarga(true, "La IA está analizando tu foto...");
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onload = async () => {
-                const base64String = reader.result.split(',')[1];
+                const base64 = reader.result.split(',')[1];
                 try {
-                    const { data, error } = await supabaseClient.functions.invoke('chef-ia', {
-                        body: { imagenBase64: base64String }
+                    // Llama a tu función Edge
+                    const { data, error } = await supabase.functions.invoke('chef-ia', {
+                        body: { tipo: 'imagen', imagenBase64: base64 }
                     });
                     if (error) throw error;
-                    agregarPlatilloALaLista(data);
+                    await guardarEnBD(data);
                 } catch (err) {
-                    alert("Error con la IA: " + err.message);
+                    alert("Error con la foto: " + err.message);
                 } finally {
-                    loadingOverlay.style.display = 'none';
-                    cameraInput.value = ''; 
+                    mostrarCarga(false);
+                    document.getElementById('camera-input').value = ''; 
                 }
             };
         });
 
-        // 3. FUNCIONES MANUALES
-        function toggleModal(show) {
-            manualModal.style.display = show ? 'flex' : 'none';
+        // 4. ANÁLISIS DE TEXTO CON IA
+        async function analizarTextoIA() {
+            const nombre = document.getElementById('ai-food-name').value;
+            const peso = document.getElementById('ai-food-weight').value;
+            if (!nombre) return alert("Por favor ingresa qué comiste.");
+
+            document.getElementById('text-modal').style.display = 'none';
+            mostrarCarga(true, "Calculando macros exactos...");
+
+            try {
+                // Llama a la MISMA función Edge, pero pasándole texto
+                const { data, error } = await supabase.functions.invoke('chef-ia', {
+                    body: { tipo: 'texto', alimento: nombre, cantidad: peso }
+                });
+                if (error) throw error;
+                await guardarEnBD(data);
+                
+                document.getElementById('ai-food-name').value = '';
+                document.getElementById('ai-food-weight').value = '';
+            } catch (err) {
+                alert("Error calculando: " + err.message);
+            } finally {
+                mostrarCarga(false);
+            }
         }
 
-        function guardarManual() {
-            const nombre = document.getElementById('manual-nombre').value;
-            const calorias = document.getElementById('manual-cal').value;
-
-            if (!nombre || !calorias) return alert("Completa ambos campos");
-
-            const datos = {
-                nombre_alimento: nombre,
-                calorias: parseInt(calorias),
-                proteinas: '?', 
-                carbohidratos: '?',
-                emoji: '🍴'
+        // 5. GUARDAR EN BD Y RENDERIZAR
+        async function guardarEnBD(infoIA) {
+            // Aseguramos formato numérico
+            const nuevoRegistro = {
+                nombre_alimento: infoIA.nombre_alimento,
+                calorias: parseInt(infoIA.calorias) || 0,
+                proteinas: parseFloat(infoIA.proteinas) || 0,
+                carbohidratos: parseFloat(infoIA.carbohidratos) || 0,
+                grasas: parseFloat(infoIA.grasas) || 0
+                // usuario_id: Si usas auth, Supabase lo asigna si usas supabase.auth
             };
 
-            agregarPlatilloALaLista(datos);
-            toggleModal(false);
-            
-            // Limpiar inputs
-            document.getElementById('manual-nombre').value = '';
-            document.getElementById('manual-cal').value = '';
+            const { data, error } = await supabase
+                .from('registros_dieta')
+                .insert([nuevoRegistro])
+                .select();
+
+            if (error) {
+                alert("Error al guardar en base de datos: " + error.message);
+            } else {
+                renderizarPlatillo(data[0]);
+            }
         }
 
-        // 4. RENDERIZADO
-        function agregarPlatilloALaLista(datosA) {
-            const nuevoDiv = document.createElement('div');
-            nuevoDiv.classList.add('food-item');
-            nuevoDiv.innerHTML = `
-                <div class="food-img">${datosA.emoji || '🍴'}</div>
-                <div style="flex:1">
-                    <div style="font-weight: bold;">${datosA.nombre_alimento}</div>
-                    <div style="font-size: 12px; color: #888;">${datosA.calorias} kcal • Prot: ${datosA.proteinas}g</div>
+        function renderizarPlatillo(item) {
+            // Actualizar variables globales
+            totales.cal += item.calorias;
+            totales.prot += item.proteinas;
+            totales.carbs += item.carbohidratos;
+            totales.fats += item.grasas;
+            listaAlimentosHoy.push(item.nombre_alimento);
+
+            // Crear Tarjeta estilo Cal AI
+            const div = document.createElement('div');
+            div.className = 'food-item';
+            div.innerHTML = `
+                <div class="food-header">
+                    <div class="food-title">${item.nombre_alimento}</div>
+                    <div class="food-cal">🔥 ${item.calorias}</div>
+                </div>
+                <div class="chips-container">
+                    <div class="macro-chip">
+                        <div class="chip-label"><span style="color:var(--prot)">●</span> Prot</div>
+                        <div class="chip-val">${item.proteinas}g</div>
+                    </div>
+                    <div class="macro-chip">
+                        <div class="chip-label"><span style="color:var(--carb)">●</span> Carb</div>
+                        <div class="chip-val">${item.carbohidratos}g</div>
+                    </div>
+                    <div class="macro-chip">
+                        <div class="chip-label"><span style="color:var(--fat)">●</span> Gras</div>
+                        <div class="chip-val">${item.grasas}g</div>
+                    </div>
                 </div>
             `;
-            foodList.insertBefore(nuevoDiv, foodList.firstChild);
-            actualizarBarra(datosA.calorias);
+            // Insertar al principio de la lista
+            document.getElementById('food-list').prepend(div);
+            actualizarUI();
         }
 
-        let totalHoy = 1250;
-        function actualizarBarra(nuevasCal) {
-            totalHoy += nuevasCal;
-            document.getElementById('total-calories').innerHTML = `${totalHoy.toLocaleString()} <span style="font-size: 16px; color: #aaa;">/ 2,000 kcal</span>`;
-            const porc = (totalHoy / 2000) * 100;
-            document.getElementById('bar-fill').style.width = `${Math.min(porc, 100)}%`;
-            if (porc > 100) document.getElementById('bar-fill').style.background = 'var(--error)';
+        function actualizarUI() {
+            document.getElementById('total-calories').innerHTML = `${totales.cal} <span style="font-size: 16px; color: #aaa; font-weight:500;">/ 2000 kcal</span>`;
+            document.getElementById('total-prot').innerText = totales.prot.toFixed(1) + 'g';
+            document.getElementById('total-carbs').innerText = totales.carbs.toFixed(1) + 'g';
+            document.getElementById('total-fats').innerText = totales.fats.toFixed(1) + 'g';
+        }
+
+        // 6. COACH METABÓLICO (IA de Ejercicio)
+        async function pedirConsejoCoach() {
+            if (listaAlimentosHoy.length === 0) return alert("Aún no has registrado comidas hoy.");
+            
+            document.getElementById('coach-modal').style.display = 'flex';
+            document.getElementById('coach-response').innerHTML = "⏳ Analizando tu carga glucémica y energética...";
+
+            try {
+                // Llamamos a otra función (o la misma con otro parámetro) para el coach
+                const { data, error } = await supabase.functions.invoke('coach-ia', {
+                    body: { 
+                        tipo: 'coach',
+                        calorias: totales.cal, 
+                        carbs: totales.carbs, 
+                        alimentos: listaAlimentosHoy 
+                    }
+                });
+                
+                if (error) throw error;
+                document.getElementById('coach-response').innerHTML = data.recomendacion;
+            } catch (err) {
+                document.getElementById('coach-response').innerHTML = "Hubo un error al contactar al coach: " + err.message;
+            }
+        }
+
+        // Utilidades de UI
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(e, id) { if(e.target.id === id) document.getElementById(id).style.display = 'none'; }
+        function mostrarCarga(mostrar, texto = "") { 
+            document.getElementById('loading-overlay').style.display = mostrar ? 'flex' : 'none';
+            if(texto) document.getElementById('loading-text').innerText = texto;
         }
     </script>
 </body>
