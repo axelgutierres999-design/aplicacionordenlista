@@ -92,24 +92,27 @@
     <input type="file" id="camera-input" accept="image/*" capture="environment" style="display: none;">
 
     <script>
-        const supabaseUrl = 'https://cpveuexgxwxjejurtwro.supabase.co';
-        const supabaseKey = 'TU_KEY_AQUÍ'; // Usa la que tienes en tu código
-        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+    // 1. CONFIGURACIÓN (He cambiado 'supabase' por 'sbClient' para evitar el SyntaxError)
+    const sbUrl = 'https://cpveuexgxwxjejurtwro.supabase.co';
+    const sbKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc';
+    const sbClient = window.supabase.createClient(sbUrl, sbKey);
 
-        let totals = { cal: 0, prot: 0, carbs: 0, fats: 0 };
+    let totals = { cal: 0, prot: 0, carbs: 0, fats: 0 };
 
-        // Cargar datos al iniciar
-        window.onload = cargarDatosHoy;
+    // 2. CARGA INICIAL
+    window.onload = cargarDatosHoy;
 
-        async function cargarDatosHoy() {
-            // Filtrar solo los registros de las últimas 24 horas
-            const hace24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-            
-            const { data, error } = await supabase
+    async function cargarDatosHoy() {
+        const hace24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        
+        try {
+            const { data, error } = await sbClient
                 .from('registros_dieta')
                 .select('*')
                 .gt('creado_at', hace24h)
                 .order('creado_at', { ascending: false });
+
+            if (error) throw error;
 
             if (data) {
                 document.getElementById('activity-list').innerHTML = '';
@@ -117,92 +120,107 @@
                 data.forEach(item => renderItem(item));
                 updateUI();
             }
+        } catch (err) {
+            console.error("Error cargando datos:", err.message);
         }
+    }
 
-        function openModal(type) {
-            const body = document.getElementById('modal-body');
-            if(type === 'food') {
-                body.innerHTML = `
-                    <h3>Registrar Alimento</h3>
-                    <input type="text" id="m-name" placeholder="Ej: Pechuga de Pollo">
-                    <input type="number" id="m-cal" placeholder="Calorías">
-                    <input type="number" id="m-prot" placeholder="Proteína (g)">
-                    <input type="number" id="m-carbs" placeholder="Carbs (g)">
-                    <input type="number" id="m-fats" placeholder="Grasas (g)">
-                    <button class="primary-btn" onclick="saveData('food')">Guardar Alimento</button>
-                `;
-            } else {
-                body.innerHTML = `
-                    <h3>Registrar Ejercicio</h3>
-                    <input type="text" id="m-name" placeholder="Ej: Correr 5km">
-                    <input type="number" id="m-cal" placeholder="Calorías Quemadas">
-                    <button class="primary-btn" style="background:var(--blue)" onclick="saveData('exercise')">Restar Calorías</button>
-                `;
-            }
-            document.getElementById('main-modal').style.display = 'flex';
-        }
-
-        async function saveData(type) {
-            const nombre = document.getElementById('m-name').value;
-            let cal = parseInt(document.getElementById('m-cal').value) || 0;
-            
-            // Si es ejercicio, las calorías se guardan en negativo para el balance
-            if(type === 'exercise') cal = -Math.abs(cal);
-
-            const newRecord = {
-                nombre_alimento: nombre,
-                calorias: cal,
-                proteinas: parseFloat(document.getElementById('m-prot')?.value) || 0,
-                carbohidratos: parseFloat(document.getElementById('m-carbs')?.value) || 0,
-                grasas: parseFloat(document.getElementById('m-fats')?.value) || 0,
-                usuario_id: (await supabase.auth.getUser()).data.user?.id
-            };
-
-            const { data, error } = await supabase.from('registros_dieta').insert([newRecord]).select();
-            
-            if (data) {
-                renderItem(data[0]);
-                updateUI();
-                document.getElementById('main-modal').style.display = 'none';
-            }
-        }
-
-        function renderItem(item) {
-            const isEx = item.calorias < 0;
-            const div = document.createElement('div');
-            div.className = `food-item ${isEx ? 'exercise-item' : ''}`;
-            div.innerHTML = `
-                <div class="food-img">${isEx ? '🏃‍♂️' : '🥗'}</div>
-                <div style="flex:1">
-                    <div style="font-weight:bold">${item.nombre_alimento}</div>
-                    <div style="font-size:11px; color:#888;">
-                        ${Math.abs(item.calorias)} kcal ${!isEx ? `• P: ${item.proteinas}g • C: ${item.carbohidratos}g` : 'Quemadas'}
-                    </div>
-                </div>
-                <div style="font-weight:bold; color:${isEx ? 'var(--blue)' : 'var(--dark)'}">
-                    ${isEx ? '-' : '+'}${Math.abs(item.calorias)}
-                </div>
+    // 3. FUNCIONES DE INTERFAZ (Modales y Cámara)
+    function openModal(type) {
+        const body = document.getElementById('modal-body');
+        if(type === 'food') {
+            body.innerHTML = `
+                <h3>Registrar Alimento</h3>
+                <input type="text" id="m-name" placeholder="Ej: Pechuga de Pollo">
+                <input type="number" id="m-cal" placeholder="Calorías">
+                <input type="number" id="m-prot" placeholder="Proteína (g)">
+                <input type="number" id="m-carbs" placeholder="Carbs (g)">
+                <input type="number" id="m-fats" placeholder="Grasas (g)">
+                <button class="primary-btn" onclick="saveData('food')">Guardar Alimento</button>
             `;
-            document.getElementById('activity-list').prepend(div);
-            
-            // Actualizar acumulados
-            totals.cal += item.calorias;
-            totals.prot += item.proteinas || 0;
-            totals.carbs += item.carbohidratos || 0;
-            totals.fats += item.grasas || 0;
+        } else {
+            body.innerHTML = `
+                <h3>Registrar Ejercicio</h3>
+                <input type="text" id="m-name" placeholder="Ej: Correr 5km">
+                <input type="number" id="m-cal" placeholder="Calorías Quemadas">
+                <button class="primary-btn" style="background:var(--blue)" onclick="saveData('exercise')">Restar Calorías</button>
+            `;
         }
+        document.getElementById('main-modal').style.display = 'flex';
+    }
 
-        function updateUI() {
-            document.getElementById('net-calories').innerHTML = `${totals.cal.toLocaleString()} <span style="font-size: 16px; color: #aaa;">/ 2,000 kcal</span>`;
-            document.getElementById('sum-prot').innerText = totals.prot.toFixed(1) + 'g';
-            document.getElementById('sum-carbs').innerText = totals.carbs.toFixed(1) + 'g';
-            document.getElementById('sum-fats').innerText = totals.fats.toFixed(1) + 'g';
-            
-            const porc = (totals.cal / 2000) * 100;
-            document.getElementById('bar-fill').style.width = `${Math.min(Math.max(porc, 0), 100)}%`;
+    // Función para cerrar modal si se hace clic fuera
+    window.onclick = function(event) {
+        const modal = document.getElementById('main-modal');
+        if (event.target == modal) modal.style.display = "none";
+    }
+
+    function abrirCamara() { 
+        document.getElementById('camera-input').click(); 
+    }
+
+    // 4. GUARDADO DE DATOS
+    async function saveData(type) {
+        const nombre = document.getElementById('m-name').value;
+        let cal = parseInt(document.getElementById('m-cal').value) || 0;
+        
+        if (!nombre || cal === 0) return alert("Por favor llena los campos básicos.");
+
+        if(type === 'exercise') cal = -Math.abs(cal);
+
+        const newRecord = {
+            nombre_alimento: nombre,
+            calorias: cal,
+            proteinas: parseFloat(document.getElementById('m-prot')?.value) || 0,
+            carbohidratos: parseFloat(document.getElementById('m-carbs')?.value) || 0,
+            grasas: parseFloat(document.getElementById('m-fats')?.value) || 0
+            // El usuario_id se maneja mejor si tienes auth, si no, puedes omitirlo o usar uno fijo
+        };
+
+        const { data, error } = await sbClient.from('registros_dieta').insert([newRecord]).select();
+        
+        if (error) {
+            alert("Error al guardar: " + error.message);
+        } else {
+            renderItem(data[0]);
+            updateUI();
+            document.getElementById('main-modal').style.display = 'none';
         }
+    }
 
-        function abrirCamara() { document.getElementById('camera-input').click(); }
-    </script>
+    function renderItem(item) {
+        const isEx = item.calorias < 0;
+        const div = document.createElement('div');
+        div.className = `food-item ${isEx ? 'exercise-item' : ''}`;
+        div.innerHTML = `
+            <div class="food-img">${isEx ? '🏃‍♂️' : '🥗'}</div>
+            <div style="flex:1">
+                <div style="font-weight:bold">${item.nombre_alimento}</div>
+                <div style="font-size:11px; color:#888;">
+                    ${Math.abs(item.calorias)} kcal ${!isEx ? `• P: ${item.proteinas}g • C: ${item.carbohidratos}g` : 'Quemadas'}
+                </div>
+            </div>
+            <div style="font-weight:bold; color:${isEx ? 'var(--blue)' : 'var(--dark)'}">
+                ${isEx ? '-' : '+'}${Math.abs(item.calorias)}
+            </div>
+        `;
+        document.getElementById('activity-list').prepend(div);
+        
+        totals.cal += item.calorias;
+        totals.prot += item.proteinas || 0;
+        totals.carbs += item.carbohidratos || 0;
+        totals.fats += item.grasas || 0;
+    }
+
+    function updateUI() {
+        document.getElementById('net-calories').innerHTML = `${totals.cal.toLocaleString()} <span style="font-size: 16px; color: #aaa;">/ 2,000 kcal</span>`;
+        document.getElementById('sum-prot').innerText = totals.prot.toFixed(1) + 'g';
+        document.getElementById('sum-carbs').innerText = totals.carbs.toFixed(1) + 'g';
+        document.getElementById('sum-fats').innerText = totals.fats.toFixed(1) + 'g';
+        
+        const porc = (totals.cal / 2000) * 100;
+        document.getElementById('bar-fill').style.width = `${Math.min(Math.max(porc, 0), 100)}%`;
+    }
+</script>
 </body>
 </html>
