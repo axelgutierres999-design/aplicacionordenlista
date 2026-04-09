@@ -139,29 +139,38 @@
     let listaAlimentosHoy = []; 
 
     // 2. CARGA INICIAL
-    window.onload = async () => {
-        mostrarCarga(true, "Cargando tu día...");
-        const hace24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-        
-        try {
-            const { data, error } = await supabaseClient
-                .from('registros_dieta')
-                .select('*')
-                .gt('creadod_at', hace24h)
-                .order('creado_at', { ascending: false });
+// Reemplaza tu window.onload por esto:
+window.addEventListener('pageshow', async (event) => {
+    // Limpiamos los totales y la lista local para evitar duplicados al recargar
+    totales = { cal: 0, prot: 0, carbs: 0, fats: 0 };
+    listaAlimentosHoy = [];
+    document.getElementById('food-list').innerHTML = '';
 
-            if (error) throw error;
+    mostrarCarga(true, "Sincronizando registros...");
+    await cargarRegistrosUltimas24Horas();
+    mostrarCarga(false);
+});
 
-            if (data) {
-                document.getElementById('food-list').innerHTML = '';
-                data.reverse().forEach(item => renderizarPlatillo(item));
-            }
-        } catch (err) {
-            console.error("Error al cargar:", err);
-        } finally {
-            mostrarCarga(false);
+async function cargarRegistrosUltimas24Horas() {
+    const hace24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    
+    try {
+        const { data, error } = await supabaseClient
+            .from('registros_dieta')
+            .select('*')
+            .gt('creado_at', hace24h)
+            .order('creado_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            // Renderizamos cada elemento recuperado de la base de datos
+            data.forEach(item => renderizarPlatillo(item));
         }
-    };
+    } catch (err) {
+        console.error("Error al recuperar datos:", err);
+    }
+}
 
     // 3. ANÁLISIS DE IMAGEN (📸)
     document.getElementById('camera-input').addEventListener('change', async (e) => {
@@ -257,7 +266,7 @@ async function guardarEnBD(infoIA) {
         div.innerHTML = `
             <div class="food-header">
                 <div class="food-title">${item.nombre_alimento}</div>
-                <div class="food-cal">🔥 ${item.calorias}</div>
+                <div class="food-cal">🔥 calorias ${item.calorias}</div>
             </div>
             <div class="chips-container">
                 <div class="macro-chip">
@@ -286,28 +295,49 @@ async function guardarEnBD(infoIA) {
     }
 
     // 6. COACH METABÓLICO (🧠)
-    async function pedirConsejoCoach() {
-        if (listaAlimentosHoy.length === 0) return alert("Aún no has registrado comidas hoy.");
-        
-        document.getElementById('coach-modal').style.display = 'flex';
-        document.getElementById('coach-response').innerHTML = "⏳ Analizando tu carga glucémica...";
+async function pedirConsejoCoach() {
+    if (listaAlimentosHoy.length === 0) return alert("Por favor, registra al menos un alimento para realizar el análisis clínico.");
+    
+    document.getElementById('coach-modal').style.display = 'flex';
+    document.getElementById('coach-response').innerHTML = `
+        <div style="text-align: center; color: #666;">
+            <p>⏳ Evaluando marcadores metabólicos...</p>
+            <p style="font-size: 12px;">Consultando literatura clínica...</p>
+        </div>
+    `;
 
-        try {
-            const { data, error } = await supabaseClient.functions.invoke('chef-ia', {
-                body: { 
-                    tipo: 'coach',
-                    calorias: totales.cal, 
-                    carbs: totales.carbs, 
-                    alimentos: listaAlimentosHoy 
-                }
-            });
-            
-            if (error) throw error;
-            document.getElementById('coach-response').innerHTML = data.recomendacion;
-        } catch (err) {
-            document.getElementById('coach-response').innerHTML = "Error: " + err.message;
-        }
+    try {
+        const { data, error } = await supabaseClient.functions.invoke('chef-ia', {
+            body: { 
+                tipo: 'coach',
+                resumen_nutricional: {
+                    total_calorias: totales.cal,
+                    macros: { 
+                        p: totales.prot.toFixed(1), 
+                        c: totales.carbs.toFixed(1), 
+                        g: totales.fats.toFixed(1) 
+                    },
+                    lista_detallada: listaAlimentosHoy 
+                },
+                // Este contexto le da a la IA el "norte" terapéutico
+                contexto_clinico: "Prevención de resistencia a la insulina, control de picos glucémicos y optimización de composición corporal."
+            }
+        });
+        
+        if (error) throw error;
+        
+        // La IA ahora devuelve un HTML completo con listas, negritas y estructura.
+        // Lo inyectamos directamente en el modal.
+        document.getElementById('coach-response').innerHTML = data.recomendacion;
+        
+    } catch (err) {
+        document.getElementById('coach-response').innerHTML = `
+            <div style="color: #d9534f; padding: 10px; border-left: 4px solid #d9534f; background: #fdf0ef;">
+                <b>Error de conectividad:</b> ${err.message}
+            </div>
+        `;
     }
+}
 
     // 7. UTILIDADES DE INTERFAZ (Para que openModal funcione)
     function openModal(id) { 
