@@ -296,13 +296,14 @@ async function guardarEnBD(infoIA) {
 
     // 6. COACH METABÓLICO (🧠)
 async function pedirConsejoCoach() {
-    if (listaAlimentosHoy.length === 0) return alert("Por favor, registra al menos un alimento para realizar el análisis clínico.");
+    if (listaAlimentosHoy.length === 0) return alert("Por favor, registra al menos un alimento para poder darte un consejo.");
     
     document.getElementById('coach-modal').style.display = 'flex';
+    // Textos actualizados para ser más amigables
     document.getElementById('coach-response').innerHTML = `
         <div style="text-align: center; color: #666;">
-            <p>⏳ Evaluando marcadores metabólicos...</p>
-            <p style="font-size: 12px;">Consultando literatura clínica...</p>
+            <p>⏳ Analizando tus comidas...</p>
+            <p style="font-size: 12px;">Preparando tu recomendación ideal...</p>
         </div>
     `;
 
@@ -318,22 +319,18 @@ async function pedirConsejoCoach() {
                         g: totales.fats.toFixed(1) 
                     },
                     lista_detallada: listaAlimentosHoy 
-                },
-                // Este contexto le da a la IA el "norte" terapéutico
-                contexto_clinico: "Prevención de resistencia a la insulina, control de picos glucémicos y optimización de composición corporal."
+                }
             }
         });
         
         if (error) throw error;
         
-        // La IA ahora devuelve un HTML completo con listas, negritas y estructura.
-        // Lo inyectamos directamente en el modal.
         document.getElementById('coach-response').innerHTML = data.recomendacion;
         
     } catch (err) {
         document.getElementById('coach-response').innerHTML = `
             <div style="color: #d9534f; padding: 10px; border-left: 4px solid #d9534f; background: #fdf0ef;">
-                <b>Error de conectividad:</b> ${err.message}
+                <b>Hubo un problema de conexión:</b> ${err.message}
             </div>
         `;
     }
