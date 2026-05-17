@@ -97,6 +97,21 @@
 
 .day-name { font-size: 11px; text-transform: uppercase; margin-bottom: 5px; opacity: 0.7; }
 .day-number { font-weight: 800; font-size: 16px; }
+
+/* Selector de Estilo de Vida */
+.lifestyle-container { text-align: center; margin: 10px 20px; }
+.lifestyle-select { 
+    background: white; 
+    border: none; 
+    padding: 10px 20px; 
+    border-radius: 20px; 
+    font-weight: 700; 
+    font-size: 14px; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
+    outline: none; 
+    cursor: pointer; 
+    color: var(--dark); 
+}
     </style>
 </head>
 <body>
@@ -113,6 +128,18 @@
     <!-- Se generará dinámicamente con JS -->
 </div>
 
+<div class="days-container" id="days-selector">
+    </div>
+
+<div class="lifestyle-container">
+    <select id="estilo-vida" class="lifestyle-select" onchange="cambiarEstiloVida()">
+        <option value="2000">🛋️ Sedentario (2000 kcal)</option>
+        <option value="2500">🚶 Moderado (2500 kcal)</option>
+        <option value="3000">🏃 Activo / Atleta (3000 kcal)</option>
+    </select>
+</div>
+
+<div class="card-calories">
 <!-- Tarjeta Dashboard -->
 <div class="card-calories">
     <!-- ... tu código actual ... -->
@@ -196,12 +223,21 @@
     let totales = { cal: 0, prot: 0, carbs: 0, fats: 0 };
     let listaAlimentosHoy = []; 
 let fechaSeleccionada = new Date(); // Por defecto hoy
+let metaCalorias = localStorage.getItem('metaCalorias') || 2000; // NUEVO
 
 // 2. CARGA INICIAL Y GENERADOR DE DÍAS
 window.addEventListener('pageshow', async () => {
+    document.getElementById('estilo-vida').value = metaCalorias; // NUEVO
     generarSelectorDias();
     await cargarDatosDelDia(new Date());
 });
+
+// NUEVA FUNCIÓN
+function cambiarEstiloVida() {
+    metaCalorias = document.getElementById('estilo-vida').value;
+    localStorage.setItem('metaCalorias', metaCalorias); // Guarda en el celular/navegador
+    actualizarUI(); // Refresca los números inmediatamente
+}
 
 function generarSelectorDias() {
     const selector = document.getElementById('days-selector');
@@ -385,12 +421,13 @@ async function guardarEnBD(infoIA) {
         actualizarUI();
     }
 
-    function actualizarUI() {
-        document.getElementById('total-calories').innerHTML = `${totales.cal} <span style="font-size: 16px; color: #aaa; font-weight:500;">/ 2000 kcal</span>`;
-        document.getElementById('total-prot').innerText = totales.prot.toFixed(1) + 'g';
-        document.getElementById('total-carbs').innerText = totales.carbs.toFixed(1) + 'g';
-        document.getElementById('total-fats').innerText = totales.fats.toFixed(1) + 'g';
-    }
+   function actualizarUI() {
+    // Reemplazamos el / 2000 kcal fijo por la variable dinámica
+    document.getElementById('total-calories').innerHTML = `${totales.cal} <span style="font-size: 16px; color: #aaa; font-weight:500;">/ ${metaCalorias} kcal</span>`;
+    document.getElementById('total-prot').innerText = totales.prot.toFixed(1) + 'g';
+    document.getElementById('total-carbs').innerText = totales.carbs.toFixed(1) + 'g';
+    document.getElementById('total-fats').innerText = totales.fats.toFixed(1) + 'g';
+}
 
     // 6. COACH METABÓLICO (🧠)
 async function pedirConsejoCoach() {
