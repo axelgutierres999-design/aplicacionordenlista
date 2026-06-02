@@ -3,46 +3,249 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Recetario AI</title>
+    <title>Mi Recetario</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        body { background: #f4f5f8; font-family: sans-serif; padding: 20px; }
-        .recipe-card { background: white; padding: 20px; border-radius: 25px; margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
-        .tag { background: #e0fdf5; color: #10ad93; padding: 5px 10px; border-radius: 10px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
-        h2 { margin: 10px 0; font-size: 18px; }
-        .btn-back { background: black; color: white; padding: 10px 20px; border-radius: 15px; text-decoration: none; display: inline-block; margin-bottom: 20px; }
+        :root { 
+            --bg: #f8f9fa; 
+            --dark: #212529; 
+            --accent: #10ad93; 
+            --card: #ffffff; 
+        }
+        
+        * { box-sizing: border-box; }
+        
+        body { 
+            background: var(--bg); 
+            color: var(--dark); 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            padding: 20px; 
+            margin: 0;
+            line-height: 1.6; 
+        }
+        
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding-bottom: 50px;
+        }
+
+        /* Navegación y Cabecera */
+        .nav-bar { 
+            display: flex; 
+            align-items: center; 
+            margin-bottom: 30px; 
+            padding-top: 10px;
+        }
+        
+        .btn-back { 
+            background: transparent; 
+            color: var(--dark); 
+            border: 1px solid #ddd; 
+            padding: 8px 16px; 
+            border-radius: 20px; 
+            text-decoration: none; 
+            font-size: 14px; 
+            font-weight: 500; 
+            transition: background 0.2s; 
+        }
+        .btn-back:hover { background: #eee; }
+        
+        .page-title { 
+            font-size: 28px; 
+            font-weight: 800; 
+            margin-bottom: 30px; 
+            text-align: center; 
+        }
+
+        /* Tarjetas de Receta */
+        .recipe-card { 
+            background: var(--card); 
+            border-radius: 24px; 
+            padding: 30px; 
+            margin-bottom: 25px; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.04); 
+            border: 1px solid rgba(0,0,0,0.02); 
+            transition: transform 0.2s ease;
+        }
+        
+        .recipe-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-start; 
+            margin-bottom: 20px; 
+            flex-wrap: wrap; 
+            gap: 10px; 
+        }
+        
+        .recipe-header h2 { 
+            margin: 0; 
+            font-size: 22px; 
+            font-weight: 700; 
+            color: var(--dark); 
+        }
+        
+        .tag { 
+            background: #e0fdf5; 
+            color: var(--accent); 
+            padding: 6px 12px; 
+            border-radius: 12px; 
+            font-size: 11px; 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px; 
+        }
+
+        /* Contenido de la Receta */
+        .recipe-section {
+            margin-bottom: 20px;
+        }
+        
+        .recipe-section h3 { 
+            font-size: 12px; 
+            text-transform: uppercase; 
+            color: #888; 
+            margin: 0 0 10px 0; 
+            letter-spacing: 1px; 
+            font-weight: 700; 
+        }
+        
+        .recipe-section p { 
+            margin: 0; 
+            color: #444; 
+            font-size: 15px; 
+        }
+        
+        .ingredients-list {
+            margin: 0;
+            padding-left: 20px;
+            color: #444;
+            font-size: 15px;
+        }
+        
+        .ingredients-list li {
+            margin-bottom: 6px;
+        }
+
+        /* Pie de Tarjeta y Botones */
+        .recipe-footer { 
+            margin-top: 25px; 
+            padding-top: 20px; 
+            border-top: 1px solid #f0f0f0; 
+            display: flex;
+        }
+        
+        .btn-video { 
+            background: #fff0f0; 
+            color: #e60000; 
+            padding: 10px 20px; 
+            border-radius: 12px; 
+            text-decoration: none; 
+            font-size: 14px; 
+            font-weight: 600; 
+            display: inline-flex; 
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s; 
+        }
+        
+        .btn-video:hover { background: #ffe0e0; }
+        
+        .status-msg {
+            text-align: center;
+            color: #888;
+            font-size: 16px;
+            margin-top: 40px;
+        }
     </style>
 </head>
 <body>
-    <a href="dieta.html" class="btn-back">⬅ Volver a Dieta</a>
-    <h1>Recetario </h1>
-    <div id="lista-recetas">Cargando tus recetas...</div>
+    <div class="container">
+        <div class="nav-bar">
+            <a href="dieta.html" class="btn-back">⬅ Volver a Dieta</a>
+        </div>
+        
+        <h1 class="page-title">Mi Recetario</h1>
+        
+        <div id="lista-recetas">
+            <div class="status-msg">Cargando tus recetas...</div>
+        </div>
+    </div>
 
     <script>
         const urlDB = 'https://cpveuexgxwxjejurtwro.supabase.co';
+        // Inserta tu llave completa de Supabase aquí
         const keyDB = 'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0'; 
-        const supabase = window.supabase.createClient(urlDB, keyDB);
+        
+        // Corrección técnica: Renombrado a supabaseClient
+        const supabaseClient = window.supabase.createClient(urlDB, keyDB);
 
         async function cargarRecetas() {
-            const { data: { user } } = await supabase.auth.getUser();
-            const { data, error } = await supabase.from('recetario_usuario').select('*').order('creado_at', { ascending: false });
+            try {
+                const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+                
+                if (authError || !user) {
+                    document.getElementById('lista-recetas').innerHTML = '<div class="status-msg">Por favor, inicia sesión para ver tus recetas guardadas.</div>';
+                    return;
+                }
 
-            const container = document.getElementById('lista-recetas');
-            if (data.length === 0) {
-                container.innerHTML = "<p>Aún no has guardado recetas.</p>";
-                return;
+                const { data, error } = await supabaseClient
+                    .from('recetario_usuario')
+                    .select('*')
+                    .order('creado_at', { ascending: false });
+
+                if (error) throw error;
+
+                const container = document.getElementById('lista-recetas');
+                
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<div class="status-msg">Aún no has guardado recetas. ¡Escanea un platillo para empezar!</div>';
+                    return;
+                }
+
+                // Generación de tarjetas con procesamiento de strings para viñetas
+                container.innerHTML = data.map(r => {
+                    // Convertir cadena de ingredientes separados por comas en elementos <li>
+                    const listaIngredientes = r.ingredientes.split(',')
+                        .map(ing => `<li>${ing.trim()}</li>`)
+                        .join('');
+
+                    return `
+                    <div class="recipe-card">
+                        <div class="recipe-header">
+                            <h2>${r.nombre_platillo}</h2>
+                            <span class="tag">${r.tipo_receta}</span>
+                        </div>
+                        
+                        <div class="recipe-section">
+                            <h3>Ingredientes</h3>
+                            <ul class="ingredients-list">
+                                ${listaIngredientes}
+                            </ul>
+                        </div>
+                        
+                        <div class="recipe-section">
+                            <h3>Instrucciones</h3>
+                            <p>${r.instrucciones}</p>
+                        </div>
+                        
+                        ${r.link_busqueda ? `
+                        <div class="recipe-footer">
+                            <a href="${r.link_busqueda}" target="_blank" class="btn-video">
+                                ▶ Ver Video de Referencia
+                            </a>
+                        </div>
+                        ` : ''}
+                    </div>
+                    `;
+                }).join('');
+                
+            } catch (err) {
+                console.error(err);
+                document.getElementById('lista-recetas').innerHTML = '<div class="status-msg" style="color: #ff4d4d;">Ocurrió un error al cargar las recetas.</div>';
             }
-
-            container.innerHTML = data.map(r => `
-                <div class="recipe-card">
-                    <span class="tag">${r.tipo_receta}</span>
-                    <h2>${r.nombre_platillo}</h2>
-                    <p><b>Ingredientes:</b> ${r.ingredientes}</p>
-                    <p><b>Instrucciones:</b> ${r.instrucciones}</p>
-                    ${r.link_busqueda ? `<a href="${r.link_busqueda}" target="_blank" style="color:#ff0000; font-size:12px;">Ver Video de Referencia</a>` : ''}
-                </div>
-            `).join('');
         }
+        
         cargarRecetas();
     </script>
 </body>
