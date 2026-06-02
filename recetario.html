@@ -14,13 +14,13 @@
     </style>
 </head>
 <body>
-    <a href="dieta.html" class="btn-back">⬅️ Volver a Dieta</a>
-    <h1>📖 Mi Recetario Saludable</h1>
+    <a href="dieta.html" class="btn-back">⬅ Volver a Dieta</a>
+    <h1>Recetario </h1>
     <div id="lista-recetas">Cargando tus recetas...</div>
 
     <script>
         const urlDB = 'https://cpveuexgxwxjejurtwro.supabase.co';
-        const keyDB = 'TU_KEY_AQUÍ'; 
+        const keyDB = 'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0'; 
         const supabase = window.supabase.createClient(urlDB, keyDB);
 
         async function cargarRecetas() {
