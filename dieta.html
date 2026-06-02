@@ -241,7 +241,20 @@
         <div class="spinner">⏳</div>
         <p style="font-weight: bold; margin-top: 20px;" id="loading-text">Analizando alimento...</p>
     </div>
+    
+<div id="receta-modal" class="modal" onclick="closeModal(event, 'receta-modal')">
+    <div class="modal-content" style="max-height: 90vh;">
+        <h3 id="receta-titulo" style="margin-top:0; color:var(--accent);">Analizando Receta...</h3>
+        
+        <div id="receta-cuerpo" style="overflow-y: auto; font-size: 14px; line-height: 1.6;">
+            </div>
 
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button class="primary-btn" id="btn-save-recipe" style="background:#5856d6; flex: 1;">💾 Guardar en Recetario</button>
+            <button class="primary-btn" onclick="document.getElementById('receta-modal').style.display='none'" style="background:#ccc; color:black; flex: 1;">Cerrar</button>
+        </div>
+    </div>
+</div>
 <script>
     // 1. CONFIGURACIÓN SUPABASE (Nombre cambiado para evitar el "already declared")
     const urlDB = 'https://cpveuexgxwxjejurtwro.supabase.co';
@@ -428,37 +441,39 @@ function renderizarPlatillo(item) {
         listaAlimentosHoy.push(item.nombre_alimento);
 
         const div = document.createElement('div');
-        div.className = 'food-item';
-        
-        // Renderiza la etiqueta img solo si el registro cuenta con una foto guardada
-        // <-- CAMBIO AQUÍ: Leemos item.imagen_url en lugar de item.foto
-        const imgElement = item.imagen_url ? `<img src="${item.imagen_url}" class="food-img" alt="Alimento">` : '';
+    div.className = 'food-item';
+    
+    const imgElement = item.imagen_url ? `<img src="${item.imagen_url}" class="food-img" alt="Alimento">` : '';
 
-        div.innerHTML = `
-            <button class="btn-delete" onclick="eliminarPlatillo('${item.id}', ${item.calorias}, ${item.proteinas}, ${item.carbohidratos}, ${item.grasas}, '${item.nombre_alimento.replace(/'/g, "\\'")}', this)">✕</button>
-            ${imgElement}
-            <div class="food-header">
-                <div class="food-title">${item.nombre_alimento}</div>
-                <div class="food-cal">🔥 ${item.calorias} kcal</div>
+    div.innerHTML = `
+        <button class="btn-delete" onclick="eliminarPlatillo('${item.id}', ${item.calorias}, ${item.proteinas}, ${item.carbohidratos}, ${item.grasas}, '${item.nombre_alimento.replace(/'/g, "\\'")}', this)">✕</button>
+        ${imgElement}
+        <div class="food-header">
+            <div class="food-title">${item.nombre_alimento}</div>
+            <div class="food-cal">🔥 ${item.calorias} kcal</div>
+        </div>
+        <div class="chips-container">
+            <div class="macro-chip">
+                <div class="chip-label"><span style="color:var(--prot)">●</span> Prot</div>
+                <div class="chip-val">${item.proteinas}g</div>
             </div>
-            <div class="chips-container">
-                <div class="macro-chip">
-                    <div class="chip-label"><span style="color:var(--prot)">●</span> Prot</div>
-                    <div class="chip-val">${item.proteinas}g</div>
-                </div>
-                <div class="macro-chip">
-                    <div class="chip-label"><span style="color:var(--carb)">●</span> Carb</div>
-                    <div class="chip-val">${item.carbohidratos}g</div>
-                </div>
-                <div class="macro-chip">
-                    <div class="chip-label"><span style="color:var(--fat)">●</span> Gras</div>
-                    <div class="chip-val">${item.grasas}g</div>
-                </div>
+            <div class="macro-chip">
+                <div class="chip-label"><span style="color:var(--carb)">●</span> Carb</div>
+                <div class="chip-val">${item.carbohidratos}g</div>
             </div>
-        `;
-        document.getElementById('food-list').prepend(div);
-        actualizarUI();
-    }
+            <div class="macro-chip">
+                <div class="chip-label"><span style="color:var(--fat)">●</span> Gras</div>
+                <div class="chip-val">${item.grasas}g</div>
+            </div>
+        </div>
+        <button onclick="obtenerRecetaIA('${item.nombre_alimento.replace(/'/g, "\\'")}')" 
+                style="width:100%; margin-top:12px; padding:8px; border-radius:12px; border:1px solid #eee; background:none; font-size:12px; font-weight:600; cursor:pointer; color:#5856d6;">
+            🍳 Ver receta y alternativa saludable
+        </button>
+    `;
+    document.getElementById('food-list').prepend(div);
+    actualizarUI();
+}
 
    function actualizarUI() {
     // Reemplazamos el / 2000 kcal fijo por la variable dinámica
@@ -559,6 +574,64 @@ async function pedirConsejoCoach() {
     } finally {
         mostrarCarga(false);
     }
+}
+let recetaActualData = null; // Guardamos la respuesta de la IA
+
+async function obtenerRecetaIA(nombre) {
+    document.getElementById('receta-modal').style.display = 'flex';
+    document.getElementById('receta-titulo').innerText = nombre;
+    document.getElementById('receta-cuerpo').innerHTML = "<p>⌛ El Chef IA está buscando la mejor receta...</p>";
+    
+    try {
+        const { data, error } = await supabaseClient.functions.invoke('chef-ia', {
+            body: { tipo: 'receta', alimento: nombre }
+        });
+        
+        if (error) throw error;
+        recetaActualData = data;
+
+        document.getElementById('receta-cuerpo').innerHTML = `
+            <div style="background:#f9f9f9; padding:15px; border-radius:15px; margin-bottom:15px;">
+                <h4 style="margin:0 0 10px 0; color:#ff4d4d;">🍳 Receta Original</h4>
+                <p><b>Ingredientes:</b> ${data.original.ingredientes.join(', ')}</p>
+                <p>${data.original.pasos}</p>
+            </div>
+            
+            <div style="background:#e0fdf5; padding:15px; border-radius:15px; border-left:5px solid #10ad93;">
+                <h4 style="margin:0 0 10px 0; color:#10ad93;">🌿 Alternativa Saludable: ${data.saludable.titulo}</h4>
+                <p><b>Cambios:</b> ${data.saludable.ingredientes.join(', ')}</p>
+                <p>${data.saludable.pasos}</p>
+                <p style="font-weight:bold; font-size:12px;">📈 ${data.comparativa}</p>
+            </div>
+
+            <div style="margin-top:15px; display:flex; gap:10px;">
+                <a href="${data.link_youtube}" target="_blank" style="text-decoration:none; background:#ff0000; color:white; padding:10px; border-radius:10px; flex:1; text-align:center; font-size:12px;">📺 Ver Video</a>
+                <a href="${data.link_google}" target="_blank" style="text-decoration:none; background:#4285f4; color:white; padding:10px; border-radius:10px; flex:1; text-align:center; font-size:12px;">🔍 Más Info</a>
+            </div>
+        `;
+
+        document.getElementById('btn-save-recipe').onclick = () => guardarEnRecetario(data);
+
+    } catch (err) {
+        document.getElementById('receta-cuerpo').innerHTML = "<p>❌ Error al obtener receta: " + err.message + "</p>";
+    }
+}
+
+async function guardarEnRecetario(dataIA) {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) return alert("Inicia sesión.");
+
+    const { error } = await supabaseClient.from('recetario_usuario').insert([{
+        usuario_id: user.id,
+        nombre_platillo: document.getElementById('receta-titulo').innerText,
+        tipo_receta: 'Saludable / Sustituida',
+        ingredientes: dataIA.saludable.ingredientes.join(', '),
+        instrucciones: dataIA.saludable.pasos,
+        link_busqueda: dataIA.link_youtube
+    }]);
+
+    if (error) alert("Error: " + error.message);
+    else alert("✅ ¡Receta guardada en tu recetario!");
 }
 </script>
 </body>
