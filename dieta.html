@@ -112,43 +112,72 @@
     cursor: pointer; 
     color: var(--dark); 
 }
+/* Corrección y adiciones para la tarjeta */
+.food-item { 
+    position: relative; /* Permite posicionar el botón de borrado en la esquina */
+    background: white; 
+    margin: 15px 20px; 
+    padding: 20px; 
+    border-radius: 25px; 
+    box-shadow: 0 5px 15px rgba(0,0,0,0.03); 
+    overflow: hidden; 
+}
+
+/* Pestaña ligera de eliminación en la esquina superior derecha */
+.btn-delete {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: #ff4d4d;
+    color: white;
+    border: none;
+    border-radius: 0 25px 0 20px;
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    transition: background 0.2s;
+    z-index: 10;
+}
+.btn-delete:active { background: #dd3333; }
+
+/* Contenedor de la foto dentro de la tarjeta */
+.food-img {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    border-radius: 18px;
+    margin-bottom: 15px;
+    display: block;
+}
     </style>
 </head>
 <body>
 
     <header class="header">
-        <h2 style="margin: 0; font-weight: 800;">Resumen Diario</h2>
+        <h2 style="margin: 0; font-weight: 800;">Mi Nutrición</h2>
     </header>
-    <header class="header">
-    <h2 style="margin: 0; font-weight: 800;">Mi Nutrición</h2>
-</header>
 
-<!-- Selector de Días de la Semana -->
-<div class="days-container" id="days-selector">
-    <!-- Se generará dinámicamente con JS -->
-</div>
+    <!-- Selector de Días de la Semana -->
+    <div class="days-container" id="days-selector"></div>
 
-<div class="days-container" id="days-selector">
+    <!-- Selector de Estilo de Vida -->
+    <div class="lifestyle-container">
+        <select id="estilo-vida" class="lifestyle-select" onchange="cambiarEstiloVida()">
+            <option value="2000"> Sedentario (1600 - 2000 kcal)</option>
+            <option value="2500"> Moderado (2500 kcal)</option>
+            <option value="3000"> Activo (2800 - 3000 kcal)</option>
+        </select>
     </div>
 
-<div class="lifestyle-container">
-    <select id="estilo-vida" class="lifestyle-select" onchange="cambiarEstiloVida()">
-        <option value="2000">🛋️ Sedentario (2000 kcal)</option>
-        <option value="2500">🚶 Moderado (2500 kcal)</option>
-        <option value="3000">🏃 Activo / Atleta (3000 kcal)</option>
-    </select>
-</div>
-
-<div class="card-calories">
-<!-- Tarjeta Dashboard -->
-<div class="card-calories">
-    <!-- ... tu código actual ... -->
-</div>
-
-    <!-- Tarjeta Dashboard -->
+    <!-- Tarjeta Dashboard Totales -->
     <div class="card-calories">
         <div style="font-size: 14px; color: #888;">Calorías Consumidas</div>
-        <div class="progress-circle" id="total-calories">0 <span style="font-size: 16px; color: #aaa; font-weight: 500;">/2500 kcal</span></div>
+        <div class="progress-circle" id="total-calories">0 <span style="font-size: 16px; color: #aaa; font-weight: 500;">/ 2500 kcal</span></div>
         
         <div class="macros-grid">
             <div class="macro-item">
@@ -166,6 +195,7 @@
         </div>
     </div>
 
+    <!-- Lista de Platillos -->
     <!-- Lista de Platillos -->
     <div id="food-list">
         <!-- Los items se cargarán aquí -->
@@ -315,13 +345,15 @@ async function cargarDatosDelDia(fecha) {
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = async () => {
-            const base64 = reader.result.split(',')[1];
+            const dataURL = reader.result; // Base64 completo con prefijo data:image...
+            const base64Solo = dataURL.split(',')[1];
             try {
                 const { data, error } = await supabaseClient.functions.invoke('chef-ia', {
-                    body: { tipo: 'imagen', imagenBase64: base64 }
+                    body: { tipo: 'imagen', imagenBase64: base64Solo }
                 });
                 if (error) throw error;
-                await guardarEnBD(data);
+                // Enviamos los datos de la IA junto con la imagen stringificada para guardarla
+                await guardarEnBD(data, dataURL);
             } catch (err) {
                 alert("Error con la foto: " + err.message);
             } finally {
@@ -357,8 +389,7 @@ async function cargarDatosDelDia(fecha) {
     }
 
     // 5. GUARDAR Y RENDERIZAR
-async function guardarEnBD(infoIA) {
-    // 1. Obtenemos al usuario actual
+async function guardarEnBD(infoIA, fotoBase64 = null) {
     const { data: { user } } = await supabaseClient.auth.getUser();
 
     if (!user) {
@@ -367,12 +398,13 @@ async function guardarEnBD(infoIA) {
     }
 
     const nuevoRegistro = {
-        usuario_id: user.id, // <--- ESTO ES VITAL para que la RLS te deje pasar
+        usuario_id: user.id,
         nombre_alimento: infoIA.nombre_alimento,
         calorias: parseInt(infoIA.calorias) || 0,
         proteinas: parseFloat(infoIA.proteinas) || 0,
         carbohidratos: parseFloat(infoIA.carbohidratos) || 0,
-        grasas: parseFloat(infoIA.grasas) || 0
+        grasas: parseFloat(infoIA.grasas) || 0,
+        foto: fotoBase64 // Guarda la cadena Base64 de la imagen en Supabase
     };
 
     const { data, error } = await supabaseClient
@@ -381,14 +413,14 @@ async function guardarEnBD(infoIA) {
         .select();
 
     if (error) {
-        console.error("Detalle del error:", error); // Para ver más info en consola
+        console.error("Detalle del error:", error);
         alert("Error al guardar: " + error.message);
     } else {
         renderizarPlatillo(data[0]);
     }
 }
 
-    function renderizarPlatillo(item) {
+function renderizarPlatillo(item) {
         totales.cal += item.calorias;
         totales.prot += item.proteinas;
         totales.carbs += item.carbohidratos;
@@ -397,10 +429,16 @@ async function guardarEnBD(infoIA) {
 
         const div = document.createElement('div');
         div.className = 'food-item';
+        
+        // Renderiza la etiqueta img solo si el registro cuenta con una foto guardada
+        const imgElement = item.foto ? `<img src="${item.foto}" class="food-img" alt="Alimento">` : '';
+
         div.innerHTML = `
+            <button class="btn-delete" onclick="eliminarPlatillo(${item.id}, ${item.calorias}, ${item.proteinas}, ${item.carbohidratos}, ${item.grasas}, '${item.nombre_alimento.replace(/'/g, "\\'")}', this)">✕</button>
+            ${imgElement}
             <div class="food-header">
                 <div class="food-title">${item.nombre_alimento}</div>
-                <div class="food-cal">🔥 calorias ${item.calorias}</div>
+                <div class="food-cal">🔥 ${item.calorias} kcal</div>
             </div>
             <div class="chips-container">
                 <div class="macro-chip">
@@ -487,6 +525,40 @@ async function pedirConsejoCoach() {
             if(texto) document.getElementById('loading-text').innerText = texto;
         }
     }
+    // funcion para borrar el plato
+    async function eliminarPlatillo(id, cal, prot, carbs, fats, nombre, boton) {
+    if (!confirm(`¿Deseas eliminar "${nombre}" de tu registro diario?`)) return;
+
+    mostrarCarga(true, "Eliminando alimento...");
+    try {
+        const { error } = await supabaseClient
+            .from('registros_dieta')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+
+        // Descontar valores de los totales globales de la pantalla
+        totales.cal -= cal;
+        totales.prot -= prot;
+        totales.carbs -= carbs;
+        totales.fats -= fats;
+
+        // Quitar del registro plano de nombres del día
+        const index = listaAlimentosHoy.indexOf(nombre);
+        if (index > -1) listaAlimentosHoy.splice(index, 1);
+
+        // Desvanecer el elemento de la interfaz de usuario
+        const tarjeta = boton.closest('.food-item');
+        if (tarjeta) tarjeta.remove();
+
+        actualizarUI();
+    } catch (err) {
+        alert("No se pudo eliminar de la base de datos: " + err.message);
+    } finally {
+        mostrarCarga(false);
+    }
+}
 </script>
 </body>
 </html>
