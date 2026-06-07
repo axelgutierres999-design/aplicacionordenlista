@@ -2,8 +2,8 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Recetario | Editorial</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mi Recetario</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,113 +12,121 @@
     
     <style>
         :root { 
-            --bg: #FDFCF8; /* Blanco hueso/papel */
-            --dark: #2C302E; 
-            --accent: #7C9885; /* Verde salvia elegante */
-            --accent-light: #E8F0EA;
-            --card: #FFFFFF; 
-            --text-muted: #666666;
+            --bg: #f4f4f4; /* Fondo oficial de tu App */
+            --dark: #333333; 
+            --accent: #10ad93; 
+            --accent-light: #e0fdf5;
+            --card: #ffffff; 
+            --danger: #e74c3c; /* Rojo de tu botón cerrar sesión */
+            --text-muted: #888888;
         }
         
         * { box-sizing: border-box; }
         
+        /* Tipografía general de la App (sans-serif) */
         body { 
-            background: var(--bg); 
+            background-color: var(--bg); 
             color: var(--dark); 
-            font-family: 'Lora', serif; /* Fuente base elegante */
-            padding: 20px; 
+            font-family: sans-serif; 
             margin: 0;
-            line-height: 1.7; 
+            padding-bottom: 50px;
+        }
+
+        /* -------------------------------------
+           HEADER ESTILO APP (Igual a Ajustes)
+           ------------------------------------- */
+        .header-detalle { 
+            display: flex; 
+            align-items: center; 
+            padding: 20px; 
+            background: white; 
+            border-bottom: 1px solid #ddd;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .btn-back { 
+            background: none; 
+            border: none; 
+            font-size: 24px; 
+            cursor: pointer; 
+            margin-right: 15px; 
+            color: var(--dark);
+        }
+        .header-detalle h2 {
+            margin: 0;
+            font-size: 20px;
         }
         
         .container { 
             max-width: 800px; 
-            margin: 0 auto; 
-            padding-bottom: 60px;
+            margin: 20px auto; 
+            padding: 0 20px;
         }
 
-        /* Navegación y Cabecera */
-        .nav-bar { 
-            display: flex; 
-            align-items: center; 
-            margin-bottom: 40px; 
-            padding-top: 10px;
-        }
-        
-        .btn-back { 
-            background: transparent; 
-            color: var(--dark); 
-            border: 1px solid #D1D1D1; 
-            padding: 8px 20px; 
-            border-radius: 30px; 
-            text-decoration: none; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            font-size: 14px; 
-            font-weight: 500; 
-            transition: all 0.3s ease; 
-        }
-        .btn-back:hover { 
-            background: var(--dark); 
-            color: #fff;
-        }
-        
-        .page-title { 
-            font-family: 'Playfair Display', serif;
-            font-size: 42px; 
-            font-weight: 700; 
-            margin-bottom: 40px; 
-            text-align: center; 
-            color: var(--dark);
-            letter-spacing: -0.5px;
-        }
-
-        /* Tarjetas de Receta */
+        /* -------------------------------------
+           TARJETAS DE RECETA (Fusión App/Editorial)
+           ------------------------------------- */
         .recipe-card { 
             background: var(--card); 
-            border-radius: 16px; 
-            padding: 35px; 
-            margin-bottom: 30px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.03); 
-            border: 1px solid rgba(0,0,0,0.04); 
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        
-        .recipe-card:hover {
-            box-shadow: 0 15px 35px rgba(0,0,0,0.06);
+            border-radius: 15px; /* Bordes redondeados de tu App */
+            padding: 25px; 
+            margin-bottom: 20px; 
+            border: 1px solid #ddd; /* Borde sutil de tu App */
+            transition: 0.3s;
+            cursor: pointer;
         }
         
         .recipe-header { 
             display: flex; 
             justify-content: space-between; 
             align-items: flex-start; 
-            flex-wrap: wrap; 
-            gap: 15px; 
+            gap: 10px; 
         }
-        
-        .recipe-header h2 { 
-            margin: 0; 
-            font-family: 'Playfair Display', serif;
-            font-size: 26px; 
-            font-weight: 700; 
-            color: var(--dark); 
-            line-height: 1.2;
+
+        .recipe-title-group {
             flex: 1;
         }
         
+        .recipe-title-group h2 { 
+            margin: 0 0 5px 0; 
+            font-family: 'Playfair Display', serif; /* Fuente de libro */
+            font-size: 22px; 
+            font-weight: 700; 
+            color: var(--dark); 
+            line-height: 1.2;
+        }
+        
         .tag { 
+            display: inline-block;
             background: var(--accent-light); 
             color: var(--accent); 
-            padding: 6px 14px; 
-            border-radius: 20px; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            font-size: 11px; 
-            font-weight: 700; 
+            padding: 4px 10px; 
+            border-radius: 12px; 
+            font-size: 10px; 
+            font-weight: bold; 
             text-transform: uppercase; 
-            letter-spacing: 1px; 
-            white-space: nowrap;
+            letter-spacing: 0.5px; 
         }
 
-        /* Botón de Expansión Estético */
+        /* BOTÓN ELIMINAR */
+        .btn-delete {
+            background: transparent;
+            color: var(--danger);
+            border: 1px solid var(--danger);
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-delete:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* Botón de Expansión */
         .btn-toggle {
             display: block;
             width: 100%;
@@ -128,132 +136,114 @@
             color: var(--text-muted);
             font-family: 'Lora', serif;
             font-style: italic;
-            font-size: 15px;
+            font-size: 14px;
             padding: 15px 0 0 0;
             margin-top: 15px;
-            border-top: 1px dashed #E0E0E0;
+            border-top: 1px dashed #eee;
             cursor: pointer;
             outline: none;
         }
         .btn-toggle::after {
-            content: ' ↓ Ver receta completa';
+            content: ' ↓ Ver preparación e ingredientes';
             color: var(--accent);
-            font-weight: 600;
+            font-weight: bold;
+            font-style: normal;
+            font-family: sans-serif;
+            font-size: 12px;
         }
         .recipe-card.active .btn-toggle::after {
             content: ' ↑ Ocultar receta';
         }
 
-        /* Contenido Oculto de la Receta */
+        /* CONTENIDO DESPLEGABLE (Editorial) */
         .recipe-content {
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.5s cubic-bezier(0, 1, 0, 1);
+            transition: max-height 0.4s ease-out, opacity 0.3s ease;
             opacity: 0;
         }
 
         .recipe-card.active .recipe-content {
-            max-height: 2000px; /* Suficiente para que no corte texto largo */
-            transition: max-height 0.8s ease-in-out, opacity 0.5s ease-in;
+            max-height: 2000px; 
+            transition: max-height 0.6s ease-in, opacity 0.4s ease-in;
             opacity: 1;
-            margin-top: 30px;
+            margin-top: 25px;
         }
 
-        /* Layout tipo Libro: Dos columnas en Desktop */
         .recipe-grid {
             display: grid;
             grid-template-columns: 1fr 1.5fr;
-            gap: 30px;
+            gap: 20px;
         }
 
         @media (max-width: 600px) {
-            .recipe-grid {
-                grid-template-columns: 1fr; /* Una columna en móviles */
-                gap: 20px;
-            }
+            .recipe-grid { grid-template-columns: 1fr; }
         }
         
         .recipe-section h3 { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             font-size: 12px; 
             text-transform: uppercase; 
             color: var(--text-muted); 
-            margin: 0 0 15px 0; 
-            letter-spacing: 1.5px; 
-            font-weight: 700; 
-            border-bottom: 1px solid #E0E0E0;
-            padding-bottom: 8px;
+            margin: 0 0 10px 0; 
+            letter-spacing: 1px; 
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
         }
         
-        .recipe-section p { 
+        .recipe-section p, .ingredients-list { 
             margin: 0; 
-            color: var(--dark); 
-            font-size: 16px; 
-            white-space: pre-line; /* Respeta los saltos de línea de la BD */
+            color: #444; 
+            font-family: 'Lora', serif; /* Fuente de libro */
+            font-size: 15px; 
+            line-height: 1.6;
         }
         
         .ingredients-list {
-            margin: 0;
             padding-left: 20px;
-            color: var(--dark);
-            font-size: 16px;
         }
-        
         .ingredients-list li {
-            margin-bottom: 10px;
-            padding-left: 5px;
+            margin-bottom: 8px;
         }
-        .ingredients-list li::marker {
-            color: var(--accent);
-        }
+        .ingredients-list li::marker { color: var(--accent); }
 
         /* Pie de Tarjeta y Botones */
         .recipe-footer { 
-            margin-top: 30px; 
+            margin-top: 20px; 
             display: flex;
             justify-content: flex-end;
         }
         
         .btn-video { 
-            background: #FAFAFA; 
+            background: white; 
             color: #D32F2F; 
-            padding: 10px 24px; 
+            padding: 8px 16px; 
             border-radius: 8px; 
             text-decoration: none; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            font-size: 14px; 
-            font-weight: 600; 
-            border: 1px solid #EEEEEE;
+            font-size: 13px; 
+            font-weight: bold; 
+            border: 1px solid #ddd;
             display: inline-flex; 
             align-items: center;
-            gap: 8px;
-            transition: all 0.2s; 
-        }
-        
-        .btn-video:hover { 
-            background: #FFEBEE; 
-            border-color: #FFCDD2;
         }
         
         .status-msg {
             text-align: center;
             color: var(--text-muted);
-            font-size: 16px;
-            margin-top: 60px;
-            font-style: italic;
+            font-size: 14px;
+            margin-top: 40px;
         }
     </style>
 </head>
 <body>
+
+    <header class="header-detalle">
+        <button class="btn-back" onclick="window.location.href='dieta.html'">←</button>
+        <h2>Mi Recetario</h2>
+    </header>
+
     <div class="container">
-        <div class="nav-bar">
-            <a href="dieta.html" class="btn-back">← Volver a Mi Dieta</a>
-        </div>
-        
-        <h1 class="page-title">Mi Recetario</h1>
-        
         <div id="lista-recetas">
-            <div class="status-msg">Abriendo el libro de recetas...</div>
+            <div class="status-msg">Cargando tu libro de recetas...</div>
         </div>
     </div>
 
@@ -263,10 +253,45 @@
         
         const supabaseClient = window.supabase.createClient(urlDB, keyDB);
 
-        // Función para alternar la visualización de la receta sin que salte la página
-        function toggleReceta(btn) {
-            const card = btn.closest('.recipe-card');
+        // Función para abrir/cerrar la tarjeta
+        function toggleReceta(elemento) {
+            // Buscamos el div principal de la tarjeta y le alternamos la clase
+            const card = elemento.closest('.recipe-card');
             card.classList.toggle('active');
+        }
+
+        // Función para borrar receta
+        async function eliminarReceta(id, nombre, btnElement) {
+            // Confirmación
+            if (!confirm(`¿Seguro que deseas eliminar la receta de "${nombre}"?`)) return;
+
+            try {
+                // Cambiar el texto del botón mientras borra
+                btnElement.innerText = "Borrando...";
+                btnElement.disabled = true;
+
+                const { error } = await supabaseClient
+                    .from('recetario_usuario')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+
+                // Remover la tarjeta de la pantalla con una pequeña animación
+                const card = btnElement.closest('.recipe-card');
+                card.style.opacity = '0';
+                setTimeout(() => card.remove(), 300);
+
+                // Si no quedan recetas, mostrar mensaje
+                if (document.querySelectorAll('.recipe-card').length === 1) {
+                    document.getElementById('lista-recetas').innerHTML = '<div class="status-msg">Tu recetario está vacío.</div>';
+                }
+
+            } catch (err) {
+                alert("Error al eliminar: " + err.message);
+                btnElement.innerText = "Eliminar";
+                btnElement.disabled = false;
+            }
         }
 
         async function cargarRecetas() {
@@ -274,7 +299,7 @@
                 const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
                 
                 if (authError || !user) {
-                    document.getElementById('lista-recetas').innerHTML = '<div class="status-msg">Por favor, inicia sesión para ver tus recetas guardadas.</div>';
+                    document.getElementById('lista-recetas').innerHTML = '<div class="status-msg">Inicia sesión para ver tus recetas.</div>';
                     return;
                 }
 
@@ -288,7 +313,7 @@
                 const container = document.getElementById('lista-recetas');
                 
                 if (!data || data.length === 0) {
-                    container.innerHTML = '<div class="status-msg">Tu recetario está en blanco. ¡Escanea un platillo para empezar a cocinar!</div>';
+                    container.innerHTML = '<div class="status-msg">Tu recetario está vacío. ¡Ve a la dieta y escanea un platillo!</div>';
                     return;
                 }
 
@@ -296,15 +321,20 @@
                     const listaIngredientes = r.ingredientes.split(',').map(ing => `<li>${ing.trim()}</li>`).join('');
 
                     return `
-                    <div class="recipe-card">
+                    <div class="recipe-card" onclick="toggleReceta(this)">
                         <div class="recipe-header">
-                            <h2>${r.nombre_platillo}</h2>
-                            <span class="tag">${r.tipo_receta}</span>
+                            <div class="recipe-title-group">
+                                <h2>${r.nombre_platillo}</h2>
+                                <span class="tag">${r.tipo_receta}</span>
+                            </div>
+                            <button class="btn-delete" onclick="event.stopPropagation(); eliminarReceta('${r.id}', '${r.nombre_platillo.replace(/'/g, "\\'")}', this)">
+                                Eliminar
+                            </button>
                         </div>
                         
-                        <button class="btn-toggle" onclick="toggleReceta(this)">Preparación e Ingredientes</button>
+                        <button class="btn-toggle"> </button>
                         
-                        <div class="recipe-content">
+                        <div class="recipe-content" onclick="event.stopPropagation();">
                             <div class="recipe-grid">
                                 <div class="recipe-section">
                                     <h3>🍽️ Ingredientes</h3>
@@ -318,7 +348,7 @@
                             
                             ${r.link_busqueda ? `
                             <div class="recipe-footer">
-                                <a href="${r.link_busqueda}" target="_blank" class="btn-video" onclick="event.stopPropagation()">
+                                <a href="${r.link_busqueda}" target="_blank" class="btn-video">
                                     ▶ Ver Video Tutorial
                                 </a>
                             </div>` : ''}
@@ -329,7 +359,7 @@
                 
             } catch (err) {
                 console.error(err);
-                document.getElementById('lista-recetas').innerHTML = '<div class="status-msg" style="color: #D32F2F;">Ocurrió un error al cargar las recetas. Intenta actualizar la página.</div>';
+                document.getElementById('lista-recetas').innerHTML = '<div class="status-msg" style="color: #D32F2F;">Error al cargar las recetas.</div>';
             }
         }
         
