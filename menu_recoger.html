@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <title>Menú - Para Recoger</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
     <style>
@@ -16,12 +16,23 @@
             --borde-redondeado: 12px;
         }
 
-        body { background: var(--color-fondo); font-family: "Inter", system-ui, sans-serif; padding-bottom: 180px; }
+        body { background: var(--color-fondo); font-family: "Inter", system-ui, sans-serif; padding-bottom: 220px; margin: 0; }
         
         /* CABECERA ESTILIZADA */
-        header { text-align: center; padding: 25px 15px; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.02); margin-bottom: 25px; border-bottom: 1px solid #e2e8f0; }
-        header h1 { margin: 5px 0 0 0; font-size: 1.6rem; color: var(--color-primario); font-weight: 800; letter-spacing: -0.5px; }
+        header { text-align: center; padding: 25px 15px 15px 15px; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.02); margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 90; }
+        header h1 { margin: 5px 0 0 0; font-size: 1.5rem; color: var(--color-primario); font-weight: 800; letter-spacing: -0.5px; }
         
+        /* BARRA DE BÚSQUEDA Y FILTROS */
+        .filtros-container { display: flex; gap: 10px; margin-top: 15px; }
+        .filtros-container input[type="search"], .filtros-container select { 
+            margin: 0; border: 1px solid #e2e8f0; border-radius: 8px; background: #f7fafc; 
+            font-size: 16px; /* 16px evita el zoom en móviles */
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); transition: border 0.2s; 
+        }
+        .filtros-container input[type="search"]:focus, .filtros-container select:focus { border-color: var(--color-primario); outline: none; background: white; }
+        .filtros-container input[type="search"] { flex: 2; }
+        .filtros-container select { flex: 1; padding: 8px 12px; height: 100%; }
+
         /* GRID DE PRODUCTOS */
         .productos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 1.2rem; padding: 0 15px; max-width: 1200px; margin: 0 auto; }
         .producto-card { background: var(--color-tarjeta); border-radius: var(--borde-redondeado); overflow: hidden; box-shadow: var(--sombra-tarjeta); display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s; border: 1px solid #edf2f7; }
@@ -37,23 +48,31 @@
         .btn-agregar:hover { background: var(--color-primario-hover); }
         
         /* CARRITO FIJO FLOTANTE Y EXPANDIBLE */
-        #carritoFijo { position: fixed; bottom: 0; left: 0; width: 100%; background: white; padding: 20px; box-shadow: 0 -10px 30px rgba(0,0,0,0.08); border-top-left-radius: 20px; border-top-right-radius: 20px; z-index: 100; border-top: 1px solid #e2e8f0; max-height: 80vh; display: flex; flex-direction: column; }
+        #carritoFijo { position: fixed; bottom: 0; left: 0; width: 100%; background: white; padding: 20px; box-shadow: 0 -10px 30px rgba(0,0,0,0.08); border-top-left-radius: 20px; border-top-right-radius: 20px; z-index: 100; border-top: 1px solid #e2e8f0; max-height: 85vh; display: flex; flex-direction: column; }
         .carrito-header { display: flex; justify-content: space-between; font-weight: 800; margin-bottom: 15px; font-size: 1.15rem; color: #2d3748; align-items: center; }
         
         /* LISTADO DE ITEMS DENTRO DEL CARRITO */
-        .carrito-detalles { overflow-y: auto; max-height: 220px; margin-bottom: 15px; padding-right: 5px; }
+        .carrito-detalles { overflow-y: auto; max-height: 250px; margin-bottom: 15px; padding-right: 5px; }
         .carrito-item { background: #f7fafc; padding: 12px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #edf2f7; display: flex; flex-direction: column; gap: 6px; }
         .carrito-item-top { display: flex; justify-content: space-between; align-items: center; }
         .carrito-item-titulo { font-weight: 700; font-size: 0.9rem; color: #2d3748; }
         
         /* CONTROLES MAS Y MENOS */
         .controles-cantidad { display: flex; align-items: center; gap: 12px; background: #edf2f7; padding: 4px 10px; border-radius: 20px; }
-        .btn-control { background: transparent; border: none; color: #4a5568; font-weight: bold; cursor: pointer; font-size: 1rem; padding: 0 5px; }
+        .btn-control { background: transparent; border: none; color: #4a5568; font-weight: bold; cursor: pointer; font-size: 1.2rem; padding: 0 5px; line-height: 1; }
         .btn-control:hover { color: var(--color-primario); }
-        .item-cantidad { font-weight: 800; font-size: 0.9rem; min-width: 15px; text-align: center; }
+        .item-cantidad { font-weight: 800; font-size: 1rem; min-width: 15px; text-align: center; color: #2d3748; }
         
-        /* INPUT DE COMENTARIOS */
-        .input-comentario { margin: 4px 0 0 0 !important; font-size: 0.8rem !important; padding: 6px 10px !important; border-radius: 6px !important; border: 1px dashed #cbd5e0 !important; background: white !important; box-shadow: none !important; }
+        /* INPUT DE COMENTARIOS (SOLUCIÓN ZOOM) */
+        .input-comentario { 
+            margin: 4px 0 0 0 !important; 
+            font-size: 16px !important; /* 16px ES LA CLAVE PARA QUE IOS NO HAGA ZOOM */
+            padding: 8px 10px !important; 
+            border-radius: 6px !important; 
+            border: 1px dashed #cbd5e0 !important; 
+            background: white !important; 
+            box-shadow: none !important; 
+        }
         .input-comentario:focus { border-color: var(--color-primario) !important; outline: none; }
 
         .btn-pagar { width: 100%; background: #2d3748; color: white; border: none; padding: 14px; border-radius: 12px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background 0.2s; }
@@ -71,6 +90,17 @@
     <header>
         <span style="font-size: 0.85rem; color: #718096; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">📍 Pedido Para Recoger</span>
         <h1 id="nombreRestaurante">Cargando Menú...</h1>
+        
+        <div class="filtros-container">
+            <input type="search" id="buscarProducto" placeholder="Buscar platillo..." oninput="filtrarYRenderizar()">
+            <select id="filtroCategoria" onchange="filtrarYRenderizar()">
+                <option value="Todos">Categorías</option>
+                <option value="Platillo">Platillos</option>
+                <option value="Bebidas">Bebidas</option>
+                <option value="Postres">Postres</option>
+                <option value="Otros">Otros</option>
+            </select>
+        </div>
     </header>
 
     <main>
@@ -100,7 +130,7 @@
 
         const params = new URLSearchParams(window.location.search);
         const rid = params.get("rid");
-        let productos = [];
+        let productosTotales = []; // Guarda todos los productos
         let carrito = [];
 
         // Lógica Principal de Carga
@@ -116,21 +146,35 @@
 
             // Obtener productos
             const { data: prodData } = await db.from("productos").select("*").eq("restaurante_id", rid);
-            productos = prodData || [];
-            renderizarProductos();
+            productosTotales = prodData || [];
+            filtrarYRenderizar(); // Inicia mostrando todo
         }
 
+        // Lógica de Búsqueda y Filtrado
+        window.filtrarYRenderizar = () => {
+            const texto = document.getElementById("buscarProducto").value.toLowerCase();
+            const categoria = document.getElementById("filtroCategoria").value;
+
+            const productosFiltrados = productosTotales.filter(p => {
+                const coincideTexto = p.nombre.toLowerCase().includes(texto);
+                const coincideCategoria = categoria === "Todos" || p.categoria === categoria;
+                return coincideTexto && coincideCategoria;
+            });
+
+            renderizarProductos(productosFiltrados);
+        };
+
         // Renderizado del Catálogo de Platillos
-        function renderizarProductos() {
+        function renderizarProductos(productosARenderizar) {
             const grid = document.getElementById("gridProductos");
             grid.innerHTML = "";
 
-            if (productos.length === 0) {
-                grid.innerHTML = "<p style='text-align:center; width:100%; color:#718096;'>Este restaurante aún no tiene platillos.</p>";
+            if (productosARenderizar.length === 0) {
+                grid.innerHTML = "<p style='text-align:center; width:100%; color:#718096; padding: 20px 0;'>No se encontraron platillos con estos filtros.</p>";
                 return;
             }
 
-            productos.forEach(p => {
+            productosARenderizar.forEach(p => {
                 const desc = p.descripcion || p.ingredientes || "Sin descripción";
                 const card = document.createElement("div");
                 card.className = "producto-card";
@@ -153,14 +197,13 @@
 
         // AGREGAR AL CARRITO
         window.agregarAlCarrito = (id) => {
-            const producto = productos.find(p => p.id === id);
+            const producto = productosTotales.find(p => p.id === id);
             if (!producto) return;
 
             const itemExistente = carrito.find(i => i.id === id);
             if (itemExistente) {
                 itemExistente.cantidad += 1;
             } else {
-                // Se agrega con la propiedad comentario vacía por defecto
                 carrito.push({ ...producto, cantidad: 1, comentario: "" });
             }
             actualizarUI();
@@ -173,7 +216,7 @@
 
             itemExistente.cantidad -= 1;
             if (itemExistente.cantidad <= 0) {
-                carrito = carrito.filter(i => i.id !== id); // Se elimina por completo si llega a cero
+                carrito = carrito.filter(i => i.id !== id);
             }
             actualizarUI();
         };
@@ -199,7 +242,6 @@
             contenedor.style.display = "flex";
             detallesContenedor.innerHTML = "";
 
-            // Renderizar cada elemento del carrito con sus respectivos botones e inputs
             carrito.forEach(item => {
                 const itemDiv = document.createElement("div");
                 itemDiv.className = "carrito-item";
@@ -212,13 +254,12 @@
                             <button class="btn-control" onclick="agregarAlCarrito('${item.id}')">+</button>
                         </div>
                     </div>
-                    <input type="text" class="input-comentario" placeholder="¿Alguna instrucción? (Ej: sin cebolla, bien tostado...)" 
+                    <input type="text" class="input-comentario" placeholder="¿Instrucción? (Ej: sin cebolla...)" 
                            value="${item.comentario}" oninput="actualizarComentario('${item.id}', this.value)">
                 `;
                 detallesContenedor.appendChild(itemDiv);
             });
 
-            // Calcular totales globales
             const cantidad = carrito.reduce((sum, i) => sum + i.cantidad, 0);
             const total = carrito.reduce((sum, i) => sum + (i.precio * i.cantidad), 0);
 
@@ -240,7 +281,6 @@
                     return;
                 }
 
-                // Estructura limpia del texto: "2x Pizza (Nota: Sin cebolla), 1x Refresco"
                 const productosTexto = carrito.map(i => {
                     const notaStr = i.comentario.trim() ? ` (Nota: ${i.comentario.trim()})` : '';
                     return `${i.cantidad}x ${i.nombre}${notaStr}`;
@@ -249,7 +289,6 @@
                 const totalCalculado = carrito.reduce((sum, i) => sum + (i.precio * i.cantidad), 0);
                 const nombreCliente = user.user_metadata?.nombre || user.email.split('@')[0];
 
-                // Inserción en Supabase
                 const { error } = await db.from("ordenes").insert([{
                     restaurante_id: rid,
                     usuario_email: user.email,
