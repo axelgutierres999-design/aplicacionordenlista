@@ -352,22 +352,25 @@ info.innerHTML = `
         ${esFav ? '⭐ Guardado' : '☆ Guardar'}
       </button>
             
-<div style="display: flex; gap: 10px; margin-top: 10px;">
-    <button onclick="window.location.href='pedido.html?rid=${res.id}&mesa=' + encodeURIComponent('Para Recoger')"
-        style="flex: 2; padding: 12px 5px; border-radius: 12px; background: #10ad93; color: #fff; font-weight: bold; border: none; cursor: pointer;">
-        🛍️ Pedir
-    </button>
+<div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+    
+    <div style="display: flex; gap: 10px;">
+        <button onclick="window.location.href='menu_recoger.html?rid=${res.id}'"
+            style="flex: 2; padding: 12px; border-radius: 12px; background: #10ad93; color: white; font-weight: bold; border: none; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; box-shadow: 0 4px 6px rgba(16, 173, 147, 0.2);">
+            🛍️ Pedir
+        </button>
 
-    <button onclick="trazarRuta(${res.lat},${res.lng})"
-        style="flex: 1; padding: 12px 5px; border-radius: 12px; background: #000; color: #fff; font-weight: 600; border: none; cursor: pointer;">
-        📍 Ir
+        <button onclick="trazarRuta(${res.lat}, ${res.lng})"
+            style="flex: 1; padding: 12px; border-radius: 12px; background: #1a1a1a; color: white; font-weight: bold; border: none; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px;">
+            📍 Ir
+        </button>
+    </div>
+
+    <button class="btn-ver-mas" onclick="abrirWhatsApp('${res.whatsapp}', '${res.nombre}')" 
+        style="width: 100%; padding: 12px; background: #25D366; border: none; color: white; border-radius: 12px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; box-shadow: 0 4px 6px rgba(37, 211, 102, 0.2);">
+        💬 Chatear por WhatsApp
     </button>
 </div>
-
-<button class="btn-ver-mas" onclick="abrirWhatsApp('${res.whatsapp}', '${res.nombre}')" 
-    style="width: 100%; margin-top: 10px; padding: 12px; background:#25D366; border:none; color:white; border-radius: 12px; font-weight: bold;">
-    💬 Chatear por WhatsApp
-</button>
 `;
 
   cambiarVista('detalle');

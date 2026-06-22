@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menú - Para Recoger</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <style>
+        body { background: #f6f8f9; font-family: "Inter", system-ui, sans-serif; padding-bottom: 120px; }
+        header { text-align: center; padding: 20px 10px; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        header h1 { margin: 0; font-size: 1.5rem; color: #10ad93; }
+        
+        .productos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; padding: 0 10px; }
+        .producto-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.08); display: flex; flex-direction: column; }
+        .producto-card img { width: 100%; height: 120px; object-fit: cover; }
+        
+        .producto-info { padding: 10px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; }
+        .producto-info h4 { margin: 0 0 5px 0; font-size: 1rem; }
+        .producto-info p { margin: 0 0 10px 0; font-size: 0.8rem; color: #666; }
+        .producto-precio { font-weight: bold; color: #10ad93; font-size: 1.1rem; margin-bottom: 10px; }
+        
+        .btn-agregar { width: 100%; background: #10ad93; color: white; border: none; padding: 8px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        
+        #carritoFijo { position: fixed; bottom: 0; left: 0; width: 100%; background: white; padding: 15px; box-shadow: 0 -4px 15px rgba(0,0,0,0.1); border-top-left-radius: 20px; border-top-right-radius: 20px; z-index: 100; }
+        .carrito-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 10px; font-size: 1.2rem; }
+        .btn-pagar { width: 100%; background: #000; color: white; border: none; padding: 15px; border-radius: 12px; font-size: 1.1rem; font-weight: bold; cursor: pointer; }
+        .btn-pagar:disabled { background: #ccc; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <span style="font-size: 0.9rem; color: #666;">📍 Pedido Para Recoger</span>
+        <h1 id="nombreRestaurante">Cargando Menú...</h1>
+    </header>
+
+    <main>
+        <div id="gridProductos" class="productos-grid">
+            <p style="text-align: center; width: 100%;">Buscando platillos...</p>
+        </div>
+    </main>
+
+    <div id="carritoFijo" hidden>
+        <div class="carrito-header">
+            <span>Total (<span id="cantidadItems">0</span> items)</span>
+            <span id="totalCarrito" style="color: #10ad93;">$0.00</span>
+        </div>
+        <button id="btnProcesarPago" class="btn-pagar">Generar Orden por Pagar</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script>
+        // 2. INICIALIZACIÓN DIRECTA (Sin archivos externos para evitar error 404)
+        const SUPABASE_URL = "https://cpveuexgxwxjejurtwro.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc";
+        const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // 3. Variables de estado
+        const params = new URLSearchParams(window.location.search);
+        const rid = params.get("rid");
+        let productos = [];
+        let carrito = [];
+
+        // 4. Lógica Principal
+        async function iniciar() {
+            if (!rid) {
+                document.getElementById("nombreRestaurante").textContent = "Restaurante no encontrado";
+                return;
+            }
+
+            // Obtener nombre del restaurante
+            const { data: resData } = await db.from("restaurantes").select("nombre").eq("id", rid).single();
+            if (resData) document.getElementById("nombreRestaurante").textContent = resData.nombre;
+
+            // Obtener productos
+            const { data: prodData } = await db.from("productos").select("*").eq("restaurante_id", rid);
+            productos = prodData || [];
+            renderizarProductos();
+        }
+
+        function renderizarProductos() {
+            const grid = document.getElementById("gridProductos");
+            grid.innerHTML = "";
+
+            if (productos.length === 0) {
+                grid.innerHTML = "<p style='text-align:center; width:100%;'>Este restaurante aún no tiene platillos.</p>";
+                return;
+            }
+
+            productos.forEach(p => {
+                const desc = p.descripcion || p.ingredientes || "Sin descripción";
+                const card = document.createElement("div");
+                card.className = "producto-card";
+                card.innerHTML = `
+                    <img src="${p.imagen_url || 'https://via.placeholder.com/150'}" alt="${p.nombre}">
+                    <div class="producto-info">
+                        <div>
+                            <h4>${p.nombre}</h4>
+                            <p>${desc.substring(0, 50)}${desc.length > 50 ? '...' : ''}</p>
+                        </div>
+                        <div class="producto-precio">$${parseFloat(p.precio).toFixed(2)}</div>
+                        <button class="btn-agregar" onclick="agregarAlCarrito('${p.id}')">Agregar</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        window.agregarAlCarrito = (id) => {
+            const producto = productos.find(p => p.id === id);
+            if (!producto) return;
+
+            const itemExistente = carrito.find(i => i.id === id);
+            if (itemExistente) {
+                itemExistente.cantidad += 1;
+            } else {
+                carrito.push({ ...producto, cantidad: 1 });
+            }
+            actualizarUI();
+        };
+
+        function actualizarUI() {
+            const contenedor = document.getElementById("carritoFijo");
+            if (carrito.length === 0) {
+                contenedor.hidden = true;
+                return;
+            }
+
+            contenedor.hidden = false;
+            const cantidad = carrito.reduce((sum, i) => sum + i.cantidad, 0);
+            const total = carrito.reduce((sum, i) => sum + (i.precio * i.cantidad), 0);
+
+            document.getElementById("cantidadItems").textContent = cantidad;
+            document.getElementById("totalCarrito").textContent = "$" + total.toFixed(2);
+        }
+
+        // 5. ENVÍO DE LA ORDEN CON LA NUEVA ESTRUCTURA SQL
+        document.getElementById("btnProcesarPago").addEventListener("click", async () => {
+            const btn = document.getElementById("btnProcesarPago");
+            btn.disabled = true;
+            btn.textContent = "Procesando...";
+
+            try {
+                // Verificar usuario activo
+                const { data: { user } } = await db.auth.getUser();
+                if (!user) {
+                    alert("Debes iniciar sesión para hacer un pedido.");
+                    window.location.href = "login.html"; // Ajusta según tu app
+                    return;
+                }
+
+                // Dar formato a los productos como texto para la columna SQL (Ej: "2x Pizza, 1x Refresco")
+                const productosTexto = carrito.map(i => `${i.cantidad}x ${i.nombre}`).join(", ");
+                const totalCalculado = carrito.reduce((sum, i) => sum + (i.precio * i.cantidad), 0);
+                
+                // Nombre del cliente por defecto (usa el metadata si existe, sino el inicio del correo)
+                const nombreCliente = user.user_metadata?.nombre || user.email.split('@')[0];
+
+                // Inserción en tabla
+                const { error } = await db.from("ordenes").insert([{
+                    restaurante_id: rid,
+                    usuario_email: user.email,
+                    cliente_nombre: nombreCliente,
+                    mesa: 'Para Recoger',
+                    productos: productosTexto,
+                    total: totalCalculado,
+                    estado: 'por_pagar'
+                }]);
+
+                if (error) throw error;
+
+                // Redireccionar al usuario a su perfil o pantalla de éxito
+                alert("¡Orden enviada! Redirigiendo a tus pedidos para realizar el pago.");
+                window.location.href = "perfil.html"; // Ajusta a la página donde el usuario ve sus órdenes
+
+            } catch (error) {
+                console.error(error);
+                alert("Hubo un error al crear la orden: " + error.message);
+                btn.disabled = false;
+                btn.textContent = "Generar Orden por Pagar";
+            }
+        });
+
+        // Iniciar la carga
+        iniciar();
+    </script>
+</body>
+</html>
