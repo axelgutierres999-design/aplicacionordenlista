@@ -354,8 +354,8 @@ info.innerHTML = `
             
 <div style="display: flex; gap: 10px; margin-top: 10px;">
     <button onclick="window.location.href='menu.html?rid=${res.id}&mesa=' + encodeURIComponent('Para Recoger')"
-        style="width: 100%; margin-top: 10px; padding: 12px; border-radius: 12px; background: #10ad93; color: #fff; font-weight: bold; border: none; cursor: pointer;">
-        🛍️ Pedir para Recoger
+        style="flex: 2; padding: 12px 5px; border-radius: 12px; background: #10ad93; color: #fff; font-weight: bold; border: none; cursor: pointer;">
+        🛍️ Pedir
     </button>
 
     <button onclick="trazarRuta(${res.lat},${res.lng})"
