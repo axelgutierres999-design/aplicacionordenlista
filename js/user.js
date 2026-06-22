@@ -266,3 +266,134 @@ window.verStatusReservaciones = async function() {
     document.body.appendChild(dialog);
     dialog.showModal();
 }
+window.verStatusOrdenes = async function() {
+    const { data: { user } } = await db.auth.getUser();
+
+    if (!user) {
+        alert("Debes iniciar sesión");
+        return;
+    }
+
+    console.log("🔍 Consultando órdenes para:", user.email);
+
+    // Consultar las últimas 15 órdenes del usuario usando su email
+    const { data, error } = await db
+        .from('ordenes')
+        .select('*')
+        .eq('usuario_email', user.email)
+        .order('created_at', { ascending: false })
+        .limit(15);
+
+    if (error) {
+        console.error("Error al obtener órdenes:", error);
+        return;
+    }
+
+    const dialog = document.createElement('dialog');
+    dialog.style = `
+        padding:0;
+        border-radius:25px;
+        border:none;
+        width:90%;
+        max-width:400px;
+        background:#eef0f3;
+    `;
+
+    let listaHTML = '';
+
+    if (!data || data.length === 0) {
+        listaHTML = `<p style="text-align:center; padding:20px; color:#666;">No tienes órdenes registradas.</p>`;
+    } else {
+        data.forEach(ord => {
+            let colorStatus = "#7f8c8d";
+            let icono = "📦";
+            let estadoTexto = ord.estado.replace('_', ' ').toUpperCase();
+            let bloquePago = "";
+
+            // Lógica de diseño según el estado de la orden
+            if (ord.estado === 'por_pagar') {
+                colorStatus = "#3498db"; 
+                icono = "💵";
+                estadoTexto = "PENDIENTE DE PAGO";
+                
+                // Formatear la hora límite si existe
+                let horaLimiteTexto = "pronto";
+                if (ord.limite_pago) {
+                    horaLimiteTexto = new Date(ord.limite_pago).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                }
+
+                // UI Especial para pagar
+                bloquePago = `
+                    <div style="margin-top:12px; padding:12px; background:#e0f2fe; border-radius:12px; border:1px solid #bae6fd; font-size:13px; color:#0369a1;">
+                        <strong style="display:block; margin-bottom:5px;">Datos para transferencia:</strong>
+                        Banco: <b>BBVA</b><br>
+                        CLABE: <b>1234 5678 9012 3456 78</b><br>
+                        Titular: <b>OrdenLista S.A.</b><br>
+                        <div style="margin-top:8px; padding-top:8px; border-top:1px dashed #7dd3fc;">
+                            ⚠️ Tienes hasta las <b>${horaLimiteTexto}</b> para realizar tu pago o el pedido será cancelado.
+                        </div>
+                    </div>
+                `;
+            } else if (ord.estado === 'pendiente' || ord.estado === 'preparando') {
+                colorStatus = "#f39c12"; icono = "👨‍🍳";
+            } else if (ord.estado === 'terminado') {
+                colorStatus = "#10ad93"; icono = "🛎️";
+            } else if (ord.estado === 'entregado') {
+                colorStatus = "#2ecc71"; icono = "✅";
+            } else if (ord.estado === 'cancelado') {
+                colorStatus = "#e53935"; icono = "❌";
+            }
+
+            listaHTML += `
+                <div style="
+                    background:white;
+                    margin-bottom:15px;
+                    padding:15px;
+                    border-radius:15px;
+                    box-shadow:4px 4px 8px #caced1;
+                ">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <strong>Orden #${ord.id}</strong>
+                        <span style="background:${colorStatus}; color:white; font-size:10px; font-weight:bold; padding:4px 8px; border-radius:12px;">
+                            ${icono} ${estadoTexto}
+                        </span>
+                    </div>
+
+                    <div style="margin-top:10px; font-size:13px; color:#555; line-height: 1.5;">
+                        📝 <b>Productos:</b> ${ord.productos}<br>
+                        📍 <b>Entrega:</b> ${ord.mesa}<br>
+                        💰 <b>Total:</b> $${parseFloat(ord.total).toFixed(2)}
+                    </div>
+                    
+                    ${bloquePago}
+                </div>
+            `;
+        });
+    }
+
+    dialog.innerHTML = `
+        <div style="padding:20px;">
+            <h3>Mis Órdenes</h3>
+            <div style="max-height:60vh; overflow-y:auto; padding-right:5px;">
+                ${listaHTML}
+            </div>
+            <button onclick="this.closest('dialog').remove()"
+                style="
+                    width:100%;
+                    margin-top:15px;
+                    padding:15px;
+                    background:black;
+                    color:white;
+                    border:none;
+                    border-radius:15px;
+                    font-weight:bold;
+                    font-size:16px;
+                ">
+                Cerrar
+            </button>
+        </div>
+    `;
+
+    document.body.appendChild(dialog);
+    dialog.showModal();
+}

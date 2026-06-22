@@ -130,6 +130,17 @@
         
         <button class="btn-logout" onclick="cerrarSesion()">Cerrar Sesión</button>
     </div>
+    <h3 style="font-size: 11px; color: #999; margin: 25px 0 15px 5px; text-transform: uppercase; letter-spacing: 1px;">Mi Actividad</h3>
+        
+        <div class="menu-item" onclick="verStatusOrdenes()">
+            <div class="item-info">
+                <span>Mis Órdenes / Pagos</span>
+                <small>Paga tus pedidos y sigue su estado</small>
+            </div>
+            <span id="badge-ordenes" style="display:none; background:#3498db; color:white; font-size:10px; padding:2px 8px; border-radius:10px; margin-right:10px;">!</span>
+            <span>❯</span>
+        </div>
+        <div class="menu-item" onclick="verStatusReservaciones()">
 
     <script src="js/user.js"></script>
 </body>
