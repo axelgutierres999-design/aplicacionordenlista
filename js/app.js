@@ -352,19 +352,22 @@ info.innerHTML = `
         ${esFav ? '⭐ Guardado' : '☆ Guardar'}
       </button>
             
-      <button onclick="window.location.href='menu.html?rid=${res.id}&mesa=Para%20Recoger'"
-        style="flex: 1.3; padding: 12px 5px; border-radius: 12px; background: #10ad93; color: #fff; font-weight: bold; font-size: 13px; border: none; box-shadow: 0 4px 10px rgba(16, 173, 147, 0.3); cursor: pointer;">
-        🛍️ Pedir
-      </button>
-
-      <button onclick="trazarRuta(${res.lat},${res.lng})"
-        style="flex: 1; padding: 12px 5px; border-radius: 12px; background: #000; color: #fff; font-weight: 600; font-size: 12px; border: none; cursor: pointer;">
-        📍 Ir ahora
-      </button>
-    
-    <button class="btn-ver-mas" onclick="abrirWhatsApp('${res.whatsapp}', '${res.nombre}')" style="width: 100%; margin-top: 15px; background:#25D366; border:none; color:white;">
-      💬 Chatear por WhatsApp
+<div style="display: flex; gap: 10px; margin-top: 10px;">
+    <button onclick="window.location.href='menu.html?rid=${res.id}&mesa=' + encodeURIComponent('Para Recoger')"
+        style="width: 100%; margin-top: 10px; padding: 12px; border-radius: 12px; background: #10ad93; color: #fff; font-weight: bold; border: none; cursor: pointer;">
+        🛍️ Pedir para Recoger
     </button>
+
+    <button onclick="trazarRuta(${res.lat},${res.lng})"
+        style="flex: 1; padding: 12px 5px; border-radius: 12px; background: #000; color: #fff; font-weight: 600; border: none; cursor: pointer;">
+        📍 Ir
+    </button>
+</div>
+
+<button class="btn-ver-mas" onclick="abrirWhatsApp('${res.whatsapp}', '${res.nombre}')" 
+    style="width: 100%; margin-top: 10px; padding: 12px; background:#25D366; border:none; color:white; border-radius: 12px; font-weight: bold;">
+    💬 Chatear por WhatsApp
+</button>
 `;
 
   cambiarVista('detalle');
