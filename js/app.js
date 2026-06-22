@@ -345,17 +345,22 @@ info.innerHTML = `
         <small style="color:#999; display:block; margin-top:5px;">Toca una estrella para guardar</small>
     </div>
 
-    <div style="display: flex; gap: 10px; margin-top: 20px;">
+<div style="display: flex; gap: 8px; margin-top: 20px; align-items: stretch;">
+      
       <button id="btn-fav-action" onclick="toggleFav('${res.id}')"
-        style="flex:1; padding:15px; border-radius:15px; border:1px solid #000; background:${esFav ? '#000':'#fff'}; color:${esFav ? '#fff':'#000'}; font-weight:600; transition: all 0.3s;">
+        style="flex: 1; padding: 12px 5px; border-radius: 12px; border: 1px solid #000; background: ${esFav ? '#000':'#fff'}; color: ${esFav ? '#fff':'#000'}; font-weight: 600; font-size: 12px; transition: all 0.3s; cursor: pointer;">
         ${esFav ? '⭐ Guardado' : '☆ Guardar'}
       </button>
             
+      <button onclick="window.location.href='menu.html?rid=${res.id}&mesa=Para%20Recoger'"
+        style="flex: 1.3; padding: 12px 5px; border-radius: 12px; background: #10ad93; color: #fff; font-weight: bold; font-size: 13px; border: none; box-shadow: 0 4px 10px rgba(16, 173, 147, 0.3); cursor: pointer;">
+        🛍️ Pedir
+      </button>
+
       <button onclick="trazarRuta(${res.lat},${res.lng})"
-        style="flex:1; padding:15px; border-radius:15px; background:#000; color:#fff; font-weight:600;">
+        style="flex: 1; padding: 12px 5px; border-radius: 12px; background: #000; color: #fff; font-weight: 600; font-size: 12px; border: none; cursor: pointer;">
         📍 Ir ahora
       </button>
-    </div>
     
     <button class="btn-ver-mas" onclick="abrirWhatsApp('${res.whatsapp}', '${res.nombre}')" style="width: 100%; margin-top: 15px; background:#25D366; border:none; color:white;">
       💬 Chatear por WhatsApp
