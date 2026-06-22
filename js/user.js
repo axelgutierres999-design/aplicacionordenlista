@@ -274,15 +274,18 @@ window.verStatusOrdenes = async function() {
         return;
     }
 
-    console.log("🔍 Consultando órdenes para:", user.email);
+    console.log("🔍 Consultando órdenes activas...");
 
-    // Consultar las últimas 15 órdenes del usuario usando su email
+    // Consultamos las órdenes, excluyendo las entregadas y trayendo datos del restaurante
     const { data, error } = await db
         .from('ordenes')
-        .select('*')
-        .eq('usuario_email', user.email)
-        .order('created_at', { ascending: false })
-        .limit(15);
+        .select(`
+            *,
+            restaurantes (nombre, datos_bancarios)
+        `)
+        .eq('usuario_email', user.email) // Si en tu tabla usas usuario_id, cámbialo a .eq('usuario_id', user.id)
+        .neq('estado', 'entregado')      // Oculta las órdenes que ya fueron entregadas
+        .order('created_at', { ascending: false });
 
     if (error) {
         console.error("Error al obtener órdenes:", error);
@@ -302,35 +305,34 @@ window.verStatusOrdenes = async function() {
     let listaHTML = '';
 
     if (!data || data.length === 0) {
-        listaHTML = `<p style="text-align:center; padding:20px; color:#666;">No tienes órdenes registradas.</p>`;
+        listaHTML = `<p style="text-align:center; padding:20px; color:#666;">No tienes órdenes activas.</p>`;
     } else {
         data.forEach(ord => {
             let colorStatus = "#7f8c8d";
             let icono = "📦";
             let estadoTexto = ord.estado.replace('_', ' ').toUpperCase();
             let bloquePago = "";
+            
+            // Datos del restaurante vinculado a la orden
+            let nombreRestaurante = ord.restaurantes?.nombre || "Restaurante";
+            let infoBancaria = ord.restaurantes?.datos_bancarios || "Datos bancarios no disponibles. Consulta en caja.";
 
-            // Lógica de diseño según el estado de la orden
             if (ord.estado === 'por_pagar') {
                 colorStatus = "#3498db"; 
                 icono = "💵";
                 estadoTexto = "PENDIENTE DE PAGO";
                 
-                // Formatear la hora límite si existe
                 let horaLimiteTexto = "pronto";
                 if (ord.limite_pago) {
                     horaLimiteTexto = new Date(ord.limite_pago).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 }
 
-                // UI Especial para pagar
                 bloquePago = `
                     <div style="margin-top:12px; padding:12px; background:#e0f2fe; border-radius:12px; border:1px solid #bae6fd; font-size:13px; color:#0369a1;">
                         <strong style="display:block; margin-bottom:5px;">Datos para transferencia:</strong>
-                        Banco: <b>BBVA</b><br>
-                        CLABE: <b>1234 5678 9012 3456 78</b><br>
-                        Titular: <b>OrdenLista S.A.</b><br>
+                        <div style="white-space: pre-wrap; font-family: monospace;">${infoBancaria}</div>
                         <div style="margin-top:8px; padding-top:8px; border-top:1px dashed #7dd3fc;">
-                            ⚠️ Tienes hasta las <b>${horaLimiteTexto}</b> para realizar tu pago o el pedido será cancelado.
+                            ⚠️ Tienes hasta las <b>${horaLimiteTexto}</b> para realizar tu pago.
                         </div>
                     </div>
                 `;
@@ -338,8 +340,6 @@ window.verStatusOrdenes = async function() {
                 colorStatus = "#f39c12"; icono = "👨‍🍳";
             } else if (ord.estado === 'terminado') {
                 colorStatus = "#10ad93"; icono = "🛎️";
-            } else if (ord.estado === 'entregado') {
-                colorStatus = "#2ecc71"; icono = "✅";
             } else if (ord.estado === 'cancelado') {
                 colorStatus = "#e53935"; icono = "❌";
             }
@@ -353,7 +353,7 @@ window.verStatusOrdenes = async function() {
                     box-shadow:4px 4px 8px #caced1;
                 ">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <strong>Orden #${ord.id}</strong>
+                        <strong style="font-size: 16px;">${nombreRestaurante}</strong>
                         <span style="background:${colorStatus}; color:white; font-size:10px; font-weight:bold; padding:4px 8px; border-radius:12px;">
                             ${icono} ${estadoTexto}
                         </span>
