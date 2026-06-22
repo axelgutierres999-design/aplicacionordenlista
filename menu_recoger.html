@@ -6,70 +6,111 @@
     <title>Menú - Para Recoger</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
     <style>
-        body { background: #f6f8f9; font-family: "Inter", system-ui, sans-serif; padding-bottom: 120px; }
-        header { text-align: center; padding: 20px 10px; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        header h1 { margin: 0; font-size: 1.5rem; color: #10ad93; }
+        /* VARIABLES DE DISEÑO MODERNO */
+        :root {
+            --color-primario: #10ad93;
+            --color-primario-hover: #0d8a75;
+            --color-fondo: #f4f7f6;
+            --color-tarjeta: #ffffff;
+            --sombra-tarjeta: 0 4px 12px rgba(0, 0, 0, 0.05);
+            --borde-redondeado: 12px;
+        }
+
+        body { background: var(--color-fondo); font-family: "Inter", system-ui, sans-serif; padding-bottom: 180px; }
         
-        .productos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; padding: 0 10px; }
-        .producto-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.08); display: flex; flex-direction: column; }
-        .producto-card img { width: 100%; height: 120px; object-fit: cover; }
+        /* CABECERA ESTILIZADA */
+        header { text-align: center; padding: 25px 15px; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.02); margin-bottom: 25px; border-bottom: 1px solid #e2e8f0; }
+        header h1 { margin: 5px 0 0 0; font-size: 1.6rem; color: var(--color-primario); font-weight: 800; letter-spacing: -0.5px; }
         
-        .producto-info { padding: 10px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; }
-        .producto-info h4 { margin: 0 0 5px 0; font-size: 1rem; }
-        .producto-info p { margin: 0 0 10px 0; font-size: 0.8rem; color: #666; }
-        .producto-precio { font-weight: bold; color: #10ad93; font-size: 1.1rem; margin-bottom: 10px; }
+        /* GRID DE PRODUCTOS */
+        .productos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 1.2rem; padding: 0 15px; max-width: 1200px; margin: 0 auto; }
+        .producto-card { background: var(--color-tarjeta); border-radius: var(--borde-redondeado); overflow: hidden; box-shadow: var(--sombra-tarjeta); display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s; border: 1px solid #edf2f7; }
+        .producto-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+        .producto-card img { width: 100%; height: 130px; object-fit: cover; background: #e2e8f0; }
         
-        .btn-agregar { width: 100%; background: #10ad93; color: white; border: none; padding: 8px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .producto-info { padding: 12px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; }
+        .producto-info h4 { margin: 0 0 4px 0; font-size: 0.95rem; font-weight: 700; color: #2d3748; line-height: 1.3; }
+        .producto-info p { margin: 0 0 12px 0; font-size: 0.8rem; color: #718096; line-height: 1.4; }
+        .producto-precio { font-weight: 800; color: var(--color-primario); font-size: 1.15rem; margin-bottom: 12px; }
         
-        #carritoFijo { position: fixed; bottom: 0; left: 0; width: 100%; background: white; padding: 15px; box-shadow: 0 -4px 15px rgba(0,0,0,0.1); border-top-left-radius: 20px; border-top-right-radius: 20px; z-index: 100; }
-        .carrito-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 10px; font-size: 1.2rem; }
-        .btn-pagar { width: 100%; background: #000; color: white; border: none; padding: 15px; border-radius: 12px; font-size: 1.1rem; font-weight: bold; cursor: pointer; }
-        .btn-pagar:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-agregar { width: 100%; background: var(--color-primario); color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.85rem; transition: background 0.2s; }
+        .btn-agregar:hover { background: var(--color-primario-hover); }
+        
+        /* CARRITO FIJO FLOTANTE Y EXPANDIBLE */
+        #carritoFijo { position: fixed; bottom: 0; left: 0; width: 100%; background: white; padding: 20px; box-shadow: 0 -10px 30px rgba(0,0,0,0.08); border-top-left-radius: 20px; border-top-right-radius: 20px; z-index: 100; border-top: 1px solid #e2e8f0; max-height: 80vh; display: flex; flex-direction: column; }
+        .carrito-header { display: flex; justify-content: space-between; font-weight: 800; margin-bottom: 15px; font-size: 1.15rem; color: #2d3748; align-items: center; }
+        
+        /* LISTADO DE ITEMS DENTRO DEL CARRITO */
+        .carrito-detalles { overflow-y: auto; max-height: 220px; margin-bottom: 15px; padding-right: 5px; }
+        .carrito-item { background: #f7fafc; padding: 12px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #edf2f7; display: flex; flex-direction: column; gap: 6px; }
+        .carrito-item-top { display: flex; justify-content: space-between; align-items: center; }
+        .carrito-item-titulo { font-weight: 700; font-size: 0.9rem; color: #2d3748; }
+        
+        /* CONTROLES MAS Y MENOS */
+        .controles-cantidad { display: flex; align-items: center; gap: 12px; background: #edf2f7; padding: 4px 10px; border-radius: 20px; }
+        .btn-control { background: transparent; border: none; color: #4a5568; font-weight: bold; cursor: pointer; font-size: 1rem; padding: 0 5px; }
+        .btn-control:hover { color: var(--color-primario); }
+        .item-cantidad { font-weight: 800; font-size: 0.9rem; min-width: 15px; text-align: center; }
+        
+        /* INPUT DE COMENTARIOS */
+        .input-comentario { margin: 4px 0 0 0 !important; font-size: 0.8rem !important; padding: 6px 10px !important; border-radius: 6px !important; border: 1px dashed #cbd5e0 !important; background: white !important; box-shadow: none !important; }
+        .input-comentario:focus { border-color: var(--color-primario) !important; outline: none; }
+
+        .btn-pagar { width: 100%; background: #2d3748; color: white; border: none; padding: 14px; border-radius: 12px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        .btn-pagar:hover { background: #1a202c; }
+        .btn-pagar:disabled { background: #cbd5e0; cursor: not-allowed; }
+
+        /* SCROLLBAR REFINADO PARA EL CARRITO */
+        .carrito-detalles::-webkit-scrollbar { width: 5px; }
+        .carrito-detalles::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        .carrito-detalles::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 10px; }
     </style>
 </head>
 <body>
 
     <header>
-        <span style="font-size: 0.9rem; color: #666;">📍 Pedido Para Recoger</span>
+        <span style="font-size: 0.85rem; color: #718096; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">📍 Pedido Para Recoger</span>
         <h1 id="nombreRestaurante">Cargando Menú...</h1>
     </header>
 
     <main>
         <div id="gridProductos" class="productos-grid">
-            <p style="text-align: center; width: 100%;">Buscando platillos...</p>
+            <p style="text-align: center; width: 100%; color: #718096;">Buscando platillos...</p>
         </div>
     </main>
 
-    <div id="carritoFijo" hidden>
+    <div id="carritoFijo" style="display: none;">
         <div class="carrito-header">
-            <span>Total (<span id="cantidadItems">0</span> items)</span>
-            <span id="totalCarrito" style="color: #10ad93;">$0.00</span>
+            <div> Mi Pedido <small style="font-weight: 500; color:#718096;">(<span id="cantidadItems">0</span> items)</small></div>
+            <span id="totalCarrito" style="color: var(--color-primario); font-size: 1.3rem;">$0.00</span>
         </div>
+
+        <div id="carritoDetalles" class="carrito-detalles"></div>
+
         <button id="btnProcesarPago" class="btn-pagar">Generar Orden por Pagar</button>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <script>
-        // 2. INICIALIZACIÓN DIRECTA (Sin archivos externos para evitar error 404)
+        // INICIALIZACIÓN DE CREDENCIALES
         const SUPABASE_URL = "https://cpveuexgxwxjejurtwro.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc";
         const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // 3. Variables de estado
         const params = new URLSearchParams(window.location.search);
         const rid = params.get("rid");
         let productos = [];
         let carrito = [];
 
-        // 4. Lógica Principal
+        // Lógica Principal de Carga
         async function iniciar() {
             if (!rid) {
                 document.getElementById("nombreRestaurante").textContent = "Restaurante no encontrado";
                 return;
             }
 
-            // Obtener nombre del restaurante
+            // Nombre del restaurante
             const { data: resData } = await db.from("restaurantes").select("nombre").eq("id", rid).single();
             if (resData) document.getElementById("nombreRestaurante").textContent = resData.nombre;
 
@@ -79,12 +120,13 @@
             renderizarProductos();
         }
 
+        // Renderizado del Catálogo de Platillos
         function renderizarProductos() {
             const grid = document.getElementById("gridProductos");
             grid.innerHTML = "";
 
             if (productos.length === 0) {
-                grid.innerHTML = "<p style='text-align:center; width:100%;'>Este restaurante aún no tiene platillos.</p>";
+                grid.innerHTML = "<p style='text-align:center; width:100%; color:#718096;'>Este restaurante aún no tiene platillos.</p>";
                 return;
             }
 
@@ -99,14 +141,17 @@
                             <h4>${p.nombre}</h4>
                             <p>${desc.substring(0, 50)}${desc.length > 50 ? '...' : ''}</p>
                         </div>
-                        <div class="producto-precio">$${parseFloat(p.precio).toFixed(2)}</div>
-                        <button class="btn-agregar" onclick="agregarAlCarrito('${p.id}')">Agregar</button>
+                        <div>
+                            <div class="producto-precio">$${parseFloat(p.precio).toFixed(2)}</div>
+                            <button class="btn-agregar" onclick="agregarAlCarrito('${p.id}')">Agregar al pedido</button>
+                        </div>
                     </div>
                 `;
                 grid.appendChild(card);
             });
         }
 
+        // AGREGAR AL CARRITO
         window.agregarAlCarrito = (id) => {
             const producto = productos.find(p => p.id === id);
             if (!producto) return;
@@ -115,19 +160,65 @@
             if (itemExistente) {
                 itemExistente.cantidad += 1;
             } else {
-                carrito.push({ ...producto, cantidad: 1 });
+                // Se agrega con la propiedad comentario vacía por defecto
+                carrito.push({ ...producto, cantidad: 1, comentario: "" });
             }
             actualizarUI();
         };
 
+        // DISMINUIR O QUITAR DEL CARRITO
+        window.restarDelCarrito = (id) => {
+            const itemExistente = carrito.find(i => i.id === id);
+            if (!itemExistente) return;
+
+            itemExistente.cantidad -= 1;
+            if (itemExistente.cantidad <= 0) {
+                carrito = carrito.filter(i => i.id !== id); // Se elimina por completo si llega a cero
+            }
+            actualizarUI();
+        };
+
+        // ACTUALIZAR COMENTARIO EN TIEMPO REAL
+        window.actualizarComentario = (id, texto) => {
+            const item = carrito.find(i => i.id === id);
+            if (item) {
+                item.comentario = texto;
+            }
+        };
+
+        // ACTUALIZAR INTERFAZ DEL CARRITO DINÁMICAMENTE
         function actualizarUI() {
             const contenedor = document.getElementById("carritoFijo");
+            const detallesContenedor = document.getElementById("carritoDetalles");
+            
             if (carrito.length === 0) {
-                contenedor.hidden = true;
+                contenedor.style.display = "none";
                 return;
             }
 
-            contenedor.hidden = false;
+            contenedor.style.display = "flex";
+            detallesContenedor.innerHTML = "";
+
+            // Renderizar cada elemento del carrito con sus respectivos botones e inputs
+            carrito.forEach(item => {
+                const itemDiv = document.createElement("div");
+                itemDiv.className = "carrito-item";
+                itemDiv.innerHTML = `
+                    <div class="carrito-item-top">
+                        <div class="carrito-item-titulo">${item.nombre} <span style="color:var(--color-primario); font-weight:700;">($${parseFloat(item.precio).toFixed(2)})</span></div>
+                        <div class="controles-cantidad">
+                            <button class="btn-control" onclick="restarDelCarrito('${item.id}')">−</button>
+                            <span class="item-cantidad">${item.cantidad}</span>
+                            <button class="btn-control" onclick="agregarAlCarrito('${item.id}')">+</button>
+                        </div>
+                    </div>
+                    <input type="text" class="input-comentario" placeholder="¿Alguna instrucción? (Ej: sin cebolla, bien tostado...)" 
+                           value="${item.comentario}" oninput="actualizarComentario('${item.id}', this.value)">
+                `;
+                detallesContenedor.appendChild(itemDiv);
+            });
+
+            // Calcular totales globales
             const cantidad = carrito.reduce((sum, i) => sum + i.cantidad, 0);
             const total = carrito.reduce((sum, i) => sum + (i.precio * i.cantidad), 0);
 
@@ -135,29 +226,30 @@
             document.getElementById("totalCarrito").textContent = "$" + total.toFixed(2);
         }
 
-        // 5. ENVÍO DE LA ORDEN CON LA NUEVA ESTRUCTURA SQL
+        // ENVÍO DE LA ORDEN CON COMENTARIOS INYECTADOS EN EL TEXTO
         document.getElementById("btnProcesarPago").addEventListener("click", async () => {
             const btn = document.getElementById("btnProcesarPago");
             btn.disabled = true;
             btn.textContent = "Procesando...";
 
             try {
-                // Verificar usuario activo
                 const { data: { user } } = await db.auth.getUser();
                 if (!user) {
                     alert("Debes iniciar sesión para hacer un pedido.");
-                    window.location.href = "login.html"; // Ajusta según tu app
+                    window.location.href = "login.html";
                     return;
                 }
 
-                // Dar formato a los productos como texto para la columna SQL (Ej: "2x Pizza, 1x Refresco")
-                const productosTexto = carrito.map(i => `${i.cantidad}x ${i.nombre}`).join(", ");
+                // Estructura limpia del texto: "2x Pizza (Nota: Sin cebolla), 1x Refresco"
+                const productosTexto = carrito.map(i => {
+                    const notaStr = i.comentario.trim() ? ` (Nota: ${i.comentario.trim()})` : '';
+                    return `${i.cantidad}x ${i.nombre}${notaStr}`;
+                }).join(", ");
+
                 const totalCalculado = carrito.reduce((sum, i) => sum + (i.precio * i.cantidad), 0);
-                
-                // Nombre del cliente por defecto (usa el metadata si existe, sino el inicio del correo)
                 const nombreCliente = user.user_metadata?.nombre || user.email.split('@')[0];
 
-                // Inserción en tabla
+                // Inserción en Supabase
                 const { error } = await db.from("ordenes").insert([{
                     restaurante_id: rid,
                     usuario_email: user.email,
@@ -170,9 +262,8 @@
 
                 if (error) throw error;
 
-                // Redireccionar al usuario a su perfil o pantalla de éxito
-                alert("¡Orden enviada! Redirigiendo a tus pedidos para realizar el pago.");
-                window.location.href = "perfil.html"; // Ajusta a la página donde el usuario ve sus órdenes
+                alert("¡Orden enviada exitosamente! Redirigiendo a tus pedidos para realizar el pago.");
+                window.location.href = "perfil.html";
 
             } catch (error) {
                 console.error(error);
@@ -182,7 +273,6 @@
             }
         });
 
-        // Iniciar la carga
         iniciar();
     </script>
 </body>
