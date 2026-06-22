@@ -353,7 +353,7 @@ info.innerHTML = `
       </button>
             
 <div style="display: flex; gap: 10px; margin-top: 10px;">
-    <button onclick="window.location.href='menu.html?rid=${res.id}&mesa=' + encodeURIComponent('Para Recoger')"
+    <button onclick="window.location.href='pedido.html?rid=${res.id}&mesa=' + encodeURIComponent('Para Recoger')"
         style="flex: 2; padding: 12px 5px; border-radius: 12px; background: #10ad93; color: #fff; font-weight: bold; border: none; cursor: pointer;">
         🛍️ Pedir
     </button>
