@@ -21,7 +21,8 @@
 
         /* Header */
         .header { padding: 50px 20px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: rgba(244,245,248,0.9); backdrop-filter: blur(10px); z-index: 100; }
-        
+        .btn-icon { background: none; border: none; font-size: 24px; cursor: pointer; padding: 5px; }
+
         /* Tarjetas Estilo App */
         .card { background: white; margin: 15px 20px; padding: 25px; border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
         
@@ -59,6 +60,14 @@
         .compact-name { font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 10px; }
         .compact-cal { font-weight: 800; font-size: 15px; color: #666; }
 
+        /* Modales */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 2000; justify-content: center; align-items: flex-end; }
+        .modal-content { background: white; width: 100%; padding: 30px; border-radius: 30px 30px 0 0; max-height: 90vh; overflow-y: auto; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 13px; color: #666; margin-bottom: 5px; font-weight: 600; }
+        .form-control { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 12px; font-size: 15px; background: var(--bg); outline: none; }
+        .btn-primary { width: 100%; padding: 16px; background: var(--success); color: white; border: none; border-radius: 15px; font-weight: bold; font-size: 16px; margin-top: 10px; cursor: pointer; }
+
         /* Menú de Navegación Inferior */
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; padding: 15px 20px 25px; display: flex; justify-content: space-around; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); z-index: 1000; border-radius: 30px 30px 0 0; }
         .nav-item { text-align: center; color: #888; text-decoration: none; font-size: 12px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 5px; }
@@ -79,8 +88,11 @@
     </div>
 
     <header class="header">
-        <h2 style="margin: 0; font-weight: 800;">Resumen del Día</h2>
-        <div style="font-weight: 700; color: #888; font-size: 14px;" id="fecha-hoy">Hoy</div>
+        <div>
+            <h2 style="margin: 0; font-weight: 800;">Resumen del Día</h2>
+            <div style="font-weight: 700; color: #888; font-size: 14px;" id="fecha-hoy">Hoy</div>
+        </div>
+        <button class="btn-icon" onclick="abrirConfiguracion()">⚙️</button>
     </header>
 
     <div class="card">
@@ -90,7 +102,7 @@
                 <div class="cal-value" id="cal-consumidas">0</div>
             </div>
             <div class="cal-box right">
-                <div class="cal-label">Restantes</div>
+                <div class="cal-label">Meta: <span id="meta-display">2000</span> kcal</div>
                 <div class="cal-value text-success" id="cal-restantes">0</div>
             </div>
         </div>
@@ -148,38 +160,138 @@
         </a>
     </nav>
 
+    <div id="modal-config" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-top:0; color:var(--dark);">⚙️ Parámetros Clínicos</h3>
+            <p style="font-size: 13px; color: #666; margin-top:-10px;">El sistema ajustará tus requerimientos basándose en algoritmos nutricionales.</p>
+            
+            <div style="display: flex; gap: 10px;">
+                <div class="form-group" style="flex: 1;">
+                    <label>Peso (kg)</label>
+                    <input type="number" id="inp-peso" class="form-control" placeholder="Ej. 70">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label>Estatura (cm)</label>
+                    <input type="number" id="inp-altura" class="form-control" placeholder="Ej. 175">
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <div class="form-group" style="flex: 1;">
+                    <label>Edad (Años)</label>
+                    <input type="number" id="inp-edad" class="form-control" placeholder="Ej. 25">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label>Género</label>
+                    <select id="inp-genero" class="form-control">
+                        <option value="M">Hombre</option>
+                        <option value="F">Mujer</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Nivel de Actividad Física</label>
+                <select id="inp-actividad" class="form-control">
+                    <option value="1.2">Sedentario (Poco o ningún ejercicio)</option>
+                    <option value="1.375">Ligero (1 a 3 días por semana)</option>
+                    <option value="1.55">Moderado (3 a 5 días por semana)</option>
+                    <option value="1.725">Fuerte (6 a 7 días por semana)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Objetivo</label>
+                <select id="inp-objetivo" class="form-control">
+                    <option value="-400">Pérdida de Grasa (Déficit)</option>
+                    <option value="0">Mantenimiento</option>
+                    <option value="300">Ganancia Muscular (Superávit)</option>
+                </select>
+            </div>
+
+            <button class="btn-primary" onclick="calcularMetasClinicas()">Guardar y Calcular</button>
+            <button onclick="document.getElementById('modal-config').style.display='none'" style="width: 100%; background: none; border: none; color: #888; margin-top: 15px; font-weight: bold; cursor:pointer;">Cancelar</button>
+        </div>
+    </div>
+
     <script>
-        // 1. CONFIGURACIÓN SUPABASE (Exactamente igual que tu archivo principal)
+        // 1. CONFIGURACIÓN SUPABASE
         const urlDB = 'https://cpveuexgxwxjejurtwro.supabase.co';
         const keyDB = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc'; 
         const supabaseClient = window.supabase.createClient(urlDB, keyDB);
 
-        // 2. VARIABLES DE ESTADO
+        // 2. VARIABLES DE ESTADO GLOBALES
         let totales = { cal: 0, prot: 0, carbs: 0, fats: 0 };
-        // Leemos la meta que configuró el usuario en la otra pantalla (o 2000 por defecto)
-        let metaCalorias = localStorage.getItem('metaCalorias') || 2000; 
+        let metaCalorias = parseFloat(localStorage.getItem('metaCaloriasUsuario')) || 2000; 
+        let metaAgua = parseFloat(localStorage.getItem('metaAguaUsuario')) || 2.5;
         
-        // Lógica para guardar el agua del día en localStorage
+        // Logica de Agua
         const hoyString = new Date().toLocaleDateString('es-MX');
         const aguaKey = `agua_${hoyString}`;
         let aguaConsumida = parseFloat(localStorage.getItem(aguaKey)) || 0;
-        const metaAgua = 2.5;
 
         // 3. INICIALIZACIÓN
         window.addEventListener('DOMContentLoaded', async () => {
-            // Mostrar fecha
             const opcionesFecha = { weekday: 'long', day: 'numeric', month: 'long' };
             document.getElementById('fecha-hoy').innerText = new Date().toLocaleDateString('es-MX', opcionesFecha);
             
-            // Cargar datos
+            // Si el usuario nunca ha configurado su perfil, abrimos el modal
+            if (!localStorage.getItem('perfilConfigurado')) {
+                abrirConfiguracion();
+            }
+            
             await cargarDatosHoy();
             actualizarUI();
-            
-            // Ocultar pantalla de carga
             document.getElementById('loading-overlay').style.display = 'none';
         });
 
-        // 4. CARGAR DATOS DE SUPABASE
+        // 4. EL MOTOR DE CÁLCULO (Código Autónomo)
+        function abrirConfiguracion() {
+            document.getElementById('modal-config').style.display = 'flex';
+        }
+
+        function calcularMetasClinicas() {
+            const peso = parseFloat(document.getElementById('inp-peso').value);
+            const altura = parseFloat(document.getElementById('inp-altura').value);
+            const edad = parseInt(document.getElementById('inp-edad').value);
+            const genero = document.getElementById('inp-genero').value;
+            const factorActividad = parseFloat(document.getElementById('inp-actividad').value);
+            const objetivo = parseFloat(document.getElementById('inp-objetivo').value);
+
+            if (!peso || !altura || !edad) return alert("Por favor, llena los campos básicos (Peso, Estatura, Edad).");
+
+            // Fórmula de Mifflin-St Jeor (GEB)
+            let geb = (10 * peso) + (6.25 * altura) - (5 * edad);
+            if (genero === 'M') {
+                geb += 5;
+            } else {
+                geb -= 161;
+            }
+
+            // Gasto Energético Total (GET)
+            let get = geb * factorActividad;
+
+            // Aplicar el déficit o superávit
+            let caloriasFinales = get + objetivo;
+
+            // Requerimiento hídrico (35 ml por kg de peso)
+            let aguaFinal = (peso * 35) / 1000; // Dividido entre 1000 para pasar a Litros
+
+            // Actualizar el estado global
+            metaCalorias = Math.round(caloriasFinales);
+            metaAgua = Math.round(aguaFinal * 10) / 10; // Redondear a un decimal
+
+            // Guardar en el dispositivo para no volver a preguntar
+            localStorage.setItem('metaCaloriasUsuario', metaCalorias);
+            localStorage.setItem('metaAguaUsuario', metaAgua);
+            localStorage.setItem('perfilConfigurado', 'true');
+
+            // Cerrar modal y refrescar la pantalla
+            document.getElementById('modal-config').style.display = 'none';
+            actualizarUI();
+        }
+
+        // 5. CARGAR DATOS DE SUPABASE (Consumo del día)
         async function cargarDatosHoy() {
             const fecha = new Date();
             const inicioDia = new Date(fecha); inicioDia.setHours(0, 0, 0, 0);
@@ -200,13 +312,11 @@
 
                 if (data && data.length > 0) {
                     data.forEach(item => {
-                        // Sumar totales
                         totales.cal += item.calorias;
                         totales.prot += item.proteinas;
                         totales.carbs += item.carbohidratos;
                         totales.fats += item.grasas;
 
-                        // Renderizar lista compacta
                         contenedorLista.innerHTML += `
                             <div class="compact-item">
                                 <div class="compact-name">🍽️ ${item.nombre_alimento}</div>
@@ -222,17 +332,18 @@
             }
         }
 
-        // 5. ACTUALIZAR INTERFAZ Y CÁLCULOS
+        // 6. ACTUALIZAR INTERFAZ Y CÁLCULOS VISUALES
         function actualizarUI() {
-            // Cálculos de Calorías
             const calRestantes = metaCalorias - totales.cal;
             
+            // Actualizar Textos
             document.getElementById('cal-consumidas').innerText = totales.cal;
+            document.getElementById('meta-display').innerText = metaCalorias; // Mostrar la meta dinámica
+            document.getElementById('agua-meta').innerText = metaAgua; // Mostrar agua dinámica
             
             const divRestantes = document.getElementById('cal-restantes');
             divRestantes.innerText = calRestantes > 0 ? calRestantes : 0;
 
-            // Manejo de colores si se pasa de la meta
             if (calRestantes < 0) {
                 divRestantes.classList.remove('text-success');
                 divRestantes.classList.add('text-danger');
@@ -245,23 +356,26 @@
             const porcentaje = (totales.cal / metaCalorias) * 100;
             const barra = document.getElementById('cal-progress');
             barra.style.width = Math.min(porcentaje, 100) + '%';
-            if (porcentaje > 100) barra.classList.add('over-limit');
+            if (porcentaje > 100) {
+                barra.classList.add('over-limit');
+            } else {
+                barra.classList.remove('over-limit');
+            }
 
-            // Macros
+            // Macros Consumidos
             document.getElementById('total-prot').innerText = totales.prot.toFixed(1) + 'g';
             document.getElementById('total-carbs').innerText = totales.carbs.toFixed(1) + 'g';
             document.getElementById('total-fats').innerText = totales.fats.toFixed(1) + 'g';
 
             // Agua
             document.getElementById('agua-actual').innerText = aguaConsumida.toFixed(2);
-            document.getElementById('agua-meta').innerText = metaAgua;
         }
 
-        // 6. FUNCIÓN DE AGUA
+        // 7. FUNCIÓN DE AGUA
         function agregarAgua(cantidad) {
             aguaConsumida += cantidad;
-            aguaConsumida = Math.round(aguaConsumida * 100) / 100; // Evitar decimales largos
-            localStorage.setItem(aguaKey, aguaConsumida); // Guardar progreso localmente
+            aguaConsumida = Math.round(aguaConsumida * 100) / 100; 
+            localStorage.setItem(aguaKey, aguaConsumida); 
             actualizarUI();
         }
     </script>
