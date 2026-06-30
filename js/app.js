@@ -7,26 +7,28 @@ let locales = [];
 let map, capaMarcadores = L.layerGroup(), controlRuta = null;
 let idRestauranteActual = null; 
 
-// --- NUEVA FUNCIÓN: ELEGIR EMOJI SEGÚN CATEGORÍA ---
-function obtenerEmojiPorCategoria(categoria) {
-  // Convertimos a minúsculas para comparar fácil
-  const cat = categoria ? categoria.toLowerCase() : "general";
+// --- MAPEO FIJO: categoría exacta del <select> de ajustes.js → emoji ---
+const MAPA_CATEGORIAS = {
+  'Restaurante':       '🍽️',
+  'Cafetería':         '☕',
+  'Bar / Pub':         '🍺',
+  'Taquería':          '🌮',
+  'Pizzería':          '🍕',
+  'Postres/Helados':   '🍩'
+  // 'Otro' y cualquier valor no reconocido caen en el aleatorio de abajo
+};
 
-  // 1. Asignación por palabras clave
-  if (cat.includes('pizza')) return '🍕';
-  if (cat.includes('tacos') || cat.includes('mexic')) return '🌮';
-  if (cat.includes('hamburguesa') || cat.includes('burger')) return '🍔';
-  if (cat.includes('cafe') || cat.includes('café') || cat.includes('coffee')) return '☕';
-  if (cat.includes('bar') || cat.includes('cerveza') || cat.includes('bebida')) return '🍺';
-  if (cat.includes('postre') || cat.includes('helado') || cat.includes('donut')) return '🍩';
-  if (cat.includes('sushi') || cat.includes('asiatica')) return '🍣';
-  if (cat.includes('carne') || cat.includes('parrilla')) return '🥩';
-  if (cat.includes('pollo')) return '🍗';
-  if (cat.includes('saludable') || cat.includes('ensalada')) return '🥗';
+function obtenerEmojiPorCategoria(categoria, idRestaurante = '') {
+  if (MAPA_CATEGORIAS[categoria]) return MAPA_CATEGORIAS[categoria];
 
-  // 2. Si no coincide con nada, usar uno aleatorio de comida
-  const aleatorios = ['🍴', '🍽️', '🍗', '🥣', '🥢','🥩','🥗'];
-  return aleatorios[Math.floor(Math.random() * aleatorios.length)];
+  const aleatorios = ['🍴', '🍽️', '🍗', '🥣', '🥢', '🥩', '🥗', '🍣', '🍔', '🥙'];
+  
+  // Genera un índice estable a partir del id, no random puro
+  let suma = 0;
+  for (let i = 0; i < idRestaurante.length; i++) {
+      suma += idRestaurante.charCodeAt(i);
+  }
+  return aleatorios[suma % aleatorios.length];
 }
 
 // --- 1. ICONOS: SOLO EMOJIS (VERSIÓN CORREGIDA) ---
@@ -91,6 +93,36 @@ document.addEventListener('DOMContentLoaded', async () => {
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
   capaMarcadores.addTo(map);
 
+  // Marcador de ubicación del usuario (punto azul tipo Google Maps)
+  let marcadorUsuario = null;
+  function mostrarUbicacionUsuario() {
+      if (!navigator.geolocation) return;
+      navigator.geolocation.watchPosition(
+          (pos) => {
+              const { latitude, longitude } = pos.coords;
+              const iconoUsuario = L.divIcon({
+                  className: 'icono-usuario-ubicacion',
+                  html: `
+                      <div style="position:relative; width:22px; height:22px;">
+                          <div style="position:absolute; inset:0; background:rgba(66,133,244,0.25); border-radius:50%; animation:pulseUbicacion 2s infinite;"></div>
+                          <div style="position:absolute; top:5px; left:5px; width:12px; height:12px; background:#4285F4; border:3px solid white; border-radius:50%; box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>
+                      </div>`,
+                  iconSize: [22, 22],
+                  iconAnchor: [11, 11]
+              });
+
+              if (!marcadorUsuario) {
+                  marcadorUsuario = L.marker([latitude, longitude], { icon: iconoUsuario, zIndexOffset: 1000 }).addTo(map);
+              } else {
+                  marcadorUsuario.setLatLng([latitude, longitude]);
+              }
+          },
+          (err) => console.warn("No se pudo obtener ubicación:", err.message),
+          { enableHighAccuracy: true }
+      );
+  }
+  mostrarUbicacionUsuario();
+
   // D) Cargar Restaurantes
   await cargarLocalesDesdeDB();
 
@@ -114,6 +146,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         map.removeControl(controlRuta);
         controlRuta = null;
     }
+  });
+
+  // H) Filtrar restaurantes visibles según el área del mapa
+  map.on('moveend', () => {
+      filtrarLocalesPorAreaVisible();
   });
   // --- ESCUCHA TIEMPO REAL: ACTUALIZAR MESAS ---
   db.channel('cambios-mesas')
@@ -165,7 +202,7 @@ async function cargarLocalesDesdeDB() {
         lat: r.lat ? parseFloat(r.lat) : 0,
         lng: r.longitud ? parseFloat(r.longitud) : 0,
         cat: r.categoria || "General",
-        icono: obtenerEmojiPorCategoria(r.categoria),
+       icono: obtenerEmojiPorCategoria(r.categoria, r.id),
         horario: r.horarios || "Consultar",
         direccion: r.direccion || "",
         
@@ -185,6 +222,15 @@ async function cargarLocalesDesdeDB() {
 
     renderizarMarcadores(locales);
   } catch (err) { console.error("Error cargando datos:", err); }
+}
+function filtrarLocalesPorAreaVisible() {
+    if (!map || !locales.length) return;
+    const bounds = map.getBounds();
+    const visibles = locales.filter(loc => {
+        if (!loc.lat || !loc.lng) return false;
+        return bounds.contains([loc.lat, loc.lng]);
+    });
+    renderizarMarcadores(visibles);
 }
 
 // --- 4. MAPA Y PREVIEW ---
@@ -575,14 +621,27 @@ function cambiarVista(target) {
 }
 
 async function filtrarLocales(termino, esFav) {
-  const q = termino.toLowerCase();
+  const q = termino.toLowerCase().trim();
   let listaFiltrada = locales;
   if (esFav) {
       const { data: favs } = await db.from('favoritos').select('restaurante_id').eq('usuario_id', usuarioId);
       const idsFavs = favs.map(f => f.restaurante_id);
       listaFiltrada = locales.filter(l => idsFavs.includes(l.id));
   }
-  const res = listaFiltrada.filter(l => l.nombre.toLowerCase().includes(q) || l.cat.toLowerCase().includes(q));
+
+  // Si el término coincide EXACTO con una categoría del mapa, filtra por categoría exacta.
+  // Si no, hace búsqueda libre por nombre o categoría parcial (texto escrito por el usuario).
+  const categoriasValidas = Object.keys(MAPA_CATEGORIAS).map(c => c.toLowerCase());
+  const esFiltroCategoria = categoriasValidas.includes(q);
+
+  const res = listaFiltrada.filter(l => {
+      if (!q) return true;
+      if (esFiltroCategoria) {
+          return l.cat.toLowerCase() === q;
+      }
+      return l.nombre.toLowerCase().includes(q) || l.cat.toLowerCase().includes(q);
+  });
+
   esFav ? mostrarFavoritosEnGrid(res) : renderizarMarcadores(res);
 }
 

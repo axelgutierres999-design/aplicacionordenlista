@@ -74,6 +74,11 @@
 
     .menu-carousel::-webkit-scrollbar { display: none; }
     .menu-carousel { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    @keyframes pulseUbicacion {
+    0%   { transform: scale(1); opacity: 1; }
+    100% { transform: scale(2.2); opacity: 0; }
+}
   </style>
 </head>
 <body>
@@ -122,11 +127,11 @@
         <div class="filter-chips">
           <button class="chip active" onclick="filtrarPorChip('Todos', this)">Todos</button>
           <button class="chip" onclick="filtrarPorChip('Restaurante', this)">🍽️ Restaurante</button>
-          <button class="chip" onclick="filtrarPorChip('Cafeteria', this)">☕ Cafeteria</button>
-          <button class="chip" onclick="filtrarPorChip('Bar', this)">🍻 Bar</button>
-          <button class="chip" onclick="filtrarPorChip('Pizza', this)">🍕 Pizza</button>
-          <button class="chip" onclick="filtrarPorChip('Tacos', this)">🌮 Tacos</button>
-          <button class="chip" onclick="filtrarPorChip('Postres', this)">🍩 Postres</button>
+          <button class="chip" onclick="filtrarPorChip('Cafetería', this)">☕ Cafetería</button>
+          <button class="chip" onclick="filtrarPorChip('Bar / Pub', this)">🍺 Bar</button>
+          <button class="chip" onclick="filtrarPorChip('Pizzería', this)">🍕 Pizzería</button>
+          <button class="chip" onclick="filtrarPorChip('Taquería', this)">🌮 Taquería</button>
+          <button class="chip" onclick="filtrarPorChip('Postres/Helados', this)">🍩 Postres</button>
         </div>
       </div>
     </header>
