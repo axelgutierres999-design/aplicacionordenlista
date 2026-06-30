@@ -111,18 +111,18 @@
             <div class="progress-bar-fill" id="cal-progress"></div>
         </div>
 
-        <div class="macros-grid">
+       <div class="macros-grid">
             <div class="macro-item">
                 <span class="macro-val" id="total-prot" style="color: var(--prot);">0g</span>
-                <span class="macro-label">Proteína</span>
+                <span class="macro-label">Prot. <span id="meta-prot-display">0g</span></span>
             </div>
             <div class="macro-item">
                 <span class="macro-val" id="total-carbs" style="color: var(--carb);">0g</span>
-                <span class="macro-label">Carbs</span>
+                <span class="macro-label">Carb. <span id="meta-carb-display">0g</span></span>
             </div>
             <div class="macro-item">
                 <span class="macro-val" id="total-fats" style="color: var(--fat);">0g</span>
-                <span class="macro-label">Grasas</span>
+                <span class="macro-label">Gras. <span id="meta-fat-display">0g</span></span>
             </div>
         </div>
     </div>
@@ -224,18 +224,22 @@
         let totales = { cal: 0, prot: 0, carbs: 0, fats: 0 };
         let metaCalorias = parseFloat(localStorage.getItem('metaCaloriasUsuario')) || 2000; 
         let metaAgua = parseFloat(localStorage.getItem('metaAguaUsuario')) || 2.5;
-        
+        let metaProteinas = parseFloat(localStorage.getItem('metaProteinasUsuario')) || 150;
+        let metaCarbs = parseFloat(localStorage.getItem('metaCarbsUsuario')) || 200;
+        let metaGrasas = parseFloat(localStorage.getItem('metaGrasasUsuario')) || 65;
         // Logica de Agua
         const hoyString = new Date().toLocaleDateString('es-MX');
         const aguaKey = `agua_${hoyString}`;
         let aguaConsumida = parseFloat(localStorage.getItem(aguaKey)) || 0;
 
-        // 3. INICIALIZACIÓN
+       // 3. INICIALIZACIÓN
         window.addEventListener('DOMContentLoaded', async () => {
             const opcionesFecha = { weekday: 'long', day: 'numeric', month: 'long' };
             document.getElementById('fecha-hoy').innerText = new Date().toLocaleDateString('es-MX', opcionesFecha);
             
-            // Si el usuario nunca ha configurado su perfil, abrimos el modal
+            await cargarPerfilDesdeSupabase();
+
+            // Si el usuario nunca ha configurado su perfil (ni local ni en la nube), abrimos el modal
             if (!localStorage.getItem('perfilConfigurado')) {
                 abrirConfiguracion();
             }
@@ -244,6 +248,41 @@
             actualizarUI();
             document.getElementById('loading-overlay').style.display = 'none';
         });
+
+        // Trae el perfil guardado en Supabase (por si el usuario cambió de dispositivo)
+        async function cargarPerfilDesdeSupabase() {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) return;
+
+            const { data } = await supabaseClient
+                .from('perfil_nutricional')
+                .select('*')
+                .eq('usuario_id', user.id)
+                .single();
+
+            if (data) {
+                metaCalorias = data.meta_calorias;
+                metaAgua = parseFloat(data.meta_agua_litros);
+                metaProteinas = data.meta_proteinas;
+                metaCarbs = data.meta_carbohidratos;
+                metaGrasas = data.meta_grasas;
+
+                localStorage.setItem('metaCaloriasUsuario', metaCalorias);
+                localStorage.setItem('metaAguaUsuario', metaAgua);
+                localStorage.setItem('metaProteinasUsuario', metaProteinas);
+                localStorage.setItem('metaCarbsUsuario', metaCarbs);
+                localStorage.setItem('metaGrasasUsuario', metaGrasas);
+                localStorage.setItem('perfilConfigurado', 'true');
+
+                // Pre-llenar el formulario por si quiere editar
+                document.getElementById('inp-peso').value = data.peso_kg;
+                document.getElementById('inp-altura').value = data.estatura_cm;
+                document.getElementById('inp-edad').value = data.edad;
+                document.getElementById('inp-genero').value = data.sexo === 'hombre' ? 'M' : 'F';
+                document.getElementById('inp-actividad').value = data.factor_actividad;
+                document.getElementById('inp-objetivo').value = data.objetivo_ajuste;
+            }
+        }
 
         // 4. EL MOTOR DE CÁLCULO (Código Autónomo)
         function abrirConfiguracion() {
@@ -274,23 +313,64 @@
             // Aplicar el déficit o superávit
             let caloriasFinales = get + objetivo;
 
-            // Requerimiento hídrico (35 ml por kg de peso)
+           // Requerimiento hídrico (35 ml por kg de peso)
             let aguaFinal = (peso * 35) / 1000; // Dividido entre 1000 para pasar a Litros
+
+            // Distribución de macros (30% proteína / 40% carbos / 30% grasas)
+            const metaProt  = Math.round((caloriasFinales * 0.30) / 4); // 4 kcal/g
+            const metaCarb  = Math.round((caloriasFinales * 0.40) / 4);
+            const metaGrasa = Math.round((caloriasFinales * 0.30) / 9); // 9 kcal/g
 
             // Actualizar el estado global
             metaCalorias = Math.round(caloriasFinales);
             metaAgua = Math.round(aguaFinal * 10) / 10; // Redondear a un decimal
+            metaProteinas = metaProt;
+            metaCarbs = metaCarb;
+            metaGrasas = metaGrasa;
 
             // Guardar en el dispositivo para no volver a preguntar
             localStorage.setItem('metaCaloriasUsuario', metaCalorias);
             localStorage.setItem('metaAguaUsuario', metaAgua);
+            localStorage.setItem('metaProteinasUsuario', metaProteinas);
+            localStorage.setItem('metaCarbsUsuario', metaCarbs);
+            localStorage.setItem('metaGrasasUsuario', metaGrasas);
             localStorage.setItem('perfilConfigurado', 'true');
+            // Guardamos también los datos crudos para poder pre-llenar el formulario después
+            localStorage.setItem('datosPerfilUsuario', JSON.stringify({ peso, altura, edad, genero, factorActividad, objetivo }));
+
+            // Guardar en Supabase para persistencia entre dispositivos
+            guardarPerfilEnSupabase({ peso, altura, edad, genero, factorActividad, objetivo, metaCalorias, metaProt, metaCarb, metaGrasa, aguaFinal });
 
             // Cerrar modal y refrescar la pantalla
             document.getElementById('modal-config').style.display = 'none';
             actualizarUI();
         }
 
+        async function guardarPerfilEnSupabase(d) {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) return; // Sigue funcionando local aunque no haya sesión
+
+            const registro = {
+                usuario_id: user.id,
+                edad: d.edad,
+                peso_kg: d.peso,
+                estatura_cm: d.altura,
+                sexo: d.genero === 'M' ? 'hombre' : 'mujer',
+                factor_actividad: d.factorActividad,
+                objetivo_ajuste: d.objetivo,
+                meta_calorias: d.metaCalorias,
+                meta_proteinas: d.metaProt,
+                meta_carbohidratos: d.metaCarb,
+                meta_grasas: d.metaGrasa,
+                meta_agua_litros: d.aguaFinal
+            };
+
+            const { error } = await supabaseClient
+                .from('perfil_nutricional')
+                .upsert(registro, { onConflict: 'usuario_id' });
+
+            if (error) console.warn('No se pudo sincronizar el perfil con la nube:', error.message);
+        }
         // 5. CARGAR DATOS DE SUPABASE (Consumo del día)
         async function cargarDatosHoy() {
             const fecha = new Date();
@@ -362,11 +442,13 @@
                 barra.classList.remove('over-limit');
             }
 
-            // Macros Consumidos
+            // Macros Consumidos + meta de referencia
             document.getElementById('total-prot').innerText = totales.prot.toFixed(1) + 'g';
             document.getElementById('total-carbs').innerText = totales.carbs.toFixed(1) + 'g';
             document.getElementById('total-fats').innerText = totales.fats.toFixed(1) + 'g';
-
+            document.getElementById('meta-prot-display').innerText = `/ ${metaProteinas}g`;
+            document.getElementById('meta-carb-display').innerText = `/ ${metaCarbs}g`;
+            document.getElementById('meta-fat-display').innerText = `/ ${metaGrasas}g`;
             // Agua
             document.getElementById('agua-actual').innerText = aguaConsumida.toFixed(2);
         }
