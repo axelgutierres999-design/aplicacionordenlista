@@ -288,7 +288,7 @@
     let totales = { cal: 0, prot: 0, carbs: 0, fats: 0 };
     let listaAlimentosHoy = []; 
 let fechaSeleccionada = new Date(); // Por defecto hoy
-let metaCalorias = localStorage.getItem('metaCalorias') || 2000; // NUEVO
+let metaCalorias = parseFloat(localStorage.getItem('metaCaloriasUsuario')) || 2000;
 
 // 2. CARGA INICIAL Y GENERADOR DE DÍAS
 window.addEventListener('pageshow', async () => {

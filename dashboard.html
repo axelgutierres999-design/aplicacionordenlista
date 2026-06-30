@@ -1,344 +1,397 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Dashboard | Mi Nutrición</title>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <style>
-        :root { 
-            --bg: #f4f5f8; 
-            --dark: #1d1d1f; 
-            --accent: #000000; 
-            --prot: #ff4d4d; 
-            --carb: #ff9f0a; 
-            --fat: #32ade6;
-            --water: #32ade6;
-            --success: #34c759;
-        }
-        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background: var(--bg); margin: 0; padding-bottom: 100px; color: var(--dark); }
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+        <title>Dashboard | Mi Nutrición</title>
+        <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+        <style>
+            :root { 
+                --bg: #f4f5f8; 
+                --dark: #1d1d1f; 
+                --accent: #000000; 
+                --prot: #ff4d4d; 
+                --carb: #ff9f0a; 
+                --fat: #32ade6;
+                --water: #32ade6;
+                --success: #34c759;
+            }
+            * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+            body { background: var(--bg); margin: 0; padding-bottom: 100px; color: var(--dark); }
 
-        /* Header */
-        .header { padding: 50px 20px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: rgba(244,245,248,0.9); backdrop-filter: blur(10px); z-index: 100; }
-        .btn-icon { background: none; border: none; font-size: 24px; cursor: pointer; padding: 5px; }
+            /* Header */
+            .header { padding: 50px 20px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: rgba(244,245,248,0.9); backdrop-filter: blur(10px); z-index: 100; }
+            .btn-icon { background: none; border: none; font-size: 24px; cursor: pointer; padding: 5px; }
 
-        /* Tarjetas Estilo App */
-        .card { background: white; margin: 15px 20px; padding: 25px; border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-        
-        /* Resumen de Calorías */
-        .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .cal-box { flex: 1; }
-        .cal-box.right { text-align: right; border-left: 1px solid #eee; padding-left: 15px; }
-        .cal-label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 5px; }
-        .cal-value { font-size: 28px; font-weight: 800; }
-        .text-success { color: var(--success); }
-        .text-danger { color: var(--prot); }
+            /* Tarjetas Estilo App */
+            .card { background: white; margin: 15px 20px; padding: 25px; border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+            
+            /* Resumen de Calorías */
+            .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+            .cal-box { flex: 1; }
+            .cal-box.right { text-align: right; border-left: 1px solid #eee; padding-left: 15px; }
+            .cal-label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 5px; }
+            .cal-value { font-size: 28px; font-weight: 800; }
+            .text-success { color: var(--success); }
+            .text-danger { color: var(--prot); }
 
-        /* Barra de Progreso */
-        .progress-bar-container { width: 100%; height: 14px; background: #eee; border-radius: 10px; margin: 20px 0; overflow: hidden; }
-        .progress-bar-fill { height: 100%; background: var(--success); width: 0%; transition: all 0.5s ease; border-radius: 10px; }
-        .progress-bar-fill.over-limit { background: var(--prot); }
+            /* Barra de Progreso */
+            .progress-bar-container { width: 100%; height: 14px; background: #eee; border-radius: 10px; margin: 20px 0; overflow: hidden; }
+            .progress-bar-fill { height: 100%; background: var(--success); width: 0%; transition: all 0.5s ease; border-radius: 10px; }
+            .progress-bar-fill.over-limit { background: var(--prot); }
 
-        /* Grid de Macros */
-        .macros-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .macro-item { background: var(--bg); padding: 12px; border-radius: 20px; text-align: center; }
-        .macro-val { font-weight: 800; font-size: 16px; display: block; }
-        .macro-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; display: block;}
+            /* Grid de Macros */
+            .macros-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+            .macro-item { background: var(--bg); padding: 12px; border-radius: 20px; text-align: center; }
+            .macro-val { font-weight: 800; font-size: 16px; display: block; }
+            .macro-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; display: block;}
 
-        /* Widget de Hidratación */
-        .water-widget { display: flex; justify-content: space-between; align-items: center; }
-        .water-info { display: flex; align-items: center; gap: 15px; }
-        .water-icon { font-size: 32px; background: rgba(50, 173, 230, 0.1); width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; border-radius: 20px; }
-        .water-btn { background: var(--water); color: white; border: none; padding: 12px 20px; border-radius: 20px; font-weight: 800; font-size: 15px; cursor: pointer; box-shadow: 0 4px 15px rgba(50, 173, 230, 0.3); transition: transform 0.1s; }
-        .water-btn:active { transform: scale(0.95); }
+            /* Widget de Hidratación */
+            .water-widget { display: flex; justify-content: space-between; align-items: center; }
+            .water-info { display: flex; align-items: center; gap: 15px; }
+            .water-icon { font-size: 32px; background: rgba(50, 173, 230, 0.1); width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; border-radius: 20px; }
+            .water-btn { background: var(--water); color: white; border: none; padding: 12px 20px; border-radius: 20px; font-weight: 800; font-size: 15px; cursor: pointer; box-shadow: 0 4px 15px rgba(50, 173, 230, 0.3); transition: transform 0.1s; }
+            .water-btn:active { transform: scale(0.95); }
 
-        /* Lista Compacta de Alimentos */
-        .compact-list { margin-top: 15px; }
-        .compact-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #eee; }
-        .compact-item:last-child { border-bottom: none; }
-        .compact-name { font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 10px; }
-        .compact-cal { font-weight: 800; font-size: 15px; color: #666; }
+            /* Lista Compacta de Alimentos */
+            .compact-list { margin-top: 15px; }
+            .compact-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #eee; }
+            .compact-item:last-child { border-bottom: none; }
+            .compact-name { font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 10px; }
+            .compact-cal { font-weight: 800; font-size: 15px; color: #666; }
 
-        /* Modales */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 2000; justify-content: center; align-items: flex-end; }
-        .modal-content { background: white; width: 100%; padding: 30px; border-radius: 30px 30px 0 0; max-height: 90vh; overflow-y: auto; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; font-size: 13px; color: #666; margin-bottom: 5px; font-weight: 600; }
-        .form-control { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 12px; font-size: 15px; background: var(--bg); outline: none; }
-        .btn-primary { width: 100%; padding: 16px; background: var(--success); color: white; border: none; border-radius: 15px; font-weight: bold; font-size: 16px; margin-top: 10px; cursor: pointer; }
+            /* Modales */
+            .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 2000; justify-content: center; align-items: flex-end; }
+            .modal-content { background: white; width: 100%; padding: 30px; border-radius: 30px 30px 0 0; max-height: 90vh; overflow-y: auto; }
+            .form-group { margin-bottom: 15px; }
+            .form-group label { display: block; font-size: 13px; color: #666; margin-bottom: 5px; font-weight: 600; }
+            .form-control { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 12px; font-size: 15px; background: var(--bg); outline: none; }
+            .btn-primary { width: 100%; padding: 16px; background: var(--success); color: white; border: none; border-radius: 15px; font-weight: bold; font-size: 16px; margin-top: 10px; cursor: pointer; }
 
-        /* Menú de Navegación Inferior */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; padding: 15px 20px 25px; display: flex; justify-content: space-around; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); z-index: 1000; border-radius: 30px 30px 0 0; }
-        .nav-item { text-align: center; color: #888; text-decoration: none; font-size: 12px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 5px; }
-        .nav-item.active { color: var(--dark); }
-        .nav-icon { font-size: 24px; }
+            /* Menú de Navegación Inferior */
+            .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; padding: 15px 20px 25px; display: flex; justify-content: space-around; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); z-index: 1000; border-radius: 30px 30px 0 0; }
+            .nav-item { text-align: center; color: #888; text-decoration: none; font-size: 12px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+            .nav-item.active { color: var(--dark); }
+            .nav-icon { font-size: 24px; }
 
-        /* Pantalla de Carga */
-        #loading-overlay { display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 3000; justify-content: center; align-items: center; flex-direction: column; }
-        .spinner { font-size: 50px; animation: spin 1.5s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-    </style>
-</head>
-<body>
+            /* Pantalla de Carga */
+            #loading-overlay { display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 3000; justify-content: center; align-items: center; flex-direction: column; }
+            .spinner { font-size: 50px; animation: spin 1.5s linear infinite; }
+            @keyframes spin { 100% { transform: rotate(360deg); } }
+        </style>
+    </head>
+    <body>
 
-    <div id="loading-overlay">
-        <div class="spinner">🔄</div>
-        <p style="font-weight: bold; margin-top: 20px; color: #666;">Sincronizando datos...</p>
-    </div>
-
-    <header class="header">
-        <div>
-            <h2 style="margin: 0; font-weight: 800;">Resumen del Día</h2>
-            <div style="font-weight: 700; color: #888; font-size: 14px;" id="fecha-hoy">Hoy</div>
-        </div>
-        <button class="btn-icon" onclick="abrirConfiguracion()">⚙️</button>
-    </header>
-
-    <div class="card">
-        <div class="cal-header">
-            <div class="cal-box">
-                <div class="cal-label">Consumidas</div>
-                <div class="cal-value" id="cal-consumidas">0</div>
-            </div>
-            <div class="cal-box right">
-                <div class="cal-label">Meta: <span id="meta-display">2000</span> kcal</div>
-                <div class="cal-value text-success" id="cal-restantes">0</div>
-            </div>
+        <div id="loading-overlay">
+            <div class="spinner">🔄</div>
+            <p style="font-weight: bold; margin-top: 20px; color: #666;">Sincronizando datos...</p>
         </div>
 
-        <div class="progress-bar-container">
-            <div class="progress-bar-fill" id="cal-progress"></div>
+        <header class="header">
+            <div>
+                <h2 style="margin: 0; font-weight: 800;">Resumen del Día</h2>
+                <div style="font-weight: 700; color: #888; font-size: 14px;" id="fecha-hoy">Hoy</div>
+            </div>
+            <button class="btn-icon" onclick="abrirConfiguracion()">⚙️</button>
+        </header>
+
+        <div class="card">
+            <div class="cal-header">
+                <div class="cal-box">
+                    <div class="cal-label">Consumidas</div>
+                    <div class="cal-value" id="cal-consumidas">0</div>
+                </div>
+                <div class="cal-box right">
+                    <div class="cal-label">Meta: <span id="meta-display">2000</span> kcal</div>
+                    <div class="cal-value text-success" id="cal-restantes">0</div>
+                </div>
+            </div>
+
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="cal-progress"></div>
+            </div>
+
+        <div class="macros-grid">
+                <div class="macro-item">
+                    <span class="macro-val" id="total-prot" style="color: var(--prot);">0g</span>
+                    <span class="macro-label">Prot. <span id="meta-prot-display">0g</span></span>
+                </div>
+                <div class="macro-item">
+                    <span class="macro-val" id="total-carbs" style="color: var(--carb);">0g</span>
+                    <span class="macro-label">Carb. <span id="meta-carb-display">0g</span></span>
+                </div>
+                <div class="macro-item">
+                    <span class="macro-val" id="total-fats" style="color: var(--fat);">0g</span>
+                    <span class="macro-label">Gras. <span id="meta-fat-display">0g</span></span>
+                </div>
+            </div>
         </div>
 
-       <div class="macros-grid">
-            <div class="macro-item">
-                <span class="macro-val" id="total-prot" style="color: var(--prot);">0g</span>
-                <span class="macro-label">Prot. <span id="meta-prot-display">0g</span></span>
-            </div>
-            <div class="macro-item">
-                <span class="macro-val" id="total-carbs" style="color: var(--carb);">0g</span>
-                <span class="macro-label">Carb. <span id="meta-carb-display">0g</span></span>
-            </div>
-            <div class="macro-item">
-                <span class="macro-val" id="total-fats" style="color: var(--fat);">0g</span>
-                <span class="macro-label">Gras. <span id="meta-fat-display">0g</span></span>
-            </div>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="water-widget">
-            <div class="water-info">
-                <div class="water-icon">💧</div>
-                <div>
-                    <div style="font-weight: 800; font-size: 16px;">Hidratación</div>
-                    <div style="font-size: 13px; color: #888; margin-top: 4px;">
-                        <span id="agua-actual" style="font-weight: 800; color: var(--dark); font-size: 15px;">0</span> 
-                        / <span id="agua-meta">2.5</span> Litros
+        <div class="card">
+            <div class="water-widget">
+                <div class="water-info">
+                    <div class="water-icon">💧</div>
+                    <div>
+                        <div style="font-weight: 800; font-size: 16px;">Hidratación</div>
+                        <div style="font-size: 13px; color: #888; margin-top: 4px;">
+                            <span id="agua-actual" style="font-weight: 800; color: var(--dark); font-size: 15px;">0</span> 
+                            / <span id="agua-meta">2.5</span> Litros
+                        </div>
                     </div>
                 </div>
+                <button class="water-btn" onclick="agregarAgua(0.25)">+ 250 ml</button>
             </div>
-            <button class="water-btn" onclick="agregarAgua(0.25)">+ 250 ml</button>
         </div>
-    </div>
 
-    <div class="card">
-        <h3 style="margin-top: 0; font-size: 18px;">Comidas Registradas</h3>
-        <div class="compact-list" id="lista-compacta">
-            </div>
-    </div>
-
-
-    <div id="modal-config" class="modal">
-        <div class="modal-content">
-            <h3 style="margin-top:0; color:var(--dark);">⚙️ Parámetros Clínicos</h3>
-            <p style="font-size: 13px; color: #666; margin-top:-10px;">El sistema ajustará tus requerimientos basándose en algoritmos nutricionales.</p>
-            
-            <div style="display: flex; gap: 10px;">
-                <div class="form-group" style="flex: 1;">
-                    <label>Peso (kg)</label>
-                    <input type="number" id="inp-peso" class="form-control" placeholder="Ej. 70">
+        <div class="card">
+            <h3 style="margin-top: 0; font-size: 18px;">Comidas Registradas</h3>
+            <div class="compact-list" id="lista-compacta">
                 </div>
-                <div class="form-group" style="flex: 1;">
-                    <label>Estatura (cm)</label>
-                    <input type="number" id="inp-altura" class="form-control" placeholder="Ej. 175">
-                </div>
-            </div>
+        </div>
 
-            <div style="display: flex; gap: 10px;">
-                <div class="form-group" style="flex: 1;">
-                    <label>Edad (Años)</label>
-                    <input type="number" id="inp-edad" class="form-control" placeholder="Ej. 25">
-                </div>
-                <div class="form-group" style="flex: 1;">
-                    <label>Género</label>
-                    <select id="inp-genero" class="form-control">
-                        <option value="M">Hombre</option>
-                        <option value="F">Mujer</option>
-                    </select>
-                </div>
-            </div>
 
-            <div class="form-group">
+        <div id="modal-config" class="modal">
+            <div class="modal-content">
+                <h3 style="margin-top:0; color:var(--dark);">⚙️ Parámetros Clínicos</h3>
+                <p style="font-size: 13px; color: #666; margin-top:-10px;">El sistema ajustará tus requerimientos basándose en algoritmos nutricionales.</p>
+                
+                <div style="display: flex; gap: 10px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Peso (kg)</label>
+                        <input type="number" id="inp-peso" class="form-control" placeholder="Ej. 70">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>Estatura (cm)</label>
+                        <input type="number" id="inp-altura" class="form-control" placeholder="Ej. 175">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Edad (Años)</label>
+                        <input type="number" id="inp-edad" class="form-control" placeholder="Ej. 25">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>Género</label>
+                        <select id="inp-genero" class="form-control">
+                            <option value="M">Hombre</option>
+                            <option value="F">Mujer</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
                 <label>Nivel de Actividad Física</label>
                 <select id="inp-actividad" class="form-control">
                     <option value="1.2">Sedentario (Poco o ningún ejercicio)</option>
                     <option value="1.375">Ligero (1 a 3 días por semana)</option>
                     <option value="1.55">Moderado (3 a 5 días por semana)</option>
                     <option value="1.725">Fuerte (6 a 7 días por semana)</option>
+                    <option value="1.9">Muy alto (atleta / 2x al día)</option>
                 </select>
             </div>
 
             <div class="form-group">
                 <label>Objetivo</label>
-                <select id="inp-objetivo" class="form-control">
-                    <option value="-400">Pérdida de Grasa (Déficit)</option>
-                    <option value="0">Mantenimiento</option>
-                    <option value="300">Ganancia Muscular (Superávit)</option>
+                <select id="inp-objetivo" class="form-control" onchange="document.getElementById('grupo-grasa-corp').style.display = this.value !== '0' ? 'block' : 'block';">
+                    <option value="perdida">Pérdida de Grasa (Déficit)</option>
+                    <option value="mantenimiento">Mantenimiento</option>
+                    <option value="ganancia">Ganancia Muscular (Superávit)</option>
+                    <option value="recomposicion">Recomposición (mismo peso, cambia composición)</option>
                 </select>
             </div>
 
+            <div class="form-group" id="grupo-grasa-corp">
+                <label>% Grasa corporal <span style="font-weight:400; color:#aaa;">(opcional — mejora la precisión)</span></label>
+                <input type="number" id="inp-grasa-corp" class="form-control" placeholder="Ej. 18 (déjalo vacío si no lo sabes)" step="0.1" min="3" max="60">
+                <p style="font-size:11px; color:#999; margin-top:6px;">Si lo indicas, usamos la fórmula Katch-McArdle (más precisa, basada en tu masa magra). Si lo dejas vacío, usamos Mifflin-St Jeor.</p>
+            </div>
+
             <button class="btn-primary" onclick="calcularMetasClinicas()">Guardar y Calcular</button>
-            <button onclick="document.getElementById('modal-config').style.display='none'" style="width: 100%; background: none; border: none; color: #888; margin-top: 15px; font-weight: bold; cursor:pointer;">Cancelar</button>
+                <button onclick="document.getElementById('modal-config').style.display='none'" style="width: 100%; background: none; border: none; color: #888; margin-top: 15px; font-weight: bold; cursor:pointer;">Cancelar</button>
+            </div>
         </div>
-    </div>
 
-    <script>
-        // 1. CONFIGURACIÓN SUPABASE
-        const urlDB = 'https://cpveuexgxwxjejurtwro.supabase.co';
-        const keyDB = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc'; 
-        const supabaseClient = window.supabase.createClient(urlDB, keyDB);
+        <script>
+            // 1. CONFIGURACIÓN SUPABASE
+            const urlDB = 'https://cpveuexgxwxjejurtwro.supabase.co';
+            const keyDB = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc'; 
+            const supabaseClient = window.supabase.createClient(urlDB, keyDB);
 
-        // 2. VARIABLES DE ESTADO GLOBALES
-        let totales = { cal: 0, prot: 0, carbs: 0, fats: 0 };
-        let metaCalorias = parseFloat(localStorage.getItem('metaCaloriasUsuario')) || 2000; 
-        let metaAgua = parseFloat(localStorage.getItem('metaAguaUsuario')) || 2.5;
-        let metaProteinas = parseFloat(localStorage.getItem('metaProteinasUsuario')) || 150;
-        let metaCarbs = parseFloat(localStorage.getItem('metaCarbsUsuario')) || 200;
-        let metaGrasas = parseFloat(localStorage.getItem('metaGrasasUsuario')) || 65;
-        // Logica de Agua
-        const hoyString = new Date().toLocaleDateString('es-MX');
-        const aguaKey = `agua_${hoyString}`;
-        let aguaConsumida = parseFloat(localStorage.getItem(aguaKey)) || 0;
+            // 2. VARIABLES DE ESTADO GLOBALES
+            let totales = { cal: 0, prot: 0, carbs: 0, fats: 0 };
+            let metaCalorias = parseFloat(localStorage.getItem('metaCaloriasUsuario')) || 2000; 
+            let metaAgua = parseFloat(localStorage.getItem('metaAguaUsuario')) || 2.5;
+            let metaProteinas = parseFloat(localStorage.getItem('metaProteinasUsuario')) || 150;
+            let metaCarbs = parseFloat(localStorage.getItem('metaCarbsUsuario')) || 200;
+            let metaGrasas = parseFloat(localStorage.getItem('metaGrasasUsuario')) || 65;
+            // Logica de Agua
+            const hoyString = new Date().toLocaleDateString('es-MX');
+            const aguaKey = `agua_${hoyString}`;
+            let aguaConsumida = parseFloat(localStorage.getItem(aguaKey)) || 0;
 
-       // 3. INICIALIZACIÓN
-        window.addEventListener('DOMContentLoaded', async () => {
-            const opcionesFecha = { weekday: 'long', day: 'numeric', month: 'long' };
-            document.getElementById('fecha-hoy').innerText = new Date().toLocaleDateString('es-MX', opcionesFecha);
-            
-            await cargarPerfilDesdeSupabase();
+        // 3. INICIALIZACIÓN
+            window.addEventListener('DOMContentLoaded', async () => {
+                const opcionesFecha = { weekday: 'long', day: 'numeric', month: 'long' };
+                document.getElementById('fecha-hoy').innerText = new Date().toLocaleDateString('es-MX', opcionesFecha);
+                
+                await cargarPerfilDesdeSupabase();
 
-            // Si el usuario nunca ha configurado su perfil (ni local ni en la nube), abrimos el modal
-            if (!localStorage.getItem('perfilConfigurado')) {
-                abrirConfiguracion();
-            }
-            
-            await cargarDatosHoy();
+                // Si el usuario nunca ha configurado su perfil (ni local ni en la nube), abrimos el modal
+                if (!localStorage.getItem('perfilConfigurado')) {
+                    abrirConfiguracion();
+                }
+                
+               await cargarDatosHoy();
             actualizarUI();
+            await revisarAjusteSemanal();
             document.getElementById('loading-overlay').style.display = 'none';
         });
 
-        // Trae el perfil guardado en Supabase (por si el usuario cambió de dispositivo)
-        async function cargarPerfilDesdeSupabase() {
-            const { data: { user } } = await supabaseClient.auth.getUser();
-            if (!user) return;
+            // Trae el perfil guardado en Supabase (por si el usuario cambió de dispositivo)
+            async function cargarPerfilDesdeSupabase() {
+                const { data: { user } } = await supabaseClient.auth.getUser();
+                if (!user) return;
 
-            const { data } = await supabaseClient
-                .from('perfil_nutricional')
-                .select('*')
-                .eq('usuario_id', user.id)
-                .single();
+                const { data } = await supabaseClient
+                    .from('perfil_nutricional')
+                    .select('*')
+                    .eq('usuario_id', user.id)
+                    .single();
 
-            if (data) {
-                metaCalorias = data.meta_calorias;
-                metaAgua = parseFloat(data.meta_agua_litros);
-                metaProteinas = data.meta_proteinas;
-                metaCarbs = data.meta_carbohidratos;
-                metaGrasas = data.meta_grasas;
+                if (data) {
+                    metaCalorias = data.meta_calorias;
+                    metaAgua = parseFloat(data.meta_agua_litros);
+                    metaProteinas = data.meta_proteinas;
+                    metaCarbs = data.meta_carbohidratos;
+                    metaGrasas = data.meta_grasas;
 
-                localStorage.setItem('metaCaloriasUsuario', metaCalorias);
-                localStorage.setItem('metaAguaUsuario', metaAgua);
-                localStorage.setItem('metaProteinasUsuario', metaProteinas);
-                localStorage.setItem('metaCarbsUsuario', metaCarbs);
-                localStorage.setItem('metaGrasasUsuario', metaGrasas);
-                localStorage.setItem('perfilConfigurado', 'true');
+                    localStorage.setItem('metaCaloriasUsuario', metaCalorias);
+                    localStorage.setItem('metaAguaUsuario', metaAgua);
+                    localStorage.setItem('metaProteinasUsuario', metaProteinas);
+                    localStorage.setItem('metaCarbsUsuario', metaCarbs);
+                    localStorage.setItem('metaGrasasUsuario', metaGrasas);
+                    localStorage.setItem('perfilConfigurado', 'true');
 
-                // Pre-llenar el formulario por si quiere editar
-                document.getElementById('inp-peso').value = data.peso_kg;
-                document.getElementById('inp-altura').value = data.estatura_cm;
-                document.getElementById('inp-edad').value = data.edad;
-                document.getElementById('inp-genero').value = data.sexo === 'hombre' ? 'M' : 'F';
-                document.getElementById('inp-actividad').value = data.factor_actividad;
+                    // Pre-llenar el formulario por si quiere editar
+                    document.getElementById('inp-peso').value = data.peso_kg;
+                    document.getElementById('inp-altura').value = data.estatura_cm;
+                    document.getElementById('inp-edad').value = data.edad;
+                    document.getElementById('inp-genero').value = data.sexo === 'hombre' ? 'M' : 'F';
+                    document.getElementById('inp-actividad').value = data.factor_actividad;
                 document.getElementById('inp-objetivo').value = data.objetivo_ajuste;
+                if (data.porcentaje_grasa) document.getElementById('inp-grasa-corp').value = data.porcentaje_grasa;
             }
         }
 
-        // 4. EL MOTOR DE CÁLCULO (Código Autónomo)
-        function abrirConfiguracion() {
-            document.getElementById('modal-config').style.display = 'flex';
-        }
+            // 4. EL MOTOR DE CÁLCULO (Código Autónomo)
+            function abrirConfiguracion() {
+                document.getElementById('modal-config').style.display = 'flex';
+            }
 
-        function calcularMetasClinicas() {
+            function calcularMetasClinicas() {
             const peso = parseFloat(document.getElementById('inp-peso').value);
             const altura = parseFloat(document.getElementById('inp-altura').value);
             const edad = parseInt(document.getElementById('inp-edad').value);
             const genero = document.getElementById('inp-genero').value;
             const factorActividad = parseFloat(document.getElementById('inp-actividad').value);
-            const objetivo = parseFloat(document.getElementById('inp-objetivo').value);
+            const objetivo = document.getElementById('inp-objetivo').value; // 'perdida' | 'mantenimiento' | 'ganancia' | 'recomposicion'
+            const porcGrasa = parseFloat(document.getElementById('inp-grasa-corp').value) || null;
 
             if (!peso || !altura || !edad) return alert("Por favor, llena los campos básicos (Peso, Estatura, Edad).");
 
-            // Fórmula de Mifflin-St Jeor (GEB)
-            let geb = (10 * peso) + (6.25 * altura) - (5 * edad);
-            if (genero === 'M') {
-                geb += 5;
+            // ─── 1. GASTO ENERGÉTICO BASAL (GEB) ─────────────────────
+            let geb;
+            let usaKatch = false;
+
+            if (porcGrasa && porcGrasa > 0 && porcGrasa < 70) {
+                // Katch-McArdle: más precisa si conocemos % de grasa corporal
+                const masaMagra = peso * (1 - (porcGrasa / 100));
+                geb = 370 + (21.6 * masaMagra);
+                usaKatch = true;
             } else {
-                geb -= 161;
+                // Mifflin-St Jeor (estándar cuando no hay % de grasa)
+                geb = (10 * peso) + (6.25 * altura) - (5 * edad);
+                geb += (genero === 'M') ? 5 : -161;
             }
 
-            // Gasto Energético Total (GET)
-            let get = geb * factorActividad;
+            // ─── 2. GASTO ENERGÉTICO TOTAL (GET) ─────────────────────
+            const get = geb * factorActividad;
 
-            // Aplicar el déficit o superávit
-            let caloriasFinales = get + objetivo;
+            // ─── 3. AJUSTE SEGÚN OBJETIVO ─────────────────────────────
+            // Déficit/superávit moderado y sostenible (300-500 kcal, no agresivo)
+            let caloriasFinales = get;
+            if (objetivo === 'perdida')      caloriasFinales = get - 450;
+            if (objetivo === 'ganancia')     caloriasFinales = get + 350;
+            if (objetivo === 'recomposicion') caloriasFinales = get; // mismas calorías, cambian macros
+            // 'mantenimiento' deja caloriasFinales = get
 
-           // Requerimiento hídrico (35 ml por kg de peso)
-            let aguaFinal = (peso * 35) / 1000; // Dividido entre 1000 para pasar a Litros
+            caloriasFinales = Math.round(caloriasFinales);
 
-            // Distribución de macros (30% proteína / 40% carbos / 30% grasas)
-            const metaProt  = Math.round((caloriasFinales * 0.30) / 4); // 4 kcal/g
-            const metaCarb  = Math.round((caloriasFinales * 0.40) / 4);
-            const metaGrasa = Math.round((caloriasFinales * 0.30) / 9); // 9 kcal/g
+            // ─── 4. DISTRIBUCIÓN DE MACROS SEGÚN OBJETIVO ────────────
+            // Proteína se calcula primero en g/kg de peso (prioridad clínica: nunca baja de 2g/kg en déficit)
+            let protPorKg, grasaPorKg;
+            switch (objetivo) {
+                case 'perdida':
+                    protPorKg = 2.1;   // 2.0–2.2 g/kg: preserva músculo en déficit
+                    grasaPorKg = 0.9;  // 0.8–1.0 g/kg
+                    break;
+                case 'ganancia':
+                    protPorKg = 1.7;   // 1.6–1.8 g/kg: suficiente para síntesis muscular
+                    grasaPorKg = 1.1;  // 1.0–1.2 g/kg: soporte hormonal con superávit
+                    break;
+                case 'recomposicion':
+                    protPorKg = 2.2;   // 2.0–2.4 g/kg: la más alta, clave en recomposición
+                    grasaPorKg = 1.0;  // 0.9–1.1 g/kg
+                    break;
+                default: // mantenimiento
+                    protPorKg = 1.8;
+                    grasaPorKg = 1.0;
+            }
 
-            // Actualizar el estado global
-            metaCalorias = Math.round(caloriasFinales);
-            metaAgua = Math.round(aguaFinal * 10) / 10; // Redondear a un decimal
+            let metaProt  = Math.round(peso * protPorKg);
+            let metaGrasa = Math.round(peso * grasaPorKg);
+
+            // Los carbohidratos absorben el resto de las calorías (después de prot y grasa)
+            const kcalProt  = metaProt * 4;
+            const kcalGrasa = metaGrasa * 9;
+            let kcalCarbs   = caloriasFinales - kcalProt - kcalGrasa;
+            if (kcalCarbs < 0) kcalCarbs = caloriasFinales * 0.20; // margen de seguridad si los gramos absorben demasiado
+            let metaCarb = Math.round(kcalCarbs / 4);
+
+            // ─── 5. HIDRATACIÓN INTELIGENTE ───────────────────────────
+            // Base: 35ml/kg + 10ml por cada minuto de ejercicio reportado hoy
+            const minutosEjercicioHoy = parseInt(localStorage.getItem('minutosEjercicioHoy')) || 0;
+            let aguaFinal = ((peso * 35) + (minutosEjercicioHoy * 10)) / 1000; // litros
+
+            // ─── Actualizar estado global ──────────────────────────────
+            metaCalorias = caloriasFinales;
+            metaAgua = Math.round(aguaFinal * 10) / 10;
             metaProteinas = metaProt;
             metaCarbs = metaCarb;
             metaGrasas = metaGrasa;
 
-            // Guardar en el dispositivo para no volver a preguntar
+            // Guardar localStorage (misma clave que usa dietahtml.html)
             localStorage.setItem('metaCaloriasUsuario', metaCalorias);
             localStorage.setItem('metaAguaUsuario', metaAgua);
             localStorage.setItem('metaProteinasUsuario', metaProteinas);
             localStorage.setItem('metaCarbsUsuario', metaCarbs);
             localStorage.setItem('metaGrasasUsuario', metaGrasas);
             localStorage.setItem('perfilConfigurado', 'true');
-            // Guardamos también los datos crudos para poder pre-llenar el formulario después
-            localStorage.setItem('datosPerfilUsuario', JSON.stringify({ peso, altura, edad, genero, factorActividad, objetivo }));
+            localStorage.setItem('datosPerfilUsuario', JSON.stringify({ peso, altura, edad, genero, factorActividad, objetivo, porcGrasa, usaKatch }));
 
-            // Guardar en Supabase para persistencia entre dispositivos
-            guardarPerfilEnSupabase({ peso, altura, edad, genero, factorActividad, objetivo, metaCalorias, metaProt, metaCarb, metaGrasa, aguaFinal });
+            // También guardamos peso actual en el historial para el ciclo de retroalimentación semanal
+            registrarPesoHistorial(peso);
 
-            // Cerrar modal y refrescar la pantalla
+            guardarPerfilEnSupabase({ peso, altura, edad, genero, factorActividad, objetivo, porcGrasa, usaKatch, metaCalorias, metaProt, metaCarb, metaGrasa, aguaFinal });
+
             document.getElementById('modal-config').style.display = 'none';
             actualizarUI();
         }
 
-        async function guardarPerfilEnSupabase(d) {
+            async function guardarPerfilEnSupabase(d) {
             const { data: { user } } = await supabaseClient.auth.getUser();
-            if (!user) return; // Sigue funcionando local aunque no haya sesión
+            if (!user) return;
 
             const registro = {
                 usuario_id: user.id,
@@ -348,6 +401,8 @@
                 sexo: d.genero === 'M' ? 'hombre' : 'mujer',
                 factor_actividad: d.factorActividad,
                 objetivo_ajuste: d.objetivo,
+                porcentaje_grasa: d.porcGrasa,
+                usa_katch_mcardle: d.usaKatch,
                 meta_calorias: d.metaCalorias,
                 meta_proteinas: d.metaProt,
                 meta_carbohidratos: d.metaCarb,
@@ -361,95 +416,143 @@
 
             if (error) console.warn('No se pudo sincronizar el perfil con la nube:', error.message);
         }
-        // 5. CARGAR DATOS DE SUPABASE (Consumo del día)
-        async function cargarDatosHoy() {
-            const fecha = new Date();
-            const inicioDia = new Date(fecha); inicioDia.setHours(0, 0, 0, 0);
-            const finDia = new Date(fecha); finDia.setHours(23, 59, 59, 999);
 
-            try {
-                const { data, error } = await supabaseClient
-                    .from('registros_dieta')
-                    .select('nombre_alimento, calorias, proteinas, carbohidratos, grasas')
-                    .gte('creado_at', inicioDia.toISOString())
-                    .lte('creado_at', finDia.toISOString())
-                    .order('creado_at', { ascending: false });
+        // ─── Historial de peso (para el ciclo de retroalimentación semanal) ─
+        async function registrarPesoHistorial(peso) {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) return;
+            await supabaseClient.from('historial_peso').insert([{ usuario_id: user.id, peso_kg: peso }]);
+        }
 
-                if (error) throw error;
+        // ─── Ciclo de retroalimentación: revisa cada 7 días si hay que ajustar ─
+        async function revisarAjusteSemanal() {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) return;
 
-                const contenedorLista = document.getElementById('lista-compacta');
-                contenedorLista.innerHTML = '';
+            const haceUnaSemana = new Date();
+            haceUnaSemana.setDate(haceUnaSemana.getDate() - 7);
 
-                if (data && data.length > 0) {
-                    data.forEach(item => {
-                        totales.cal += item.calorias;
-                        totales.prot += item.proteinas;
-                        totales.carbs += item.carbohidratos;
-                        totales.fats += item.grasas;
+            const { data } = await supabaseClient
+                .from('historial_peso')
+                .select('peso_kg, created_at')
+                .eq('usuario_id', user.id)
+                .gte('created_at', haceUnaSemana.toISOString())
+                .order('created_at', { ascending: true });
 
-                        contenedorLista.innerHTML += `
-                            <div class="compact-item">
-                                <div class="compact-name">🍽️ ${item.nombre_alimento}</div>
-                                <div class="compact-cal">${item.calorias} <span style="font-size:11px; font-weight:normal;">kcal</span></div>
-                            </div>
-                        `;
-                    });
-                } else {
-                    contenedorLista.innerHTML = `<div style="text-align:center; padding: 20px; color: #888;">No has registrado comidas hoy.</div>`;
+            if (!data || data.length < 2) return; // no hay suficientes datos aún
+
+            const pesoInicial = data[0].peso_kg;
+            const pesoActual = data[data.length - 1].peso_kg;
+            const diferencia = pesoActual - pesoInicial;
+
+            const objetivo = JSON.parse(localStorage.getItem('datosPerfilUsuario') || '{}').objetivo;
+            let mensaje = '';
+
+            if (objetivo === 'perdida') {
+                if (diferencia < -1.2) {
+                    mensaje = '📉 Bajaste más rápido de lo recomendado esta semana. Vamos a subir un poco tus calorías para proteger tu músculo.';
+                } else if (Math.abs(diferencia) < 0.15) {
+                    mensaje = '⚖️ Tu peso no se movió esta semana. Tu metabolismo se adaptó — vamos a ajustar tus calorías a la baja un poco.';
                 }
-            } catch (err) {
-                console.error("Error cargando dashboard:", err);
-            }
-        }
-
-        // 6. ACTUALIZAR INTERFAZ Y CÁLCULOS VISUALES
-        function actualizarUI() {
-            const calRestantes = metaCalorias - totales.cal;
-            
-            // Actualizar Textos
-            document.getElementById('cal-consumidas').innerText = totales.cal;
-            document.getElementById('meta-display').innerText = metaCalorias; // Mostrar la meta dinámica
-            document.getElementById('agua-meta').innerText = metaAgua; // Mostrar agua dinámica
-            
-            const divRestantes = document.getElementById('cal-restantes');
-            divRestantes.innerText = calRestantes > 0 ? calRestantes : 0;
-
-            if (calRestantes < 0) {
-                divRestantes.classList.remove('text-success');
-                divRestantes.classList.add('text-danger');
-            } else {
-                divRestantes.classList.add('text-success');
-                divRestantes.classList.remove('text-danger');
             }
 
-            // Barra de Progreso
-            const porcentaje = (totales.cal / metaCalorias) * 100;
-            const barra = document.getElementById('cal-progress');
-            barra.style.width = Math.min(porcentaje, 100) + '%';
-            if (porcentaje > 100) {
-                barra.classList.add('over-limit');
-            } else {
-                barra.classList.remove('over-limit');
+            if (mensaje) {
+                const banner = document.createElement('div');
+                banner.style = 'background:#e8f0fe;color:#1a73e8;padding:14px 20px;margin:15px 20px;border-radius:16px;font-size:13px;text-align:center;cursor:pointer;font-weight:600;';
+                banner.innerHTML = mensaje + ' <span style="text-decoration:underline;">Ajustar ahora →</span>';
+                banner.onclick = () => abrirConfiguracion();
+                document.querySelector('.header').insertAdjacentElement('afterend', banner);
+            }
+        }
+            // 5. CARGAR DATOS DE SUPABASE (Consumo del día)
+            async function cargarDatosHoy() {
+                const fecha = new Date();
+                const inicioDia = new Date(fecha); inicioDia.setHours(0, 0, 0, 0);
+                const finDia = new Date(fecha); finDia.setHours(23, 59, 59, 999);
+
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('registros_dieta')
+                        .select('nombre_alimento, calorias, proteinas, carbohidratos, grasas')
+                        .gte('creado_at', inicioDia.toISOString())
+                        .lte('creado_at', finDia.toISOString())
+                        .order('creado_at', { ascending: false });
+
+                    if (error) throw error;
+
+                    const contenedorLista = document.getElementById('lista-compacta');
+                    contenedorLista.innerHTML = '';
+
+                    if (data && data.length > 0) {
+                        data.forEach(item => {
+                            totales.cal += item.calorias;
+                            totales.prot += item.proteinas;
+                            totales.carbs += item.carbohidratos;
+                            totales.fats += item.grasas;
+
+                            contenedorLista.innerHTML += `
+                                <div class="compact-item">
+                                    <div class="compact-name">🍽️ ${item.nombre_alimento}</div>
+                                    <div class="compact-cal">${item.calorias} <span style="font-size:11px; font-weight:normal;">kcal</span></div>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        contenedorLista.innerHTML = `<div style="text-align:center; padding: 20px; color: #888;">No has registrado comidas hoy.</div>`;
+                    }
+                } catch (err) {
+                    console.error("Error cargando dashboard:", err);
+                }
             }
 
-            // Macros Consumidos + meta de referencia
-            document.getElementById('total-prot').innerText = totales.prot.toFixed(1) + 'g';
-            document.getElementById('total-carbs').innerText = totales.carbs.toFixed(1) + 'g';
-            document.getElementById('total-fats').innerText = totales.fats.toFixed(1) + 'g';
-            document.getElementById('meta-prot-display').innerText = `/ ${metaProteinas}g`;
-            document.getElementById('meta-carb-display').innerText = `/ ${metaCarbs}g`;
-            document.getElementById('meta-fat-display').innerText = `/ ${metaGrasas}g`;
-            // Agua
-            document.getElementById('agua-actual').innerText = aguaConsumida.toFixed(2);
-        }
+            // 6. ACTUALIZAR INTERFAZ Y CÁLCULOS VISUALES
+            function actualizarUI() {
+                const calRestantes = metaCalorias - totales.cal;
+                
+                // Actualizar Textos
+                document.getElementById('cal-consumidas').innerText = totales.cal;
+                document.getElementById('meta-display').innerText = metaCalorias; // Mostrar la meta dinámica
+                document.getElementById('agua-meta').innerText = metaAgua; // Mostrar agua dinámica
+                
+                const divRestantes = document.getElementById('cal-restantes');
+                divRestantes.innerText = calRestantes > 0 ? calRestantes : 0;
 
-        // 7. FUNCIÓN DE AGUA
-        function agregarAgua(cantidad) {
-            aguaConsumida += cantidad;
-            aguaConsumida = Math.round(aguaConsumida * 100) / 100; 
-            localStorage.setItem(aguaKey, aguaConsumida); 
-            actualizarUI();
-        }
-    </script>
-</body>
-</html>
+                if (calRestantes < 0) {
+                    divRestantes.classList.remove('text-success');
+                    divRestantes.classList.add('text-danger');
+                } else {
+                    divRestantes.classList.add('text-success');
+                    divRestantes.classList.remove('text-danger');
+                }
+
+                // Barra de Progreso
+                const porcentaje = (totales.cal / metaCalorias) * 100;
+                const barra = document.getElementById('cal-progress');
+                barra.style.width = Math.min(porcentaje, 100) + '%';
+                if (porcentaje > 100) {
+                    barra.classList.add('over-limit');
+                } else {
+                    barra.classList.remove('over-limit');
+                }
+
+                // Macros Consumidos + meta de referencia
+                document.getElementById('total-prot').innerText = totales.prot.toFixed(1) + 'g';
+                document.getElementById('total-carbs').innerText = totales.carbs.toFixed(1) + 'g';
+                document.getElementById('total-fats').innerText = totales.fats.toFixed(1) + 'g';
+                document.getElementById('meta-prot-display').innerText = `/ ${metaProteinas}g`;
+                document.getElementById('meta-carb-display').innerText = `/ ${metaCarbs}g`;
+                document.getElementById('meta-fat-display').innerText = `/ ${metaGrasas}g`;
+                // Agua
+                document.getElementById('agua-actual').innerText = aguaConsumida.toFixed(2);
+            }
+
+            // 7. FUNCIÓN DE AGUA
+            function agregarAgua(cantidad) {
+                aguaConsumida += cantidad;
+                aguaConsumida = Math.round(aguaConsumida * 100) / 100; 
+                localStorage.setItem(aguaKey, aguaConsumida); 
+                actualizarUI();
+            }
+        </script>
+    </body>
+    </html>
