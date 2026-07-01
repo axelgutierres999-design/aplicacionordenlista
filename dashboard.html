@@ -471,12 +471,14 @@
                 const finDia = new Date(fecha); finDia.setHours(23, 59, 59, 999);
 
                 try {
+                    const { data: { user } } = await supabaseClient.auth.getUser();
                     const { data, error } = await supabaseClient
-                        .from('registros_dieta')
-                        .select('nombre_alimento, calorias, proteinas, carbohidratos, grasas')
-                        .gte('creado_at', inicioDia.toISOString())
-                        .lte('creado_at', finDia.toISOString())
-                        .order('creado_at', { ascending: false });
+                    .from('registros_dieta')
+                    .select('nombre_alimento, calorias, proteinas, carbohidratos, grasas')
+                    .eq('usuario_id', user?.id)
+                    .gte('creado_at', inicioDia.toISOString())
+                    .lte('creado_at', finDia.toISOString())
+                    .order('creado_at', { ascending: false });
 
                     if (error) throw error;
 
