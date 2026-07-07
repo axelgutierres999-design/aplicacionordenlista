@@ -12,18 +12,17 @@
     
     <style>
         :root { 
-            --bg: #f4f4f4; /* Fondo oficial de tu App */
+            --bg: #f4f4f4; 
             --dark: #333333; 
             --accent: #10ad93; 
             --accent-light: #e0fdf5;
             --card: #ffffff; 
-            --danger: #e74c3c; /* Rojo de tu botón cerrar sesión */
+            --danger: #e74c3c; 
             --text-muted: #888888;
         }
         
         * { box-sizing: border-box; }
         
-        /* Tipografía general de la App (sans-serif) */
         body { 
             background-color: var(--bg); 
             color: var(--dark); 
@@ -32,9 +31,6 @@
             padding-bottom: 50px;
         }
 
-        /* -------------------------------------
-           HEADER ESTILO APP (Igual a Ajustes)
-           ------------------------------------- */
         .header-detalle { 
             display: flex; 
             align-items: center; 
@@ -45,6 +41,7 @@
             top: 0;
             z-index: 100;
         }
+        
         .btn-back { 
             background: none; 
             border: none; 
@@ -53,6 +50,7 @@
             margin-right: 15px; 
             color: var(--dark);
         }
+        
         .header-detalle h2 {
             margin: 0;
             font-size: 20px;
@@ -64,15 +62,13 @@
             padding: 0 20px;
         }
 
-        /* -------------------------------------
-           TARJETAS DE RECETA (Fusión App/Editorial)
-           ------------------------------------- */
+        /* Tarjetas de Receta */
         .recipe-card { 
             background: var(--card); 
-            border-radius: 15px; /* Bordes redondeados de tu App */
+            border-radius: 15px; 
             padding: 25px; 
             margin-bottom: 20px; 
-            border: 1px solid #ddd; /* Borde sutil de tu App */
+            border: 1px solid #ddd; 
             transition: 0.3s;
             cursor: pointer;
         }
@@ -84,13 +80,9 @@
             gap: 10px; 
         }
 
-        .recipe-title-group {
-            flex: 1;
-        }
-        
         .recipe-title-group h2 { 
             margin: 0 0 5px 0; 
-            font-family: 'Playfair Display', serif; /* Fuente de libro */
+            font-family: 'Playfair Display', serif; 
             font-size: 22px; 
             font-weight: 700; 
             color: var(--dark); 
@@ -109,7 +101,6 @@
             letter-spacing: 0.5px; 
         }
 
-        /* BOTÓN ELIMINAR */
         .btn-delete {
             background: transparent;
             color: var(--danger);
@@ -121,12 +112,7 @@
             cursor: pointer;
             transition: 0.2s;
         }
-        .btn-delete:hover {
-            background: var(--danger);
-            color: white;
-        }
 
-        /* Botón de Expansión */
         .btn-toggle {
             display: block;
             width: 100%;
@@ -143,19 +129,20 @@
             cursor: pointer;
             outline: none;
         }
+        
         .btn-toggle::after {
-            content: ' ↓ Ver preparación e ingredientes';
+            content: ' ↓ Ver detalles de ingredientes';
             color: var(--accent);
             font-weight: bold;
             font-style: normal;
             font-family: sans-serif;
             font-size: 12px;
         }
+        
         .recipe-card.active .btn-toggle::after {
-            content: ' ↑ Ocultar receta';
+            content: ' ↑ Ocultar detalles';
         }
 
-        /* CONTENIDO DESPLEGABLE (Editorial) */
         .recipe-content {
             max-height: 0;
             overflow: hidden;
@@ -170,16 +157,6 @@
             margin-top: 25px;
         }
 
-        .recipe-grid {
-            display: grid;
-            grid-template-columns: 1fr 1.5fr;
-            gap: 20px;
-        }
-
-        @media (max-width: 600px) {
-            .recipe-grid { grid-template-columns: 1fr; }
-        }
-        
         .recipe-section h3 { 
             font-size: 12px; 
             text-transform: uppercase; 
@@ -190,48 +167,123 @@
             padding-bottom: 5px;
         }
         
-        .recipe-section p, .ingredients-list { 
+        .ingredients-list {
+            padding-left: 20px;
             margin: 0; 
             color: #444; 
-            font-family: 'Lora', serif; /* Fuente de libro */
+            font-family: 'Lora', serif; 
             font-size: 15px; 
             line-height: 1.6;
         }
-        
-        .ingredients-list {
-            padding-left: 20px;
-        }
-        .ingredients-list li {
-            margin-bottom: 8px;
-        }
-        .ingredients-list li::marker { color: var(--accent); }
 
-        /* Pie de Tarjeta y Botones */
-        .recipe-footer { 
-            margin-top: 20px; 
+        .btn-cocinar {
+            width: 100%;
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(16, 173, 147, 0.3);
+            transition: transform 0.1s;
+        }
+        
+        .btn-cocinar:active { transform: scale(0.98); }
+
+        /* -------------------------------------
+           OVERLAY MODO CHEF INTERACTIVO
+           ------------------------------------- */
+        .chef-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--card);
+            z-index: 2000;
+            flex-direction: column;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .chef-header {
             display: flex;
-            justify-content: flex-end;
-        }
-        
-        .btn-video { 
-            background: white; 
-            color: #D32F2F; 
-            padding: 8px 16px; 
-            border-radius: 8px; 
-            text-decoration: none; 
-            font-size: 13px; 
-            font-weight: bold; 
-            border: 1px solid #ddd;
-            display: inline-flex; 
+            justify-content: space-between;
             align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid #eee;
         }
-        
-        .status-msg {
+
+        .progress-container {
+            width: 100%;
+            height: 6px;
+            background: #eee;
+            margin-bottom: 30px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .chef-body {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
             text-align: center;
-            color: var(--text-muted);
-            font-size: 14px;
-            margin-top: 40px;
+            overflow-y: auto;
         }
+
+        .step-number {
+            font-size: 14px;
+            color: var(--accent);
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+        }
+
+        .step-text {
+            font-family: 'Playfair Display', serif;
+            font-size: 26px;
+            line-height: 1.4;
+            color: var(--dark);
+            margin-bottom: 30px;
+            max-width: 600px;
+        }
+
+        .chef-footer {
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            border-top: 1px solid #eee;
+        }
+
+        .btn-nav {
+            flex: 1;
+            padding: 18px;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-prev { background: #eee; color: var(--dark); }
+        .btn-next { background: var(--accent); color: white; }
+
+        .status-msg { text-align: center; color: var(--text-muted); font-size: 14px; margin-top: 40px; }
     </style>
 </head>
 <body>
@@ -247,45 +299,56 @@
         </div>
     </div>
 
+    <div id="chef-mode" class="chef-overlay">
+        <div class="chef-header">
+            <button class="btn-back" onclick="cerrarModoChef()" style="margin:0;">✕ Cerrar</button>
+            <h3 id="chef-title" style="margin:0; font-size: 16px;">Título de Receta</h3>
+            <div style="width: 24px;"></div> </div>
+        
+        <div class="progress-container">
+            <div id="chef-progress" class="progress-bar"></div>
+        </div>
+
+        <div class="chef-body">
+            <div id="step-counter" class="step-number">Paso 1 de X</div>
+            <div id="step-content" class="step-text">Cargando instrucciones...</div>
+        </div>
+
+        <div class="chef-footer">
+            <button id="btn-prev-step" class="btn-nav btn-prev" onclick="cambiarPaso(-1)">← Anterior</button>
+            <button id="btn-next-step" class="btn-nav btn-next" onclick="cambiarPaso(1)">Siguiente →</button>
+        </div>
+    </div>
+
     <script>
         const urlDB = 'https://cpveuexgxwxjejurtwro.supabase.co';
         const keyDB = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdmV1ZXhneHd4amVqdXJ0d3JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MTYxMzAsImV4cCI6MjA4MjE5MjEzMH0.I4FeC3dmtOXNqLWA-tRgxAb7JCe13HysOkqMGkXaUUc'; 
         
         const supabaseClient = window.supabase.createClient(urlDB, keyDB);
 
-        // Función para abrir/cerrar la tarjeta
+        // Variables Globales de Estado
+        let recetarioGlobal = [];
+        let pasosActuales = [];
+        let pasoIndex = 0;
+
         function toggleReceta(elemento) {
-            // Buscamos el div principal de la tarjeta y le alternamos la clase
             const card = elemento.closest('.recipe-card');
             card.classList.toggle('active');
         }
 
-        // Función para borrar receta
         async function eliminarReceta(id, nombre, btnElement) {
-            // Confirmación
             if (!confirm(`¿Seguro que deseas eliminar la receta de "${nombre}"?`)) return;
 
             try {
-                // Cambiar el texto del botón mientras borra
                 btnElement.innerText = "Borrando...";
                 btnElement.disabled = true;
 
-                const { error } = await supabaseClient
-                    .from('recetario_usuario')
-                    .delete()
-                    .eq('id', id);
-
+                const { error } = await supabaseClient.from('recetario_usuario').delete().eq('id', id);
                 if (error) throw error;
 
-                // Remover la tarjeta de la pantalla con una pequeña animación
                 const card = btnElement.closest('.recipe-card');
                 card.style.opacity = '0';
                 setTimeout(() => card.remove(), 300);
-
-                // Si no quedan recetas, mostrar mensaje
-                if (document.querySelectorAll('.recipe-card').length === 1) {
-                    document.getElementById('lista-recetas').innerHTML = '<div class="status-msg">Tu recetario está vacío.</div>';
-                }
 
             } catch (err) {
                 alert("Error al eliminar: " + err.message);
@@ -296,24 +359,18 @@
 
         async function cargarRecetas() {
             try {
-                const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-                
-                if (authError || !user) {
-                    document.getElementById('lista-recetas').innerHTML = '<div class="status-msg">Inicia sesión para ver tus recetas.</div>';
-                    return;
-                }
-
                 const { data, error } = await supabaseClient
                     .from('recetario_usuario')
                     .select('*')
                     .order('creado_at', { ascending: false });
 
                 if (error) throw error;
-
+                
+                recetarioGlobal = data; // Guardamos en memoria para el Modo Chef
                 const container = document.getElementById('lista-recetas');
                 
                 if (!data || data.length === 0) {
-                    container.innerHTML = '<div class="status-msg">Tu recetario está vacío. ¡Ve a la dieta y escanea un platillo!</div>';
+                    container.innerHTML = '<div class="status-msg">Tu recetario está vacío.</div>';
                     return;
                 }
 
@@ -327,31 +384,20 @@
                                 <h2>${r.nombre_platillo}</h2>
                                 <span class="tag">${r.tipo_receta}</span>
                             </div>
-                            <button class="btn-delete" onclick="event.stopPropagation(); eliminarReceta('${r.id}', '${r.nombre_platillo.replace(/'/g, "\\'")}', this)">
-                                Eliminar
-                            </button>
+                            <button class="btn-delete" onclick="event.stopPropagation(); eliminarReceta('${r.id}', '${r.nombre_platillo.replace(/'/g, "\\'")}', this)">Eliminar</button>
                         </div>
                         
                         <button class="btn-toggle"> </button>
                         
                         <div class="recipe-content" onclick="event.stopPropagation();">
-                            <div class="recipe-grid">
-                                <div class="recipe-section">
-                                    <h3>🍽️ Ingredientes</h3>
-                                    <ul class="ingredients-list">${listaIngredientes}</ul>
-                                </div>
-                                <div class="recipe-section">
-                                    <h3>👨‍🍳 Instrucciones</h3>
-                                    <p>${r.instrucciones}</p>
-                                </div>
+                            <div class="recipe-section">
+                                <h3>🍽️ Ingredientes</h3>
+                                <ul class="ingredients-list">${listaIngredientes}</ul>
                             </div>
                             
-                            ${r.link_busqueda ? `
-                            <div class="recipe-footer">
-                                <a href="${r.link_busqueda}" target="_blank" class="btn-video">
-                                    ▶ Ver Video Tutorial
-                                </a>
-                            </div>` : ''}
+                            <button class="btn-cocinar" onclick="iniciarModoChef('${r.id}')">
+                                👨‍🍳 Iniciar Modo Cocina Guiada
+                            </button>
                         </div>
                     </div>
                     `;
@@ -359,8 +405,77 @@
                 
             } catch (err) {
                 console.error(err);
-                document.getElementById('lista-recetas').innerHTML = '<div class="status-msg" style="color: #D32F2F;">Error al cargar las recetas.</div>';
+                document.getElementById('lista-recetas').innerHTML = '<div class="status-msg">Error al cargar las recetas.</div>';
             }
+        }
+
+        /* -------------------------------------
+           LÓGICA DEL MODO CHEF INTERACTIVO
+           ------------------------------------- */
+        function iniciarModoChef(idReceta) {
+            const receta = recetarioGlobal.find(r => r.id === idReceta);
+            if (!receta) return;
+
+            // PARSER AUTOMÁTICO: Divide el bloque de texto en pasos individuales
+            // Separa por saltos de línea o puntos, y limpia espacios vacíos
+            pasosActuales = receta.instrucciones
+                .split(/\n|\. (?=[A-Z])/) 
+                .map(p => p.trim())
+                .filter(p => p.length > 10); // Ignorar líneas muy cortas
+
+            if (pasosActuales.length === 0) {
+                pasosActuales = ["No se encontraron instrucciones detalladas. Revisa la receta."];
+            }
+
+            // Iniciar variables
+            pasoIndex = 0;
+            document.getElementById('chef-title').innerText = receta.nombre_platillo;
+            document.getElementById('chef-mode').style.display = 'flex';
+            
+            renderizarPaso();
+        }
+
+        function renderizarPaso() {
+            // Actualizar Textos
+            document.getElementById('step-content').innerText = pasosActuales[pasoIndex];
+            document.getElementById('step-counter').innerText = `Paso ${pasoIndex + 1} de ${pasosActuales.length}`;
+            
+            // Actualizar Barra de Progreso
+            const porcentaje = ((pasoIndex + 1) / pasosActuales.length) * 100;
+            document.getElementById('chef-progress').style.width = `${porcentaje}%`;
+
+            // Control de Botones
+            const btnPrev = document.getElementById('btn-prev-step');
+            const btnNext = document.getElementById('btn-next-step');
+
+            btnPrev.style.visibility = pasoIndex === 0 ? 'hidden' : 'visible';
+            
+            if (pasoIndex === pasosActuales.length - 1) {
+                btnNext.innerText = "🎉 Terminar";
+                btnNext.style.background = "#34c759"; // Verde éxito
+            } else {
+                btnNext.innerText = "Siguiente →";
+                btnNext.style.background = "var(--accent)";
+            }
+        }
+
+        function cambiarPaso(direccion) {
+            const nuevoIndice = pasoIndex + direccion;
+            
+            // Si le da a Terminar en el último paso
+            if (nuevoIndice >= pasosActuales.length) {
+                cerrarModoChef();
+                return;
+            }
+
+            if (nuevoIndice >= 0 && nuevoIndice < pasosActuales.length) {
+                pasoIndex = nuevoIndice;
+                renderizarPaso();
+            }
+        }
+
+        function cerrarModoChef() {
+            document.getElementById('chef-mode').style.display = 'none';
         }
         
         cargarRecetas();
