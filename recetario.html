@@ -312,6 +312,13 @@
         <div class="chef-body">
             <div id="step-counter" class="step-number">Paso 1 de X</div>
             <div id="step-content" class="step-text">Cargando instrucciones...</div>
+            
+            <button id="btn-pedir-tip" onclick="consultarSousChef()" style="background: #e0fdf5; color: var(--accent); border: 1px solid var(--accent); padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; margin-top: 20px; font-size: 14px;">
+                💡 Pedir Tip al Chef para este paso
+            </button>
+            
+            <div id="sous-chef-respuesta" style="display: none; background: white; border-radius: 15px; padding: 20px; margin-top: 20px; text-align: left; box-shadow: 0 4px 15px rgba(0,0,0,0.05); width: 100%; max-width: 600px; border-left: 4px solid var(--accent);">
+                </div>
         </div>
 
         <div class="chef-footer">
@@ -436,6 +443,10 @@
         }
 
         function renderizarPaso() {
+            // Ocultar el tip anterior
+            document.getElementById('sous-chef-respuesta').style.display = 'none';
+            document.getElementById('sous-chef-respuesta').innerHTML = '';
+            
             // Actualizar Textos
             document.getElementById('step-content').innerText = pasosActuales[pasoIndex];
             document.getElementById('step-counter').innerText = `Paso ${pasoIndex + 1} de ${pasosActuales.length}`;
@@ -476,6 +487,59 @@
 
         function cerrarModoChef() {
             document.getElementById('chef-mode').style.display = 'none';
+        }
+        
+        async function consultarSousChef() {
+            const btn = document.getElementById('btn-pedir-tip');
+            const respuestaDiv = document.getElementById('sous-chef-respuesta');
+            const pasoTexto = pasosActuales[pasoIndex];
+            const tituloReceta = document.getElementById('chef-title').innerText;
+
+            btn.innerText = "⏳ Consultando al Chef...";
+            btn.disabled = true;
+
+            try {
+                // Hacemos la llamada a tu Edge Function
+                const { data, error } = await supabaseClient.functions.invoke('chef-ia', {
+                    body: { 
+                        tipo: 'sous_chef', 
+                        nombre_receta: tituloReceta,
+                        paso_actual: pasoTexto 
+                    }
+                });
+
+                if (error) throw error;
+
+                // Renderizamos la respuesta estructurada
+                respuestaDiv.style.display = 'block';
+                respuestaDiv.innerHTML = `
+                    <div style="display: flex; gap: 15px; margin-bottom: 10px;">
+                        <div style="flex: 1;">
+                            <span style="font-size: 12px; color: #888; text-transform: uppercase;">🌡️ Temperatura</span>
+                            <div style="font-weight: bold; color: #333;">${data.temperatura}</div>
+                        </div>
+                        <div style="flex: 1;">
+                            <span style="font-size: 12px; color: #888; text-transform: uppercase;">⏱️ Tiempo</span>
+                            <div style="font-weight: bold; color: #333;">${data.tiempo}</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 15px;">
+                        <span style="font-size: 12px; color: #10ad93; text-transform: uppercase; font-weight: bold;">💡 Tip Profesional</span>
+                        <p style="margin: 5px 0 15px 0; font-size: 14px; color: #444;">${data.tip_pro}</p>
+                    </div>
+                    <div style="background: #fff5f5; padding: 10px; border-radius: 10px; border-left: 3px solid #e74c3c;">
+                        <span style="font-size: 12px; color: #e74c3c; text-transform: uppercase; font-weight: bold;">🚨 Prevención de Error</span>
+                        <p style="margin: 5px 0 0 0; font-size: 13px; color: #666;">${data.alerta_error}</p>
+                    </div>
+                `;
+
+            } catch (err) {
+                respuestaDiv.style.display = 'block';
+                respuestaDiv.innerHTML = `<p style="color: red;">Error al contactar al Chef: ${err.message}</p>`;
+            } finally {
+                btn.innerText = "💡 Pedir Tip al Chef para este paso";
+                btn.disabled = false;
+            }
         }
         
         cargarRecetas();
