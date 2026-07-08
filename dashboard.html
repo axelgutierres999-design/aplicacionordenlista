@@ -359,10 +359,38 @@
             if (kcalCarbs < 0) kcalCarbs = caloriasFinales * 0.20; // margen de seguridad si los gramos absorben demasiado
             let metaCarb = Math.round(kcalCarbs / 4);
 
-            // ─── 5. HIDRATACIÓN INTELIGENTE ───────────────────────────
-            // Base: 35ml/kg + 10ml por cada minuto de ejercicio reportado hoy
-            const minutosEjercicioHoy = parseInt(localStorage.getItem('minutosEjercicioHoy')) || 0;
-            let aguaFinal = ((peso * 35) + (minutosEjercicioHoy * 10)) / 1000; // litros
+           // ─── 5. HIDRATACIÓN INTELIGENTE (Protocolo EFSA + ACSM) ──────────
+// Método: ingesta total de agua basada en GET (gasto energético total)
+// Referencia: EFSA 2010 — 1ml por kcal de GET en adultos activos
+// Ajustes adicionales: ejercicio, clima, déficit calórico
+
+const minutosEjercicioHoy = parseInt(localStorage.getItem('minutosEjercicioHoy')) || 0;
+
+// Base EFSA: 1ml por kcal de GET (más precisa que el método kg)
+let aguaBase = get / 1000; // litros
+
+// Ajuste por ejercicio: ACSM recomienda 0.4–0.8L por hora de ejercicio
+const litrosPorEjercicio = (minutosEjercicioHoy / 60) * 0.6;
+
+// Ajuste por objetivo: en déficit hay mayor catabolismo proteico
+// → más urea que excretar → más agua necesaria
+const ajusteObjetivo =
+  objetivo === 'perdida'      ? 0.3  :  // +300ml en déficit
+  objetivo === 'ganancia'     ? 0.2  :  // +200ml en superávit (más síntesis)
+  objetivo === 'recomposicion'? 0.25 :  // +250ml (alta proteína = más urea)
+  0;                                     // mantenimiento: sin ajuste
+
+// Ajuste por masa corporal: personas >90kg necesitan proporcionalmente más
+const ajustePeso = peso > 90 ? ((peso - 90) * 0.01) : 0;
+
+// Total final con techo razonable de seguridad (max 5L para evitar hiponatremia)
+let aguaFinal = Math.min(
+  aguaBase + litrosPorEjercicio + ajusteObjetivo + ajustePeso,
+  5.0
+);
+
+// Mínimo clínico: nunca menos de 1.5L (OMS)
+aguaFinal = Math.max(aguaFinal, 1.5);
 
             // ─── Actualizar estado global ──────────────────────────────
             metaCalorias = caloriasFinales;
@@ -386,7 +414,24 @@
             guardarPerfilEnSupabase({ peso, altura, edad, genero, factorActividad, objetivo, porcGrasa, usaKatch, metaCalorias, metaProt, metaCarb, metaGrasa, aguaFinal });
 
             document.getElementById('modal-config').style.display = 'none';
-            actualizarUI();
+actualizarUI();
+
+// Mostrar resumen clínico del cálculo
+const metodo = usaKatch ? 'Katch-McArdle (masa magra)' : 'Mifflin-St Jeor';
+const resumen = `
+✅ Cálculo completado\n
+🔬 Fórmula usada: ${metodo}
+⚡ Metabolismo basal (GEB): ${Math.round(geb)} kcal
+🏃 Gasto total (GET): ${Math.round(get)} kcal
+🎯 Calorías objetivo: ${caloriasFinales} kcal
+💪 Proteínas: ${metaProt}g (${protPorKg}g/kg)
+🍞 Carbohidratos: ${metaCarb}g
+🥑 Grasas: ${metaGrasa}g
+💧 Agua: ${Math.round(aguaFinal * 10) / 10}L
+   (Base EFSA ${Math.round(get/1000 * 10)/10}L + ejercicio + objetivo)
+`.trim();
+
+setTimeout(() => alert(resumen), 100);
         }
 
             async function guardarPerfilEnSupabase(d) {
