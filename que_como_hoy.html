@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>¿Qué Como Hoy?</title>
+  <style>
+    :root {
+      --verde:#10b981; --verde-oscuro:#059669; --rojo:#ef4444;
+      --amarillo:#f59e0b; --azul:#3b82f6; --morado:#8b5cf6;
+      --fondo:#f0fdf4; --blanco:#ffffff;
+      --gris-claro:#f3f4f6; --gris:#6b7280; --texto:#1f2937;
+      --radio:14px; --sombra:0 4px 20px rgba(0,0,0,0.07);
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',system-ui,sans-serif;background:var(--fondo);color:var(--texto);min-height:100vh}
+
+    /* ── HEADER ── */
+    .app-header{
+      background:linear-gradient(135deg,var(--verde),var(--verde-oscuro));
+      color:white;padding:20px 16px 16px;
+    }
+    .app-header h1{font-size:1.5rem;font-weight:900;margin-bottom:2px}
+    .app-header p{font-size:0.85rem;opacity:0.85}
+
+    /* ── TABS ── */
+    .tabs{display:flex;background:white;border-bottom:2px solid #e5e7eb;overflow-x:auto}
+    .tab{flex:1;min-width:90px;padding:12px 8px;border:none;background:none;font-size:0.82rem;
+         font-weight:700;color:var(--gris);cursor:pointer;white-space:nowrap;transition:all 0.2s}
+    .tab.activo{color:var(--verde);border-bottom:3px solid var(--verde);margin-bottom:-2px}
+
+    /* ── CONTENIDO ── */
+    .pagina{display:none;padding:16px;max-width:680px;margin:0 auto}
+    .pagina.activa{display:block}
+
+    /* ── CARDS ── */
+    .card{background:white;border-radius:var(--radio);box-shadow:var(--sombra);
+          padding:16px;margin-bottom:14px}
+    .card-titulo{font-size:1rem;font-weight:800;color:var(--texto);margin-bottom:12px;
+                 display:flex;align-items:center;gap:8px}
+
+    /* ── SUGERENCIAS ── */
+    .sugerencia-card{
+      background:white;border-radius:var(--radio);box-shadow:var(--sombra);
+      padding:16px;margin-bottom:14px;border-left:4px solid var(--verde);
+      cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;
+    }
+    .sugerencia-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.1)}
+    .sug-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+    .sug-nombre{font-size:1rem;font-weight:800;color:var(--texto)}
+    .sug-tiempo{font-size:0.75rem;background:var(--gris-claro);padding:3px 8px;
+                border-radius:20px;color:var(--gris);font-weight:600}
+    .sug-macros{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0}
+    .macro-badge{font-size:0.72rem;padding:3px 8px;border-radius:20px;font-weight:700}
+    .macro-cal{background:#fef3c7;color:#92400e}
+    .macro-prot{background:#dbeafe;color:#1e40af}
+    .macro-carb{background:#d1fae5;color:#065f46}
+    .macro-gras{background:#fce7f3;color:#9d174d}
+    .sug-ingredientes{font-size:0.8rem;color:var(--gris);line-height:1.5}
+    .sug-faltantes{font-size:0.75rem;color:var(--rojo);font-weight:600;margin-top:4px}
+    .badge-encaja{background:#d1fae5;color:#065f46;border-radius:8px;
+                  padding:4px 10px;font-size:0.75rem;font-weight:700;display:inline-block}
+    .badge-parcial{background:#fef3c7;color:#92400e;border-radius:8px;
+                   padding:4px 10px;font-size:0.75rem;font-weight:700;display:inline-block}
+
+    /* ── PROGRESO CALÓRICO ── */
+    .progreso-wrap{margin-bottom:16px}
+    .progreso-label{display:flex;justify-content:space-between;font-size:0.82rem;
+                    font-weight:700;color:var(--gris);margin-bottom:6px}
+    .barra-bg{height:12px;background:#e5e7eb;border-radius:6px;overflow:hidden}
+    .barra-fill{height:100%;border-radius:6px;transition:width 0.5s ease;
+                background:linear-gradient(90deg,var(--verde),var(--verde-oscuro))}
+    .barra-fill.exceso{background:linear-gradient(90deg,var(--amarillo),var(--rojo))}
+
+    /* ── DESPENSA ── */
+    .despensa-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+    .item-despensa{
+      background:white;border:1.5px solid #e5e7eb;border-radius:10px;
+      padding:10px;display:flex;flex-direction:column;gap:4px;
+    }
+    .item-nombre{font-size:0.85rem;font-weight:700;color:var(--texto)}
+    .item-cant{font-size:0.75rem;color:var(--gris)}
+    .item-acciones{display:flex;gap:6px;margin-top:4px}
+    .btn-xs{border:none;border-radius:6px;padding:4px 8px;font-size:0.72rem;
+            font-weight:700;cursor:pointer}
+    .btn-editar{background:#dbeafe;color:#1e40af}
+    .btn-borrar{background:#fee2e2;color:#b91c1c}
+
+    /* ── FORMULARIOS ── */
+    .form-group{margin-bottom:12px}
+    label{display:block;font-size:0.82rem;font-weight:700;color:var(--gris);margin-bottom:4px}
+    input,select,textarea{
+      width:100%;padding:10px 12px;border:1.5px solid #e5e7eb;
+      border-radius:10px;font-size:0.88rem;outline:none;
+      font-family:inherit;background:white;transition:border 0.15s;
+    }
+    input:focus,select:focus,textarea:focus{border-color:var(--verde)}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media(max-width:400px){.form-row{grid-template-columns:1fr}}
+
+    /* ── BOTONES ── */
+    .btn{border:none;border-radius:10px;padding:11px 18px;font-size:0.9rem;
+         font-weight:800;cursor:pointer;transition:all 0.15s;display:inline-flex;
+         align-items:center;gap:8px}
+    .btn-verde{background:linear-gradient(135deg,var(--verde),var(--verde-oscuro));color:white;width:100%}
+    .btn-verde:hover{opacity:0.9}
+    .btn-gris{background:var(--gris-claro);color:var(--texto)}
+    .btn-rojo{background:#fee2e2;color:var(--rojo)}
+
+    /* ── INGREDIENTES DE RECETA ── */
+    .ing-lista{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+    .ing-row{display:flex;gap:8px;align-items:center}
+    .ing-row input{flex:1}
+    .ing-row .btn-xs{flex-shrink:0}
+
+    /* ── MODAL ── */
+    .modal-overlay{
+      display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);
+      z-index:1000;align-items:flex-end;justify-content:center;
+    }
+    .modal-overlay.abierto{display:flex}
+    .modal-box{
+      background:white;border-radius:20px 20px 0 0;padding:20px 16px 32px;
+      width:100%;max-width:520px;max-height:90vh;overflow-y:auto;
+    }
+    .modal-titulo{font-size:1.1rem;font-weight:900;margin-bottom:16px;
+                  display:flex;justify-content:space-between;align-items:center}
+    .btn-modal-cerrar{background:var(--gris-claro);border:none;border-radius:50%;
+                      width:32px;height:32px;cursor:pointer;font-size:1rem}
+
+    /* ── CHIP DE CATEGORÍA ── */
+    .chip{display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.72rem;
+          font-weight:700;margin-right:4px;margin-bottom:4px;cursor:pointer;
+          background:var(--gris-claro);color:var(--gris);transition:all 0.15s}
+    .chip.activo{background:var(--verde);color:white}
+
+    /* ── ESTADO VACÍO ── */
+    .estado-vacio{text-align:center;padding:40px 20px;color:var(--gris)}
+    .estado-vacio-icon{font-size:3rem;margin-bottom:12px}
+
+    /* ── IA SUGERENCIA ── */
+    .ia-loading{text-align:center;padding:30px;color:var(--gris)}
+    .ia-dot{display:inline-block;width:8px;height:8px;border-radius:50%;
+            background:var(--verde);margin:0 3px;animation:bounce 1.2s infinite}
+    .ia-dot:nth-child(2){animation-delay:0.2s}
+    .ia-dot:nth-child(3){animation-delay:0.4s}
+    @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  </style>
+</head>
+<body>
+
+<div class="app-header">
+  <h1>🍽️ ¿Qué Como Hoy?</h1>
+  <p>Sugerencias basadas en tu despensa y metas calóricas</p>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab activo" onclick="cambiarTab('sugerencias')">💡 Sugerencias</button>
+  <button class="tab"        onclick="cambiarTab('despensa')">🧺 Despensa</button>
+  <button class="tab"        onclick="cambiarTab('recetas')">📖 Mis Recetas</button>
+  <button class="tab"        onclick="cambiarTab('historial')">📅 Hoy Comí</button>
+</div>
+
+<!-- ══════════════ TAB: SUGERENCIAS ══════════════ -->
+<div id="tab-sugerencias" class="pagina activa">
+
+  <!-- Progreso calórico del día -->
+  <div class="card" id="cardProgreso" style="display:none;">
+    <div class="card-titulo">⚡ Progreso del día</div>
+    <div class="progreso-wrap">
+      <div class="progreso-label">
+        <span id="lblCalCons">0 kcal consumidas</span>
+        <span id="lblCalMeta">Meta: 0 kcal</span>
+      </div>
+      <div class="barra-bg">
+        <div class="barra-fill" id="barraProgreso" style="width:0%"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;font-size:0.78rem;color:var(--gris);flex-wrap:wrap;">
+      <span>🍳 Disponibles: <strong id="lblCalDisp" style="color:var(--verde)">0</strong> kcal</span>
+      <span>💪 Proteína hoy: <strong id="lblProtHoy">0</strong>g</span>
+    </div>
+  </div>
+
+  <!-- Filtro tipo de comida -->
+  <div style="margin-bottom:12px;overflow-x:auto;white-space:nowrap;padding-bottom:4px;">
+    <button class="chip activo" onclick="filtrarComida('todos',this)">Todos</button>
+    <button class="chip" onclick="filtrarComida('desayuno',this)">🌅 Desayuno</button>
+    <button class="chip" onclick="filtrarComida('almuerzo',this)">🌞 Almuerzo</button>
+    <button class="chip" onclick="filtrarComida('cena',this)">🌙 Cena</button>
+    <button class="chip" onclick="filtrarComida('snack',this)">🍎 Snack</button>
+  </div>
+
+  <div id="contenedorSugerencias">
+    <div class="ia-loading">
+      <div class="ia-dot"></div><div class="ia-dot"></div><div class="ia-dot"></div>
+      <p style="margin-top:12px;font-size:0.85rem;">Buscando recetas con tu despensa...</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ TAB: DESPENSA ══════════════ -->
+<div id="tab-despensa" class="pagina">
+  <button class="btn btn-verde" onclick="abrirModalDespensa()"
+          style="margin-bottom:14px;">+ Agregar ingrediente</button>
+
+  <div style="margin-bottom:12px;overflow-x:auto;white-space:nowrap;">
+    <button class="chip activo" onclick="filtrarDespensa('Todos',this)">Todos</button>
+    <button class="chip" onclick="filtrarDespensa('Frutas y Verduras',this)">🥦 Frutas/Verduras</button>
+    <button class="chip" onclick="filtrarDespensa('Proteínas',this)">🥩 Proteínas</button>
+    <button class="chip" onclick="filtrarDespensa('Lácteos',this)">🥛 Lácteos</button>
+    <button class="chip" onclick="filtrarDespensa('Cereales',this)">🌾 Cereales</button>
+    <button class="chip" onclick="filtrarDespensa('Otros',this)">📦 Otros</button>
+  </div>
+
+  <div id="contenedorDespensa">
+    <div class="estado-vacio">
+      <div class="estado-vacio-icon">🧺</div>
+      <p>Tu despensa está vacía.<br>Agrega los ingredientes que tienes en casa.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ TAB: RECETAS ══════════════ -->
+<div id="tab-recetas" class="pagina">
+  <button class="btn btn-verde" onclick="abrirModalReceta()"
+          style="margin-bottom:14px;">+ Crear receta</button>
+
+  <div id="contenedorRecetas">
+    <div class="estado-vacio">
+      <div class="estado-vacio-icon">📖</div>
+      <p>Aún no tienes recetas.<br>Crea tus comidas favoritas para obtener sugerencias.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ TAB: HOY COMÍ ══════════════ -->
+<div id="tab-historial" class="pagina">
+  <div class="card">
+    <div class="card-titulo">📅 Lo que comiste hoy</div>
+    <div id="contenedorHistorial">
+      <p style="color:var(--gris);font-size:0.88rem;">No has registrado comidas hoy.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MODAL: AGREGAR A DESPENSA ══════════════ -->
+<div class="modal-overlay" id="modalDespensa">
+  <div class="modal-box">
+    <div class="modal-titulo">
+      🧺 <span id="tituloModalDespensa">Agregar ingrediente</span>
+      <button class="btn-modal-cerrar" onclick="cerrarModal('modalDespensa')">✕</button>
+    </div>
+    <input type="hidden" id="despensaEditId">
+    <div class="form-group">
+      <label>Nombre del ingrediente</label>
+      <input type="text" id="despensaNombre" placeholder="Ej: pollo, tomate, avena...">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Cantidad</label>
+        <input type="number" id="despensaCantidad" value="1" min="0" step="0.5">
+      </div>
+      <div class="form-group">
+        <label>Unidad</label>
+        <select id="despensaUnidad">
+          <option value="piezas">piezas</option>
+          <option value="g">gramos (g)</option>
+          <option value="kg">kilogramos (kg)</option>
+          <option value="ml">mililitros (ml)</option>
+          <option value="L">litros (L)</option>
+          <option value="tazas">tazas</option>
+          <option value="cucharadas">cucharadas</option>
+          <option value="rebanadas">rebanadas</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Categoría</label>
+      <select id="despensaCategoria">
+        <option value="Frutas y Verduras">🥦 Frutas y Verduras</option>
+        <option value="Proteínas">🥩 Proteínas (carne, huevo, legumbres)</option>
+        <option value="Lácteos">🥛 Lácteos</option>
+        <option value="Cereales">🌾 Cereales y Granos</option>
+        <option value="Condimentos">🧂 Condimentos y especias</option>
+        <option value="Otros">📦 Otros</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Calorías por 100g/ml (opcional)</label>
+      <input type="number" id="despensaCalorias" placeholder="Ej: 165 para pollo cocido">
+    </div>
+    <button class="btn btn-verde" onclick="guardarDespensa()">💾 Guardar</button>
+  </div>
+</div>
+
+<!-- ══════════════ MODAL: CREAR RECETA ══════════════ -->
+<div class="modal-overlay" id="modalReceta">
+  <div class="modal-box">
+    <div class="modal-titulo">
+      📖 <span id="tituloModalReceta">Nueva receta</span>
+      <button class="btn-modal-cerrar" onclick="cerrarModal('modalReceta')">✕</button>
+    </div>
+    <input type="hidden" id="recetaEditId">
+
+    <div class="form-group">
+      <label>Nombre de la receta</label>
+      <input type="text" id="recetaNombre" placeholder="Ej: Avena con plátano">
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Tipo de comida</label>
+        <select id="recetaTipo">
+          <option value="desayuno">🌅 Desayuno</option>
+          <option value="almuerzo">🌞 Almuerzo</option>
+          <option value="cena">🌙 Cena</option>
+          <option value="snack">🍎 Snack</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Tiempo (minutos)</label>
+        <input type="number" id="recetaTiempo" value="15" min="1">
+      </div>
+    </div>
+
+    <!-- Macros -->
+    <p style="font-size:0.82rem;font-weight:700;color:var(--gris);margin-bottom:8px;">
+      Macronutrientes por porción:
+    </p>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Calorías (kcal)</label>
+        <input type="number" id="recetaCal" placeholder="320" oninput="calcularMacrosAuto()">
+      </div>
+      <div class="form-group">
+        <label>Proteínas (g)</label>
+        <input type="number" id="recetaProt" placeholder="15" step="0.1">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Carbohidratos (g)</label>
+        <input type="number" id="recetaCarb" placeholder="45" step="0.1">
+      </div>
+      <div class="form-group">
+        <label>Grasas (g)</label>
+        <input type="number" id="recetaGrasa" placeholder="8" step="0.1">
+      </div>
+    </div>
+
+    <!-- Ingredientes -->
+    <p style="font-size:0.82rem;font-weight:700;color:var(--gris);margin:12px 0 8px;">
+      Ingredientes necesarios:
+    </p>
+    <div class="ing-lista" id="listaIngredientes">
+      <!-- Se agrega dinámicamente -->
+    </div>
+    <button class="btn btn-gris" onclick="agregarFilaIngrediente()"
+            style="margin-bottom:14px;font-size:0.82rem;padding:8px 12px;">
+      + Agregar ingrediente
+    </button>
+
+    <div class="form-group">
+      <label>Descripción / Preparación (opcional)</label>
+      <textarea id="recetaDesc" rows="3" placeholder="Pasos de preparación..."></textarea>
+    </div>
+
+    <button class="btn btn-verde" onclick="guardarReceta()">💾 Guardar receta</button>
+  </div>
+</div>
+
+<!-- ══════════════ MODAL: DETALLE SUGERENCIA ══════════════ -->
+<div class="modal-overlay" id="modalDetalle">
+  <div class="modal-box">
+    <div class="modal-titulo">
+      🍽️ <span id="detalleNombre"></span>
+      <button class="btn-modal-cerrar" onclick="cerrarModal('modalDetalle')">✕</button>
+    </div>
+    <div id="detalleContenido"></div>
+    <button class="btn btn-verde" onclick="registrarComoComida()"
+            style="margin-top:14px;">✅ Lo comí / Registrar</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// ESTADO GLOBAL
+// ═══════════════════════════════════════════════════════════════
+let despensa       = [];
+let recetas        = [];
+let historialHoy   = [];
+let metasCal       = { calorias:2000, proteinas:150 };
+let filtroComiida  = 'todos';
+let filtroDespensa = 'Todos';
+let recetaSeleccionada = null;
+
+// ── Obtener usuario ──────────────────────────────────────────
+async function getUserId() {
+    const { data } = await db.auth.getUser();
+    return data?.user?.id;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INICIALIZACIÓN
+// ═══════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', async () => {
+    await cargarMetas();
+    await cargarDespensa();
+    await cargarRecetas();
+    await cargarHistorialHoy();
+    actualizarProgresoCalórico();
+    generarSugerencias();
+});
+
+async function cargarMetas() {
+    try {
+        const uid = await getUserId();
+        if (!uid) return;
+        const { data } = await db.from('perfiles')
+            .select('meta_calorica, meta_proteinas')
+            .eq('user_id', uid).single();
+        if (data) {
+            metasCal.calorias  = data.meta_calorica  || 2000;
+            metasCal.proteinas = data.meta_proteinas || 150;
+        }
+        document.getElementById('cardProgreso').style.display = 'block';
+    } catch(e) { console.warn('Sin perfil:', e.message); }
+}
+
+async function cargarDespensa() {
+    const uid = await getUserId();
+    if (!uid) return;
+    const { data } = await db.from('despensa_items')
+        .select('*').eq('user_id', uid).order('nombre');
+    despensa = data || [];
+    renderizarDespensa();
+}
+
+async function cargarRecetas() {
+    const uid = await getUserId();
+    if (!uid) return;
+    const { data: recs } = await db.from('recetas_usuario')
+        .select('*, receta_ingredientes(*)').eq('user_id', uid);
+    recetas = recs || [];
+    renderizarRecetas();
+}
+
+async function cargarHistorialHoy() {
+    const uid = await getUserId();
+    if (!uid) return;
+    const hoy = new Date().toISOString().split('T')[0];
+    const { data } = await db.from('historial_recetas')
+        .select('*, recetas_usuario(nombre, calorias_total, proteinas_g)')
+        .eq('user_id', uid).eq('fecha', hoy);
+    historialHoy = data || [];
+    renderizarHistorial();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PROGRESO CALÓRICO
+// ═══════════════════════════════════════════════════════════════
+function actualizarProgresoCalórico() {
+    const calHoy  = historialHoy.reduce((s, h) =>
+        s + (h.recetas_usuario?.calorias_total || 0) * (h.porciones || 1), 0);
+    const protHoy = historialHoy.reduce((s, h) =>
+        s + (h.recetas_usuario?.proteinas_g || 0) * (h.porciones || 1), 0);
+    const pct     = Math.min((calHoy / metasCal.calorias) * 100, 100);
+    const disp    = Math.max(metasCal.calorias - calHoy, 0);
+
+    document.getElementById('lblCalCons').textContent = `${Math.round(calHoy)} kcal consumidas`;
+    document.getElementById('lblCalMeta').textContent = `Meta: ${metasCal.calorias} kcal`;
+    document.getElementById('barraProgreso').style.width = `${pct}%`;
+    document.getElementById('barraProgreso').className =
+        'barra-fill' + (pct >= 95 ? ' exceso' : '');
+    document.getElementById('lblCalDisp').textContent = Math.round(disp);
+    document.getElementById('lblProtHoy').textContent = Math.round(protHoy) + 'g';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SUGERENCIAS INTELIGENTES
+// ═══════════════════════════════════════════════════════════════
+function generarSugerencias() {
+    const cont = document.getElementById('contenedorSugerencias');
+    if (recetas.length === 0) {
+        cont.innerHTML = `<div class="estado-vacio">
+            <div class="estado-vacio-icon">💡</div>
+            <p>Crea tus primeras recetas en la pestaña <strong>📖 Mis Recetas</strong><br>
+            y agrega ingredientes a tu <strong>🧺 Despensa</strong>.</p></div>`;
+        return;
+    }
+
+    const calHoy  = historialHoy.reduce((s,h) =>
+        s + (h.recetas_usuario?.calorias_total||0)*(h.porciones||1), 0);
+    const disponibles = metasCal.calorias - calHoy;
+    const nombresHoy  = new Set(historialHoy.map(h => h.recetas_usuario?.nombre));
+
+    // Calcular compatibilidad de cada receta con la despensa
+    const nombresDespensa = new Set(despensa.map(d => d.nombre.toLowerCase().trim()));
+
+    const scored = recetas
+        .filter(r => filtroComiida === 'todos' || r.tipo_comida === filtroComiida)
+        .filter(r => !nombresHoy.has(r.nombre))      // no repetir lo de hoy
+        .map(r => {
+            const ingredientes = r.receta_ingredientes || [];
+            if (ingredientes.length === 0) return { ...r, score:50, faltantes:[] };
+
+            const requeridos   = ingredientes.filter(i => !i.es_opcional);
+            const encontrados  = requeridos.filter(i =>
+                nombresDespensa.has(i.nombre_ingrediente.toLowerCase().trim()));
+            const faltantes    = requeridos.filter(i =>
+                !nombresDespensa.has(i.nombre_ingrediente.toLowerCase().trim()));
+
+            const pct = requeridos.length > 0
+                ? (encontrados.length / requeridos.length) * 100 : 100;
+
+            // Bonus si cabe en las calorías disponibles
+            const encajaCal = r.calorias_total && r.calorias_total <= disponibles;
+            const score = pct + (encajaCal ? 20 : 0);
+
+            return { ...r, score, pct, faltantes: faltantes.map(f => f.nombre_ingrediente) };
+        })
+        .sort((a, b) => b.score - a.score);
+
+    if (scored.length === 0) {
+        cont.innerHTML = `<div class="estado-vacio">
+            <div class="estado-vacio-icon">🔍</div>
+            <p>No hay recetas para este tipo de comida.<br>¡Crea más recetas!</p></div>`;
+        return;
+    }
+
+    cont.innerHTML = scored.map(r => {
+        const pct      = r.pct ?? 100;
+        const badge    = pct === 100
+            ? `<span class="badge-encaja">✅ Tienes todo</span>`
+            : pct >= 50
+                ? `<span class="badge-parcial">⚠️ ${Math.round(pct)}% ingredientes</span>`
+                : `<span style="background:#fee2e2;color:#b91c1c;border-radius:8px;
+                               padding:4px 10px;font-size:0.75rem;font-weight:700;
+                               display:inline-block;">❌ Faltan ingredientes</span>`;
+
+        const macrosBadges = `
+            ${r.calorias_total ? `<span class="macro-badge macro-cal">⚡${Math.round(r.calorias_total)} kcal</span>` : ''}
+            ${r.proteinas_g    ? `<span class="macro-badge macro-prot">💪${Math.round(r.proteinas_g)}g prot</span>` : ''}
+            ${r.carbos_g       ? `<span class="macro-badge macro-carb">🍞${Math.round(r.carbos_g)}g carb</span>` : ''}
+            ${r.grasas_g       ? `<span class="macro-badge macro-gras">🥑${Math.round(r.grasas_g)}g grasas</span>` : ''}`;
+
+        const ingList = (r.receta_ingredientes || [])
+            .map(i => i.nombre_ingrediente).join(', ');
+
+        return `<div class="sugerencia-card" onclick="verDetalleReceta('${r.id}')">
+            <div class="sug-header">
+                <div>
+                    <div class="sug-nombre">${r.nombre}</div>
+                    <div style="margin-top:4px;">${badge}</div>
+                </div>
+                <span class="sug-tiempo">⏱️ ${r.tiempo_min} min</span>
+            </div>
+            <div class="sug-macros">${macrosBadges}</div>
+            ${ingList ? `<div class="sug-ingredientes">📋 ${ingList}</div>` : ''}
+            ${r.faltantes?.length > 0
+                ? `<div class="sug-faltantes">❌ Te faltan: ${r.faltantes.join(', ')}</div>`
+                : ''}
+        </div>`;
+    }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DESPENSA
+// ═══════════════════════════════════════════════════════════════
+function renderizarDespensa() {
+    const cont = document.getElementById('contenedorDespensa');
+    let items  = despensa;
+    if (filtroDespensa !== 'Todos') {
+        items = despensa.filter(d => d.categoria === filtroDespensa);
+    }
+    if (items.length === 0) {
+        cont.innerHTML = `<div class="estado-vacio">
+            <div class="estado-vacio-icon">🧺</div>
+            <p>No hay ingredientes en esta categoría.</p></div>`;
+        return;
+    }
+    cont.innerHTML = `<div class="despensa-grid">${items.map(d => `
+        <div class="item-despensa">
+            <div class="item-nombre">${d.nombre}</div>
+            <div class="item-cant">${d.cantidad} ${d.unidad}</div>
+            <div style="font-size:0.7rem;color:var(--gris);">${d.categoria}</div>
+            <div class="item-acciones">
+                <button class="btn-xs btn-editar" onclick="editarDespensa('${d.id}')">✏️</button>
+                <button class="btn-xs btn-borrar" onclick="borrarDespensa('${d.id}')">🗑️</button>
+            </div>
+        </div>`).join('')}</div>`;
+}
+
+function abrirModalDespensa(item = null) {
+    document.getElementById('despensaEditId').value = item?.id || '';
+    document.getElementById('despensaNombre').value = item?.nombre || '';
+    document.getElementById('despensaCantidad').value = item?.cantidad || 1;
+    document.getElementById('despensaUnidad').value = item?.unidad || 'piezas';
+    document.getElementById('despensaCategoria').value = item?.categoria || 'Otros';
+    document.getElementById('despensaCalorias').value = item?.calorias_por_100g || '';
+    document.getElementById('tituloModalDespensa').textContent =
+        item ? 'Editar ingrediente' : 'Agregar ingrediente';
+    document.getElementById('modalDespensa').classList.add('abierto');
+}
+
+function editarDespensa(id) {
+    const item = despensa.find(d => d.id === id);
+    if (item) abrirModalDespensa(item);
+}
+
+async function guardarDespensa() {
+    const uid = await getUserId();
+    if (!uid) return alert('Sesión no válida');
+    const id  = document.getElementById('despensaEditId').value;
+    const datos = {
+        user_id:          uid,
+        nombre:           document.getElementById('despensaNombre').value.trim(),
+        cantidad:         parseFloat(document.getElementById('despensaCantidad').value) || 1,
+        unidad:           document.getElementById('despensaUnidad').value,
+        categoria:        document.getElementById('despensaCategoria').value,
+        calorias_por_100g:parseFloat(document.getElementById('despensaCalorias').value) || null,
+        updated_at:       new Date().toISOString()
+    };
+    if (!datos.nombre) return alert('Escribe el nombre del ingrediente');
+    try {
+        if (id) await db.from('despensa_items').update(datos).eq('id', id);
+        else    await db.from('despensa_items').insert([datos]);
+        cerrarModal('modalDespensa');
+        await cargarDespensa();
+        generarSugerencias();
+    } catch(e) { alert('Error: ' + e.message); }
+}
+
+async function borrarDespensa(id) {
+    if (!confirm('¿Eliminar este ingrediente de la despensa?')) return;
+    await db.from('despensa_items').delete().eq('id', id);
+    await cargarDespensa();
+    generarSugerencias();
+}
+
+function filtrarDespensa(cat, btn) {
+    filtroDespensa = cat;
+    document.querySelectorAll('#tab-despensa .chip').forEach(c => c.classList.remove('activo'));
+    btn.classList.add('activo');
+    renderizarDespensa();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RECETAS
+// ═══════════════════════════════════════════════════════════════
+function renderizarRecetas() {
+    const cont = document.getElementById('contenedorRecetas');
+    if (recetas.length === 0) {
+        cont.innerHTML = `<div class="estado-vacio">
+            <div class="estado-vacio-icon">📖</div>
+            <p>Crea tus primeras recetas para obtener sugerencias.</p></div>`;
+        return;
+    }
+    cont.innerHTML = recetas.map(r => {
+        const ings = (r.receta_ingredientes || []).map(i => i.nombre_ingrediente).join(', ');
+        return `<div class="card" style="cursor:pointer;" onclick="verDetalleReceta('${r.id}')">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+                <strong style="font-size:0.95rem;">${r.nombre}</strong>
+                <span style="font-size:0.72rem;background:var(--gris-claro);padding:3px 8px;
+                             border-radius:20px;color:var(--gris);">${r.tipo_comida}</span>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+                ${r.calorias_total ? `<span class="macro-badge macro-cal">⚡${Math.round(r.calorias_total)}</span>` : ''}
+                ${r.proteinas_g    ? `<span class="macro-badge macro-prot">💪${r.proteinas_g}g</span>` : ''}
+            </div>
+            ${ings ? `<p style="font-size:0.78rem;color:var(--gris);">${ings}</p>` : ''}
+            <div style="display:flex;gap:6px;margin-top:10px;">
+                <button class="btn-xs btn-editar" onclick="event.stopPropagation();editarReceta('${r.id}')">✏️ Editar</button>
+                <button class="btn-xs btn-borrar" onclick="event.stopPropagation();borrarReceta('${r.id}')">🗑️</button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// Filas de ingredientes en el modal
+let ingContador = 0;
+function agregarFilaIngrediente(nombre='', cant='', unidad='piezas') {
+    ingContador++;
+    const id = `ing-${ingContador}`;
+    const lista = document.getElementById('listaIngredientes');
+    const div = document.createElement('div');
+    div.className = 'ing-row';
+    div.id = id;
+    div.innerHTML = `
+        <input type="text"   placeholder="Ingrediente" value="${nombre}" class="ing-nombre" style="flex:2">
+        <input type="number" placeholder="Cant."       value="${cant}"   class="ing-cant"   step="0.5" style="flex:1;min-width:60px">
+        <select class="ing-unidad" style="flex:1;min-width:70px;padding:10px 6px;">
+            <option ${unidad==='piezas'?'selected':''}>piezas</option>
+            <option ${unidad==='g'?'selected':''}>g</option>
+            <option ${unidad==='ml'?'selected':''}>ml</option>
+            <option ${unidad==='tazas'?'selected':''}>tazas</option>
+        </select>
+        <button class="btn-xs btn-borrar" onclick="this.parentElement.remove()">✕</button>`;
+    lista.appendChild(div);
+}
+
+function abrirModalReceta(receta = null) {
+    document.getElementById('recetaEditId').value = receta?.id || '';
+    document.getElementById('recetaNombre').value  = receta?.nombre || '';
+    document.getElementById('recetaTipo').value    = receta?.tipo_comida || 'almuerzo';
+    document.getElementById('recetaTiempo').value  = receta?.tiempo_min || 15;
+    document.getElementById('recetaCal').value     = receta?.calorias_total || '';
+    document.getElementById('recetaProt').value    = receta?.proteinas_g || '';
+    document.getElementById('recetaCarb').value    = receta?.carbos_g || '';
+    document.getElementById('recetaGrasa').value   = receta?.grasas_g || '';
+    document.getElementById('recetaDesc').value    = receta?.descripcion || '';
+
+    const lista = document.getElementById('listaIngredientes');
+    lista.innerHTML = '';
+    ingContador = 0;
+    if (receta?.receta_ingredientes?.length > 0) {
+        receta.receta_ingredientes.forEach(i =>
+            agregarFilaIngrediente(i.nombre_ingrediente, i.cantidad_necesaria, i.unidad));
+    } else {
+        agregarFilaIngrediente();
+    }
+
+    document.getElementById('tituloModalReceta').textContent =
+        receta ? 'Editar receta' : 'Nueva receta';
+    document.getElementById('modalReceta').classList.add('abierto');
+}
+
+function editarReceta(id) {
+    const r = recetas.find(r => r.id === id);
+    if (r) abrirModalReceta(r);
+}
+
+async function guardarReceta() {
+    const uid = await getUserId();
+    if (!uid) return alert('Sesión no válida');
+    const id = document.getElementById('recetaEditId').value;
+
+    const datos = {
+        user_id:         uid,
+        nombre:          document.getElementById('recetaNombre').value.trim(),
+        tipo_comida:     document.getElementById('recetaTipo').value,
+        tiempo_min:      parseInt(document.getElementById('recetaTiempo').value) || 15,
+        calorias_total:  parseFloat(document.getElementById('recetaCal').value) || null,
+        proteinas_g:     parseFloat(document.getElementById('recetaProt').value) || null,
+        carbos_g:        parseFloat(document.getElementById('recetaCarb').value) || null,
+        grasas_g:        parseFloat(document.getElementById('recetaGrasa').value) || null,
+        descripcion:     document.getElementById('recetaDesc').value
+    };
+    if (!datos.nombre) return alert('Escribe el nombre de la receta');
+
+    try {
+        let recetaId = id;
+        if (id) {
+            await db.from('recetas_usuario').update(datos).eq('id', id);
+        } else {
+            const { data: nueva } = await db.from('recetas_usuario').insert([datos]).select().single();
+            recetaId = nueva.id;
+        }
+
+        // Guardar ingredientes
+        await db.from('receta_ingredientes').delete().eq('receta_id', recetaId);
+        const filas = document.querySelectorAll('#listaIngredientes .ing-row');
+        const ingredientes = [];
+        filas.forEach(f => {
+            const nom  = f.querySelector('.ing-nombre').value.trim();
+            const cant = parseFloat(f.querySelector('.ing-cant').value) || 1;
+            const uni  = f.querySelector('.ing-unidad').value;
+            if (nom) ingredientes.push({ receta_id:recetaId, nombre_ingrediente:nom, cantidad_necesaria:cant, unidad:uni });
+        });
+        if (ingredientes.length > 0) await db.from('receta_ingredientes').insert(ingredientes);
+
+        cerrarModal('modalReceta');
+        await cargarRecetas();
+        generarSugerencias();
+    } catch(e) { alert('Error: ' + e.message); }
+}
+
+async function borrarReceta(id) {
+    if (!confirm('¿Eliminar esta receta?')) return;
+    await db.from('recetas_usuario').delete().eq('id', id);
+    await cargarRecetas();
+    generarSugerencias();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DETALLE Y REGISTRO
+// ═══════════════════════════════════════════════════════════════
+function verDetalleReceta(id) {
+    const r = recetas.find(r => r.id === id);
+    if (!r) return;
+    recetaSeleccionada = r;
+
+    document.getElementById('detalleNombre').textContent = r.nombre;
+    const ings = (r.receta_ingredientes || []);
+    const nombresDespensa = new Set(despensa.map(d => d.nombre.toLowerCase().trim()));
+
+    document.getElementById('detalleContenido').innerHTML = `
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+            <span class="macro-badge macro-cal">⚡ ${r.calorias_total || '?'} kcal</span>
+            <span class="macro-badge macro-prot">💪 ${r.proteinas_g || '?'}g prot</span>
+            <span class="macro-badge macro-carb">🍞 ${r.carbos_g || '?'}g carb</span>
+            <span class="macro-badge macro-gras">🥑 ${r.grasas_g || '?'}g grasas</span>
+            <span class="sug-tiempo">⏱️ ${r.tiempo_min} min</span>
+        </div>
+        ${r.descripcion ? `<p style="font-size:0.88rem;color:var(--gris);margin-bottom:12px;line-height:1.6;">${r.descripcion}</p>` : ''}
+        ${ings.length > 0 ? `
+        <p style="font-weight:700;font-size:0.85rem;margin-bottom:8px;">Ingredientes:</p>
+        <ul style="list-style:none;padding:0;display:flex;flex-direction:column;gap:6px;">
+            ${ings.map(i => {
+                const ok = nombresDespensa.has(i.nombre_ingrediente.toLowerCase().trim());
+                return `<li style="display:flex;align-items:center;gap:8px;font-size:0.85rem;">
+                    <span>${ok ? '✅' : '❌'}</span>
+                    <span style="flex:1;">${i.nombre_ingrediente}</span>
+                    <span style="color:var(--gris);">${i.cantidad_necesaria} ${i.unidad}</span>
+                </li>`;
+            }).join('')}
+        </ul>` : ''}`;
+    document.getElementById('modalDetalle').classList.add('abierto');
+}
+
+async function registrarComoComida() {
+    if (!recetaSeleccionada) return;
+    const uid = await getUserId();
+    if (!uid) return alert('Sesión no válida');
+    try {
+        await db.from('historial_recetas').insert([{
+            user_id:   uid,
+            receta_id: recetaSeleccionada.id,
+            fecha:     new Date().toISOString().split('T')[0],
+            tipo_comida: recetaSeleccionada.tipo_comida,
+            porciones:   1
+        }]);
+        cerrarModal('modalDetalle');
+        await cargarHistorialHoy();
+        actualizarProgresoCalórico();
+        generarSugerencias();
+        alert(`✅ "${recetaSeleccionada.nombre}" registrada como comida de hoy.`);
+    } catch(e) { alert('Error: ' + e.message); }
+}
+
+function renderizarHistorial() {
+    const cont = document.getElementById('contenedorHistorial');
+    if (historialHoy.length === 0) {
+        cont.innerHTML = `<p style="color:var(--gris);font-size:0.88rem;">No has registrado comidas hoy.</p>`;
+        return;
+    }
+    const total = historialHoy.reduce((s,h) => s + (h.recetas_usuario?.calorias_total||0), 0);
+    cont.innerHTML = `
+        ${historialHoy.map(h => `
+        <div style="display:flex;justify-content:space-between;padding:10px 0;
+                    border-bottom:1px solid #f3f4f6;font-size:0.88rem;">
+            <span>${h.recetas_usuario?.nombre || 'Comida'}</span>
+            <span style="color:var(--verde);font-weight:700;">
+                ${h.recetas_usuario?.calorias_total || '?'} kcal</span>
+        </div>`).join('')}
+        <div style="display:flex;justify-content:space-between;padding-top:10px;
+                    font-weight:800;font-size:0.95rem;">
+            <span>Total</span>
+            <span style="color:var(--verde);">${Math.round(total)} kcal</span>
+        </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════
+function cambiarTab(nombre) {
+    document.querySelectorAll('.pagina').forEach(p => p.classList.remove('activa'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('activo'));
+    document.getElementById(`tab-${nombre}`).classList.add('activa');
+    const idx = ['sugerencias','despensa','recetas','historial'].indexOf(nombre);
+    document.querySelectorAll('.tab')[idx]?.classList.add('activo');
+}
+
+function cerrarModal(id) {
+    document.getElementById(id).classList.remove('abierto');
+}
+
+function filtrarComida(tipo, btn) {
+    filtroComiida = tipo;
+    document.querySelectorAll('#tab-sugerencias .chip').forEach(c => c.classList.remove('activo'));
+    btn.classList.add('activo');
+    generarSugerencias();
+}
+
+// Cerrar modales tocando overlay
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', e => {
+        if (e.target === overlay) overlay.classList.remove('abierto');
+    });
+});
+</script>
+</body>
+</html>
