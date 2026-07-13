@@ -212,8 +212,8 @@ async function cargarLocalesDesdeDB() {
         galeria: galeriaMenu,
 
         whatsapp: r.whatsapp || r.telefono || "", 
-        instagram: r.instagram_url || "", 
-        facebook: r.facebook_url || "",
+        mesas_libres: r.mesas_disponibles ?? r.num_mesas, 
+        mesas_total: r.mesas_totales ?? r.num_mesas ?? 10,
         
         rating: promedio,
         votos: totalVotos
@@ -284,7 +284,7 @@ async function verDetalle(nombre) {
   
   idRestauranteActual = res.id; 
 
-  // Verificar favoritos (Solo si hay usuarioId)
+ // Verificar favoritos (Solo si hay usuarioId)
   let esFav = false;
   if (usuarioId) {
       const { data } = await db.from('favoritos').select('*').match({ usuario_id: usuarioId, restaurante_id: res.id });
@@ -301,7 +301,7 @@ async function verDetalle(nombre) {
       if(calif) miPuntuacion = calif.puntuacion;
   }
 
-  // Renderizado inicial (Cabeceras e imágenes principales)
+  // Renderizado
   document.getElementById('detalle-nombre').textContent = res.nombre;
   document.getElementById('detalle-titulo-header').textContent = res.nombre;
   
@@ -314,7 +314,7 @@ async function verDetalle(nombre) {
 
   const info = document.getElementById('detalle-info-box');
 
-  // Construcción del Carrusel de Menú
+  // Carrusel de Menú
   let menuHTML = '';
   if (res.galeria && res.galeria.length > 0) {
       const itemsGaleria = res.galeria.map(imgUrl => `
@@ -338,99 +338,93 @@ async function verDetalle(nombre) {
       `;
   }
 
-  // Construcción de los botones de Redes Sociales
-let redesHTML = '';
-  // Verificamos si al menos una existe
-  if (res.instagram || res.facebook) {
-      let botones = '';
-      if (res.instagram) botones += `<a href="${res.instagram}" target="_blank" style="padding: 10px; background: #e1306c; color: white; border-radius: 10px; text-decoration:none;">📸 Instagram</a>`;
-      if (res.facebook) botones += `<a href="${res.facebook}" target="_blank" style="padding: 10px; background: #1877f2; color: white; border-radius: 10px; text-decoration:none;">🔵 Facebook</a>`;
-      
-      redesHTML = `<div style="display:flex; gap:10px; margin: 20px 0; justify-content:center;">${botones}</div>`;
-  }
+  // 1. Cálculos previos (importante ponerlos antes del HTML)
+const mesasOcupadas = res.mesas_total - res.mesas_libres;
+const porcentajeOcupado = (mesasOcupadas / res.mesas_total) * 100;
 
-  // 3. Renderizado final seguro
-  info.innerHTML = `
-    <div class="info-box-neumorph">${res.direccion || 'Sin dirección'}</div>
-    
-    ${redesHTML} 
+// 2. Insertar el contenido al contenedor info
+info.innerHTML = `
+    <div class="info-box-neumorph" style="margin-bottom: 20px;">
+        <p>📍 ${res.direccion || 'Sin dirección'}</p>
+        <p>🕒 ${res.horario}</p>
+    </div>
 
-    <h3 style="margin-top:20px;">🗺️ Distribución</h3>
-    <div id="contenedorPlanoCliente" style="height:250px; background:#f9f9f9;">
+    <div class="mesa-status-card" style="display: flex; align-items: center; justify-content: space-around; padding: 15px; text-align: center;">
+        <div>
+            <span style="font-size: 20px;">🟢</span>
+            <h3 style="margin: 5px 0 0;">${res.mesas_libres}</h3>
+            <p style="font-size: 10px; color: #666; text-transform: uppercase;">Libres</p>
+        </div>
+        <div style="width: 1px; height: 30px; background: #ddd;"></div>
+        <div>
+            <span style="font-size: 20px;">🔴</span>
+            <h3 style="margin: 5px 0 0;">${mesasOcupadas}</h3>
+            <p style="font-size: 10px; color: #666; text-transform: uppercase;">Ocupadas</p>
+        </div>
+        <div style="width: 1px; height: 30px; background: #ddd;"></div>
+        <div>
+            <span style="font-size: 20px;">📊</span>
+            <h3 style="margin: 5px 0 0;">${res.mesas_total}</h3>
+            <p style="font-size: 10px; color: #666; text-transform: uppercase;">Total</p>
+        </div>
+    </div>
+
+    <div style="width: 100%; height: 6px; background: #eee; border-radius: 10px; margin: 15px 0 25px; overflow: hidden;">
+        <div style="width: ${porcentajeOcupado}%; height: 100%; background: ${porcentajeOcupado > 80 ? '#F44336' : '#000'}; transition: width 0.5s;"></div>
+    </div>
+
+    <h3 style="margin: 20px 0 10px; font-weight: 800; font-size: 16px;">🗺️ Distribución del Lugar</h3>
+    <div id="contenedorPlanoCliente" style="width: 100%; height: 250px; background: #f9f9f9; border-radius: 20px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #eaeaea; margin-bottom: 25px; overflow: hidden; position: relative;">
         <div id="canvasPlanoCliente"></div>
     </div>
+
+    ${menuHTML}
+
+    <div style="text-align: center; margin-bottom: 25px; background: #fff; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
+        <p style="margin: 0 0 10px; font-weight: bold; font-size: 15px; color: #333;">Califica tu experiencia</p>
+        <div id="stars-container">
+            ${[1,2,3,4,5].map(i => `
+                <span class="star" onclick="calificar(${i})" 
+                      style="font-size: 36px; cursor: pointer; transition: 0.2s; color: ${i <= miPuntuacion ? '#FFD700' : '#ddd'}; transform: ${i <= miPuntuacion ? 'scale(1.1)' : 'scale(1)'}">★</span>
+            `).join('')}
+        </div>
+        <small style="color:#999; display:block; margin-top:5px;">Toca una estrella para guardar</small>
+    </div>
+
+<div style="display: flex; gap: 8px; margin-top: 20px; align-items: stretch;">
+      
+      <button id="btn-fav-action" onclick="toggleFav('${res.id}')"
+        style="flex: 1; padding: 12px 5px; border-radius: 12px; border: 1px solid #000; background: ${esFav ? '#000':'#fff'}; color: ${esFav ? '#fff':'#000'}; font-weight: 600; font-size: 12px; transition: all 0.3s; cursor: pointer;">
+        ${esFav ? '⭐ Guardado' : '☆ Guardar'}
+      </button>
+            
+<div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
     
-    `;
-  
-
-  // Cálculos para la barra de ocupación
-  const mesasOcupadas = res.mesas_total - res.mesas_libres;
-  const porcentajeOcupado = (mesasOcupadas / res.mesas_total) * 100;
-
-  // ENSAMBLAJE FINAL DEL HTML (Sin duplicados)
-  info.innerHTML = `
-      <div class="info-box-neumorph" style="margin-bottom: 20px;">
-          <p>📍 ${res.direccion || 'Sin dirección'}</p>
-          <p>🕒 ${res.horario}</p>
-      </div>
-
-      <div style="width: 100%; height: 6px; background: #eee; border-radius: 10px; margin: 15px 0 25px; overflow: hidden;">
-          <div style="width: ${porcentajeOcupado}%; height: 100%; background: ${porcentajeOcupado > 80 ? '#F44336' : '#000'}; transition: width 0.5s;"></div>
-      </div>
-
-      <h3 style="margin: 20px 0 10px; font-weight: 800; font-size: 16px;">🗺️ Distribución del Lugar</h3>
-      <div id="contenedorPlanoCliente" style="width: 100%; height: 250px; background: #f9f9f9; border-radius: 20px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #eaeaea; margin-bottom: 25px; overflow: hidden; position: relative;">
-          <div id="canvasPlanoCliente"></div>
-      </div>
-
-      ${redesHTML}
-
-      ${menuHTML}
-
-      <div style="text-align: center; margin-bottom: 25px; background: #fff; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
-          <p style="margin: 0 0 10px; font-weight: bold; font-size: 15px; color: #333;">Califica tu experiencia</p>
-          <div id="stars-container">
-              ${[1,2,3,4,5].map(i => `
-                  <span class="star" onclick="calificar(${i})" 
-                        style="font-size: 36px; cursor: pointer; transition: 0.2s; color: ${i <= miPuntuacion ? '#FFD700' : '#ddd'}; transform: ${i <= miPuntuacion ? 'scale(1.1)' : 'scale(1)'}">★</span>
-              `).join('')}
-          </div>
-          <small style="color:#999; display:block; margin-top:5px;">Toca una estrella para guardar</small>
-      </div>
-
-      <div style="display: flex; gap: 8px; margin-top: 20px; align-items: stretch;">
-        <button id="btn-fav-action" onclick="toggleFav('${res.id}')"
-          style="flex: 1; padding: 12px 5px; border-radius: 12px; border: 1px solid #000; background: ${esFav ? '#000':'#fff'}; color: ${esFav ? '#fff':'#000'}; font-weight: 600; font-size: 12px; transition: all 0.3s; cursor: pointer;">
-          ${esFav ? '⭐ Guardado' : '☆ Guardar'}
+    <div style="display: flex; gap: 10px;">
+        <button onclick="window.location.href='menu_recoger.html?rid=${res.id}'"
+            style="flex: 2; padding: 12px; border-radius: 12px; background: #10ad93; color: white; font-weight: bold; border: none; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; box-shadow: 0 4px 6px rgba(16, 173, 147, 0.2);">
+            🛍️ Pedir
         </button>
-      </div>
-              
-      <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-          <div style="display: flex; gap: 10px;">
-              <button onclick="window.location.href='menu_recoger.html?rid=${res.id}'"
-                  style="flex: 2; padding: 12px; border-radius: 12px; background: #10ad93; color: white; font-weight: bold; border: none; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; box-shadow: 0 4px 6px rgba(16, 173, 147, 0.2);">
-                  🛍️ Pedir
-              </button>
 
-              <button onclick="trazarRuta(${res.lat}, ${res.lng})"
-                  style="flex: 1; padding: 12px; border-radius: 12px; background: #1a1a1a; color: white; font-weight: bold; border: none; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px;">
-                  📍 Ir
-              </button>
-          </div>
+        <button onclick="trazarRuta(${res.lat}, ${res.lng})"
+            style="flex: 1; padding: 12px; border-radius: 12px; background: #1a1a1a; color: white; font-weight: bold; border: none; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px;">
+            📍 Ir
+        </button>
+    </div>
 
-          <button class="btn-ver-mas" onclick="abrirWhatsApp('${res.whatsapp}', '${res.nombre}')" 
-              style="width: 100%; padding: 12px; background: #25D366; border: none; color: white; border-radius: 12px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; box-shadow: 0 4px 6px rgba(37, 211, 102, 0.2);">
-              💬 Chatear por WhatsApp
-          </button>
-      </div>
-  `;
+    <button class="btn-ver-mas" onclick="abrirWhatsApp('${res.whatsapp}', '${res.nombre}')" 
+        style="width: 100%; padding: 12px; background: #25D366; border: none; color: white; border-radius: 12px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; box-shadow: 0 4px 6px rgba(37, 211, 102, 0.2);">
+        💬 Chatear por WhatsApp
+    </button>
+</div>
+`;
 
   cambiarVista('detalle');
   
-  setTimeout(() => {
-     cargarPlanoEsteticoCliente(res.id);
-  }, 300);
-}
+setTimeout(() => {
+   cargarPlanoEsteticoCliente(res.id);
+}, 300);}
+
 // --- 9. RENDERIZAR PLANO ESTÉTICO (CLIENTES) ---
 // --- 9. RENDERIZAR PLANO ESTÉTICO (CLIENTES) ---
 async function cargarPlanoEsteticoCliente(restauranteId) {
