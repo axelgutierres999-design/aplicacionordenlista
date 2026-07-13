@@ -212,8 +212,8 @@ async function cargarLocalesDesdeDB() {
         galeria: galeriaMenu,
 
         whatsapp: r.whatsapp || r.telefono || "", 
-        mesas_libres: r.mesas_disponibles ?? r.num_mesas, 
-        mesas_total: r.mesas_totales ?? r.num_mesas ?? 10,
+        instagram: r.instagram_url || "", 
+        facebook: r.facebook_url || "",
         
         rating: promedio,
         votos: totalVotos
@@ -337,6 +337,28 @@ async function verDetalle(nombre) {
         <img src="${res.menu_img}" style="width:100%; border-radius:20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); margin-bottom: 20px;">
       `;
   }
+     let redesHTML = '';
+   if (res.instagram || res.facebook) {
+     let botonIG = res.instagram ? `
+         <a href="${res.instagram}" target="_blank" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); color: white; text-decoration: none; border-radius: 12px; font-weight: bold; font-size: 13px; box-shadow: 0 4px 10px rgba(220, 39, 67, 0.2);">
+            📸 Instagram
+        </a>` : '';
+        
+      let botonFB = res.facebook ? `
+        <a href="${res.facebook}" target="_blank" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; background: #1877F2; color: white; text-decoration: none; border-radius: 12px; font-weight: bold; font-size: 13px; box-shadow: 0 4px 10px rgba(24, 119, 242, 0.2);">
+            🔵 Facebook
+        </a>` : '';
+
+      redesHTML = `
+        <div class="social-networks-card" style="background: #fff; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 25px; text-align: center;">
+            <h3 style="margin: 0 0 15px 0; font-weight: 800; font-size: 15px; color: #333; display: flex; align-items: center; justify-content: center; gap: 6px;">📱 Conéctate con Nosotros</h3>
+            <div style="display: flex; gap: 10px;">
+                ${botonIG}
+                ${botonFB}
+            </div>
+        </div>
+    `;
+}
 
   // 1. Cálculos previos (importante ponerlos antes del HTML)
 const mesasOcupadas = res.mesas_total - res.mesas_libres;
@@ -368,6 +390,22 @@ info.innerHTML = `
             <p style="font-size: 10px; color: #666; text-transform: uppercase;">Total</p>
         </div>
     </div>
+
+    <div style="width: 100%; height: 6px; background: #eee; border-radius: 10px; margin: 15px 0 25px; overflow: hidden;">
+        </div>
+
+    <h3 style="margin: 20px 0 10px; font-weight: 800; font-size: 16px;">🗺️ Distribución del Lugar</h3>
+    <div id="contenedorPlanoCliente" style="width: 100%; height: 250px; background: #f9f9f9; border-radius: 20px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #eaeaea; margin-bottom: 25px; overflow: hidden; position: relative;">
+        <div id="canvasPlanoCliente"></div>
+    </div>
+
+    ${redesHTML}
+
+    ${menuHTML}
+
+    <div style="text-align: center; margin-bottom: 25px; background: #fff; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
+        </div>
+    
 
     <div style="width: 100%; height: 6px; background: #eee; border-radius: 10px; margin: 15px 0 25px; overflow: hidden;">
         <div style="width: ${porcentajeOcupado}%; height: 100%; background: ${porcentajeOcupado > 80 ? '#F44336' : '#000'}; transition: width 0.5s;"></div>
