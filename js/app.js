@@ -278,7 +278,6 @@ function mostrarPreview(loc) {
 }
 
 // --- 5. VISTA DE DETALLE ---
-// --- 5. VISTA DE DETALLE ---
 async function verDetalle(nombre) {
   const res = locales.find(l => l.nombre === nombre);
   if (!res) return;
@@ -340,28 +339,29 @@ async function verDetalle(nombre) {
   }
 
   // Construcción de los botones de Redes Sociales
-  let redesHTML = '';
+let redesHTML = '';
+  // Verificamos si al menos una existe
   if (res.instagram || res.facebook) {
-      let botonIG = res.instagram ? `
-          <a href="${res.instagram}" target="_blank" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); color: white; text-decoration: none; border-radius: 12px; font-weight: bold; font-size: 13px; box-shadow: 0 4px 10px rgba(220, 39, 67, 0.2);">
-             📸 Instagram
-         </a>` : '';
-         
-       let botonFB = res.facebook ? `
-         <a href="${res.facebook}" target="_blank" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; background: #1877F2; color: white; text-decoration: none; border-radius: 12px; font-weight: bold; font-size: 13px; box-shadow: 0 4px 10px rgba(24, 119, 242, 0.2);">
-             🔵 Facebook
-         </a>` : '';
-
-       redesHTML = `
-         <div class="social-networks-card" style="background: #fff; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 25px; text-align: center;">
-             <h3 style="margin: 0 0 15px 0; font-weight: 800; font-size: 15px; color: #333; display: flex; align-items: center; justify-content: center; gap: 6px;">📱 Conéctate con Nosotros</h3>
-             <div style="display: flex; gap: 10px;">
-                 ${botonIG}
-                 ${botonFB}
-             </div>
-         </div>
-     `;
+      let botones = '';
+      if (res.instagram) botones += `<a href="${res.instagram}" target="_blank" style="padding: 10px; background: #e1306c; color: white; border-radius: 10px; text-decoration:none;">📸 Instagram</a>`;
+      if (res.facebook) botones += `<a href="${res.facebook}" target="_blank" style="padding: 10px; background: #1877f2; color: white; border-radius: 10px; text-decoration:none;">🔵 Facebook</a>`;
+      
+      redesHTML = `<div style="display:flex; gap:10px; margin: 20px 0; justify-content:center;">${botones}</div>`;
   }
+
+  // 3. Renderizado final seguro
+  info.innerHTML = `
+    <div class="info-box-neumorph">${res.direccion || 'Sin dirección'}</div>
+    
+    ${redesHTML} 
+
+    <h3 style="margin-top:20px;">🗺️ Distribución</h3>
+    <div id="contenedorPlanoCliente" style="height:250px; background:#f9f9f9;">
+        <div id="canvasPlanoCliente"></div>
+    </div>
+    
+    `;
+  
 
   // Cálculos para la barra de ocupación
   const mesasOcupadas = res.mesas_total - res.mesas_libres;
