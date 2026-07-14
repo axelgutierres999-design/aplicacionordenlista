@@ -345,8 +345,8 @@ async function verDetalle(nombre) {
 
       redesHTML = `
           <div style="background:#fff; border-radius:20px; padding:18px; margin-bottom:20px; box-shadow:0 10px 30px rgba(0,0,0,0.05);">
-              <h3 style="margin:0 0 12px; font-weight:800; font-size:16px;">📲 Síguenos en Nuestras Redes</h3>
-              ${tieneInstagram ? `<p style="margin:0 0 10px; font-weight:600; color:#333;">📷 ${handleInstagram}</p>` : ''}
+              <h3 style="margin:0 0 12px; font-weight:800; font-size:16px;">Nuestras Redes</h3>
+              ${tieneInstagram ? `<p style="margin:0 0 10px; font-weight:600; color:#333;"> ${handleInstagram}</p>` : ''}
               ${fotosRedes.length > 0 ? `
                   <div style="display:flex; overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; padding-bottom:5px;">
                       ${fotosRedesHTML}
