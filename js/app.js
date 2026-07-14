@@ -324,47 +324,46 @@ async function verDetalle(nombre) {
   const info = document.getElementById('detalle-info-box');
 
   // 📲 Tarjeta de Redes Sociales
-  let redesHTML = '';
-  const tieneInstagram = res.instagram && res.instagram.trim() !== '';
-  const tieneFacebook = res.facebook_url && res.facebook_url.trim() !== '';
-  const fotosRedes = Array.isArray(res.galeria_redes) ? res.galeria_redes : [];
+let redesHTML = '';
+const tieneInstagram = res.instagram && res.instagram.trim() !== '';
+const tieneFacebook = res.facebook_url && res.facebook_url.trim() !== '';
+const fotosRedes = Array.isArray(res.galeria_redes) ? res.galeria_redes : [];
 
-  if (tieneInstagram || tieneFacebook || fotosRedes.length > 0) {
-      const linkInstagram = tieneInstagram
-          ? (res.instagram.startsWith('http') ? res.instagram : `https://instagram.com/${res.instagram.replace('@','').trim()}`)
-          : null;
-      const handleInstagram = tieneInstagram
-          ? (res.instagram.startsWith('http') ? res.instagram : `@${res.instagram.replace('@','').trim()}`)
-          : '';
+if (tieneInstagram || tieneFacebook || fotosRedes.length > 0) {
+    // Solo armamos el enlace para el botón
+    const linkInstagram = tieneInstagram
+        ? (res.instagram.startsWith('http') ? res.instagram : `https://instagram.com/${res.instagram.replace('@','').trim()}`)
+        : null;
 
-      const fotosRedesHTML = fotosRedes.map(url => `
-          <div style="flex:0 0 auto; width:110px; height:110px; scroll-snap-align:center; margin-right:10px; border-radius:12px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.1);">
-              <img src="${url}" style="width:100%; height:100%; object-fit:cover;">
-          </div>
-      `).join('');
+    const fotosRedesHTML = fotosRedes.map(url => `
+        <div style="flex:0 0 auto; width:110px; height:110px; scroll-snap-align:center; margin-right:10px; border-radius:12px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.1);">
+            <img src="${url}" style="width:100%; height:100%; object-fit:cover;">
+        </div>
+    `).join('');
 
-      redesHTML = `
-          <div style="background:#fff; border-radius:20px; padding:18px; margin-bottom:20px; box-shadow:0 10px 30px rgba(0,0,0,0.05);">
-              <h3 style="margin:0 0 12px; font-weight:800; font-size:16px;">Nuestras Redes</h3>
-              ${tieneInstagram ? `<p style="margin:0 0 10px; font-weight:600; color:#333;"> ${handleInstagram}</p>` : ''}
-              ${fotosRedes.length > 0 ? `
-                  <div style="display:flex; overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; padding-bottom:5px;">
-                      ${fotosRedesHTML}
-                  </div>
-              ` : ''}
-              <div style="display:flex; gap:8px; margin-top:12px;">
-                  ${tieneInstagram ? `
-                      <button onclick="window.open('${linkInstagram}','_blank')" style="flex:1; padding:12px; border:none; border-radius:12px; font-weight:bold; color:#fff; cursor:pointer; background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);">
-                          Ver Perfil Instagram
-                      </button>` : ''}
-                  ${tieneFacebook ? `
-                      <button onclick="window.open('${res.facebook_url}','_blank')" style="flex:1; padding:12px; border:none; border-radius:12px; font-weight:bold; color:#fff; cursor:pointer; background:#1877F2;">
-                          Ver Facebook
-                      </button>` : ''}
-              </div>
-          </div>
-      `;
-  }
+    redesHTML = `
+        <div style="background:#fff; border-radius:20px; padding:18px; margin-bottom:20px; box-shadow:0 10px 30px rgba(0,0,0,0.05);">
+            <h3 style="margin:0 0 12px; font-weight:800; font-size:16px;">Síguenos en Nuestras Redes</h3>
+            
+            ${fotosRedes.length > 0 ? `
+                <div style="display:flex; overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; padding-bottom:5px;">
+                    ${fotosRedesHTML}
+                </div>
+            ` : ''}
+            
+            <div style="display:flex; gap:8px; margin-top:12px;">
+                ${tieneInstagram ? `
+                    <button onclick="window.open('${linkInstagram}','_blank')" style="flex:1; padding:12px; border:none; border-radius:12px; font-weight:bold; color:#fff; cursor:pointer; background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);">
+                        Ver Instagram
+                    </button>` : ''}
+                ${tieneFacebook ? `
+                    <button onclick="window.open('${res.facebook_url}','_blank')" style="flex:1; padding:12px; border:none; border-radius:12px; font-weight:bold; color:#fff; cursor:pointer; background:#1877F2;">
+                        Ver Facebook
+                    </button>` : ''}
+            </div>
+        </div>
+    `;
+}
 
   // Carrusel de Menú
   let menuHTML = '';
