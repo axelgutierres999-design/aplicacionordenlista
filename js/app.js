@@ -215,13 +215,20 @@ async function cargarLocalesDesdeDB() {
         mesas_libres: r.mesas_disponibles ?? r.num_mesas, 
         mesas_total: r.mesas_totales ?? r.num_mesas ?? 10,
 
-        // 📲 NUEVO: Redes sociales
+       // 📲 Redes sociales existentes en tu código
         instagram: r.instagram || '',
         facebook_url: r.facebook_url || '',
         galeria_redes: Array.isArray(r.galeria_redes) 
             ? r.galeria_redes 
             : (typeof r.galeria_redes === 'string' 
                 ? (() => { try { return JSON.parse(r.galeria_redes); } catch(e) { return []; } })() 
+                : []),
+        
+        // 🆕 PASO 1: AGREGAR ESTA LÍNEA PARA LOS 3 LINKS DE INSTAGRAM
+        posts_instagram: Array.isArray(r.posts_instagram) 
+            ? r.posts_instagram 
+            : (typeof r.posts_instagram === 'string' 
+                ? (() => { try { return JSON.parse(r.posts_instagram); } catch(e) { return []; } })() 
                 : []),
         
         rating: promedio,
@@ -324,23 +331,54 @@ async function verDetalle(nombre) {
   const info = document.getElementById('detalle-info-box');
 
   // 📲 Tarjeta de Redes Sociales
+// 📲 PASO 2: Tarjeta de Redes Sociales con Carrusel de Publicaciones Reales
 let redesHTML = '';
 const tieneInstagram = res.instagram && res.instagram.trim() !== '';
 const tieneFacebook = res.facebook_url && res.facebook_url.trim() !== '';
 const fotosRedes = Array.isArray(res.galeria_redes) ? res.galeria_redes : [];
+// Capturamos el nuevo arreglo de publicaciones de Instagram mapeado en el Paso 1
+const postsInstagram = Array.isArray(res.posts_instagram) ? res.posts_instagram : [];
 
-if (tieneInstagram || tieneFacebook || fotosRedes.length > 0) {
-    // Solo armamos el enlace para el botón
+if (tieneInstagram || tieneFacebook || fotosRedes.length > 0 || postsInstagram.length > 0) {
+    
     const linkInstagram = tieneInstagram
         ? (res.instagram.startsWith('http') ? res.instagram : `https://instagram.com/${res.instagram.replace('@','').trim()}`)
         : null;
 
+    // Galería estática previa (si existe)
     const fotosRedesHTML = fotosRedes.map(url => `
         <div style="flex:0 0 auto; width:110px; height:110px; scroll-snap-align:center; margin-right:10px; border-radius:12px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.1);">
             <img src="${url}" style="width:100%; height:100%; object-fit:cover;">
         </div>
     `).join('');
 
+    // Generación dinámica de las 3 publicaciones interactivas
+    let carruselPublicacionesHTML = '';
+    if (postsInstagram.length > 0) {
+        const iframesHTML = postsInstagram.map(link => {
+            // Limpieza de parámetros de rastreo de URL (?utm_source=...)
+            let linkLimpio = link.split('?')[0]; 
+            if (!linkLimpio.endsWith('/')) linkLimpio += '/';
+            const urlEmbed = linkLimpio + 'embed';
+
+            return `
+                <div style="flex: 0 0 auto; width: 290px; scroll-snap-align: center; margin-right: 15px;">
+                    <iframe src="${urlEmbed}" width="100%" height="390" frameborder="0" scrolling="no" allowtransparency="true" style="border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); background: white;"></iframe>
+                </div>
+            `;
+        }).join('');
+
+        carruselPublicacionesHTML = `
+            <div style="margin-top: 20px;">
+                <h4 style="margin: 0 0 10px; font-weight: 800; font-size: 14px; color: #333;">Publicaciones Destacadas</h4>
+                <div style="display: flex; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; padding-bottom: 10px;">
+                    ${iframesHTML}
+                </div>
+            </div>
+        `;
+    }
+
+    // Estructura final de la sección de redes
     redesHTML = `
         <div style="background:#fff; border-radius:20px; padding:18px; margin-bottom:20px; box-shadow:0 10px 30px rgba(0,0,0,0.05);">
             <h3 style="margin:0 0 12px; font-weight:800; font-size:16px;">Síguenos en Nuestras Redes</h3>
@@ -361,9 +399,11 @@ if (tieneInstagram || tieneFacebook || fotosRedes.length > 0) {
                         Ver Facebook
                     </button>` : ''}
             </div>
+
+            ${carruselPublicacionesHTML}
         </div>
     `;
-}
+}    
 
   // Carrusel de Menú
   let menuHTML = '';
