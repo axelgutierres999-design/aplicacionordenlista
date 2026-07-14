@@ -352,27 +352,31 @@ if (tieneInstagram || tieneFacebook || fotosRedes.length > 0 || postsInstagram.l
         </div>
     `).join('');
 
-    // Generación dinámica de las 3 publicaciones interactivas
+     // Generación dinámica de las 3 publicaciones interactivas (método oficial, auto-ajustable)
     let carruselPublicacionesHTML = '';
     if (postsInstagram.length > 0) {
-        const iframesHTML = postsInstagram.map(link => {
+        const bloquesHTML = postsInstagram.map(link => {
             // Limpieza de parámetros de rastreo de URL (?utm_source=...)
             let linkLimpio = link.split('?')[0]; 
             if (!linkLimpio.endsWith('/')) linkLimpio += '/';
-            const urlEmbed = linkLimpio + 'embed';
 
             return `
-                <div style="flex: 0 0 auto; width: 290px; scroll-snap-align: center; margin-right: 15px;">
-                    <iframe src="${urlEmbed}" width="100%" height="390" frameborder="0" scrolling="no" allowtransparency="true" style="border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); background: white;"></iframe>
+                <div style="flex: 0 0 auto; width: 328px; scroll-snap-align: center; margin-right: 16px;">
+                    <blockquote class="instagram-media" data-instgrm-permalink="${linkLimpio}" data-instgrm-version="14"
+                        style="background:#FFF; border-radius:14px; border:1px solid #e6e6e6; margin:0; max-width:328px; min-width:328px; box-shadow:0 6px 16px rgba(0,0,0,0.08); overflow:hidden;">
+                        <div style="padding:16px;">
+                            <a href="${linkLimpio}" target="_blank" rel="noopener" style="text-decoration:none; color:#000;">Ver esta publicación en Instagram</a>
+                        </div>
+                    </blockquote>
                 </div>
             `;
         }).join('');
 
         carruselPublicacionesHTML = `
-            <div style="margin-top: 20px;">
-                <h4 style="margin: 0 0 10px; font-weight: 800; font-size: 14px; color: #333;">Publicaciones Destacadas</h4>
-                <div style="display: flex; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; padding-bottom: 10px;">
-                    ${iframesHTML}
+            <div style="margin-top: 22px;">
+                <h4 style="margin: 0 0 12px; font-weight: 800; font-size: 14px; color: #333;">Publicaciones Destacadas</h4>
+                <div style="display: flex; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; padding: 4px 4px 16px 4px; margin: 0 -4px;">
+                    ${bloquesHTML}
                 </div>
             </div>
         `;
@@ -515,7 +519,30 @@ ${redesHTML}
   
 setTimeout(() => {
    cargarPlanoEsteticoCliente(res.id);
+   if (postsInstagram.length > 0) {
+       cargarEmbedsInstagram();
+   }
 }, 300);}
+
+// --- 📲 PROCESAR Y REDIMENSIONAR EMBEDS DE INSTAGRAM (método oficial) ---
+function cargarEmbedsInstagram() {
+    // Si el script ya está cargado, solo le pedimos que reprocese los nuevos bloques
+    if (window.instgrm && window.instgrm.Embeds) {
+        window.instgrm.Embeds.process();
+        return;
+    }
+    // Si ya se está cargando el script, no lo dupliques
+    if (document.getElementById('ig-embed-script')) return;
+
+    const script = document.createElement('script');
+    script.id = 'ig-embed-script';
+    script.async = true;
+    script.src = 'https://www.instagram.com/embed.js';
+    script.onload = () => {
+        if (window.instgrm && window.instgrm.Embeds) window.instgrm.Embeds.process();
+    };
+    document.body.appendChild(script);
+}
 
 // --- 9. RENDERIZAR PLANO ESTÉTICO (CLIENTES) ---
 // --- 9. RENDERIZAR PLANO ESTÉTICO (CLIENTES) ---
