@@ -6,46 +6,58 @@
   <title>¿Qué Como Hoy?</title>
   <style>
     :root {
-      --verde:#10b981; --verde-oscuro:#059669; --rojo:#ef4444;
-      --amarillo:#f59e0b; --azul:#3b82f6; --morado:#8b5cf6;
-      --fondo:#f0fdf4; --blanco:#ffffff;
-      --gris-claro:#f3f4f6; --gris:#6b7280; --texto:#1f2937;
-      --radio:14px; --sombra:0 4px 20px rgba(0,0,0,0.07);
+      --bg-color:#eef0f3; --shadow-light:#ffffff; --shadow-dark:#caced1;
+      --texto:#1f2937; --gris:#6b7280; --gris-claro:#f3f4f6;
+      --acento:#10ad93; --rojo:#ff4757; --amarillo:#f59e0b;
+      --radio:20px; --radio-sm:14px;
     }
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'Inter',system-ui,sans-serif;background:var(--fondo);color:var(--texto);min-height:100vh}
+    body{font-family:system-ui,sans-serif;background:var(--bg-color);color:var(--texto);min-height:100vh}
 
     /* ── HEADER ── */
     .app-header{
-      background:linear-gradient(135deg,var(--verde),var(--verde-oscuro));
-      color:white;padding:20px 16px 16px;
+      background:var(--bg-color);
+      color:var(--texto);
+      padding:24px 20px 18px;
+      display:flex; align-items:center; gap:14px;
+      box-shadow:0 6px 16px rgba(0,0,0,0.04);
     }
-    .app-header h1{font-size:1.5rem;font-weight:900;margin-bottom:2px}
-    .app-header p{font-size:0.85rem;opacity:0.85}
+    .app-header .btn-back{
+      background:var(--bg-color); border:none; border-radius:50%;
+      width:38px; height:38px; font-size:20px; cursor:pointer; color:#000;
+      box-shadow:4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
+      flex-shrink:0;
+    }
+    .app-header h1{font-size:1.3rem;font-weight:900;margin-bottom:2px;color:#000}
+    .app-header p{font-size:0.82rem;color:var(--gris)}
 
     /* ── TABS ── */
-    .tabs{display:flex;background:white;border-bottom:2px solid #e5e7eb;overflow-x:auto}
-    .tab{flex:1;min-width:90px;padding:12px 8px;border:none;background:none;font-size:0.82rem;
-         font-weight:700;color:var(--gris);cursor:pointer;white-space:nowrap;transition:all 0.2s}
-    .tab.activo{color:var(--verde);border-bottom:3px solid var(--verde);margin-bottom:-2px}
+    .tabs{display:flex;background:var(--bg-color);padding:10px 12px;gap:8px;overflow-x:auto}
+    .tab{flex:1;min-width:90px;padding:12px 8px;border:none;background:var(--bg-color);font-size:0.8rem;
+         font-weight:700;color:var(--gris);cursor:pointer;white-space:nowrap;border-radius:14px;
+         box-shadow:4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);transition:all 0.2s}
+    .tab.activo{color:#fff;background:#000;
+         box-shadow:inset 2px 2px 5px rgba(0,0,0,0.3), inset -2px -2px 5px rgba(255,255,255,0.1)}
 
     /* ── CONTENIDO ── */
     .pagina{display:none;padding:16px;max-width:680px;margin:0 auto}
     .pagina.activa{display:block}
 
     /* ── CARDS ── */
-    .card{background:white;border-radius:var(--radio);box-shadow:var(--sombra);
-          padding:16px;margin-bottom:14px}
+    .card{background:var(--bg-color);border-radius:var(--radio);
+          box-shadow:8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);
+          padding:18px;margin-bottom:16px}
     .card-titulo{font-size:1rem;font-weight:800;color:var(--texto);margin-bottom:12px;
                  display:flex;align-items:center;gap:8px}
 
     /* ── SUGERENCIAS ── */
     .sugerencia-card{
-      background:white;border-radius:var(--radio);box-shadow:var(--sombra);
-      padding:16px;margin-bottom:14px;border-left:4px solid var(--verde);
-      cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;
+      background:var(--bg-color);border-radius:var(--radio);
+      box-shadow:8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);
+      padding:18px;margin-bottom:16px;cursor:pointer;transition:transform 0.15s;
     }
-    .sugerencia-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.1)}
+    .sugerencia-card:active{transform:scale(0.98);
+      box-shadow:inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light)}
     .sug-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
     .sug-nombre{font-size:1rem;font-weight:800;color:var(--texto)}
     .sug-tiempo{font-size:0.75rem;background:var(--gris-claro);padding:3px 8px;
@@ -67,48 +79,54 @@
     .progreso-wrap{margin-bottom:16px}
     .progreso-label{display:flex;justify-content:space-between;font-size:0.82rem;
                     font-weight:700;color:var(--gris);margin-bottom:6px}
-    .barra-bg{height:12px;background:#e5e7eb;border-radius:6px;overflow:hidden}
-    .barra-fill{height:100%;border-radius:6px;transition:width 0.5s ease;
-                background:linear-gradient(90deg,var(--verde),var(--verde-oscuro))}
+    .barra-bg{height:12px;background:var(--gris-claro);border-radius:6px;overflow:hidden;
+              box-shadow:inset 2px 2px 4px rgba(0,0,0,0.08)}
+    .barra-fill{height:100%;border-radius:6px;transition:width 0.5s ease;background:var(--acento)}
     .barra-fill.exceso{background:linear-gradient(90deg,var(--amarillo),var(--rojo))}
 
     /* ── DESPENSA ── */
-    .despensa-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+    .despensa-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
     .item-despensa{
-      background:white;border:1.5px solid #e5e7eb;border-radius:10px;
-      padding:10px;display:flex;flex-direction:column;gap:4px;
+      background:var(--bg-color);border-radius:16px;
+      box-shadow:5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+      padding:12px;display:flex;flex-direction:column;gap:4px;
     }
     .item-nombre{font-size:0.85rem;font-weight:700;color:var(--texto)}
     .item-cant{font-size:0.75rem;color:var(--gris)}
     .item-acciones{display:flex;gap:6px;margin-top:4px}
-    .btn-xs{border:none;border-radius:6px;padding:4px 8px;font-size:0.72rem;
+    .btn-xs{border:none;border-radius:8px;padding:5px 9px;font-size:0.72rem;
             font-weight:700;cursor:pointer}
     .btn-editar{background:#dbeafe;color:#1e40af}
     .btn-borrar{background:#fee2e2;color:#b91c1c}
 
-    /* ── FORMULARIOS ── */
-    .form-group{margin-bottom:12px}
-    label{display:block;font-size:0.82rem;font-weight:700;color:var(--gris);margin-bottom:4px}
+    /* ── FORMULARIOS (estilo "hundido") ── */
+    .form-group{margin-bottom:14px}
+    label{display:block;font-size:0.82rem;font-weight:700;color:var(--gris);margin-bottom:6px}
     input,select,textarea{
-      width:100%;padding:10px 12px;border:1.5px solid #e5e7eb;
-      border-radius:10px;font-size:0.88rem;outline:none;
-      font-family:inherit;background:white;transition:border 0.15s;
+      width:100%;padding:12px 14px;border:none;
+      border-radius:12px;font-size:0.88rem;outline:none;
+      font-family:inherit;background:var(--bg-color);color:var(--texto);
+      box-shadow:inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+      transition:box-shadow 0.15s;
     }
-    input:focus,select:focus,textarea:focus{border-color:var(--verde)}
+    input:focus,select:focus,textarea:focus{
+      box-shadow:inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light), 0 0 0 2px var(--acento);
+    }
     .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
     @media(max-width:400px){.form-row{grid-template-columns:1fr}}
 
     /* ── BOTONES ── */
-    .btn{border:none;border-radius:10px;padding:11px 18px;font-size:0.9rem;
+    .btn{border:none;border-radius:14px;padding:13px 18px;font-size:0.9rem;
          font-weight:800;cursor:pointer;transition:all 0.15s;display:inline-flex;
-         align-items:center;gap:8px}
-    .btn-verde{background:linear-gradient(135deg,var(--verde),var(--verde-oscuro));color:white;width:100%}
-    .btn-verde:hover{opacity:0.9}
-    .btn-gris{background:var(--gris-claro);color:var(--texto)}
+         align-items:center;justify-content:center;gap:8px}
+    .btn-verde{background:#000;color:#fff;width:100%}
+    .btn-verde:active{transform:scale(0.98)}
+    .btn-gris{background:var(--bg-color);color:var(--texto);
+              box-shadow:4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light)}
     .btn-rojo{background:#fee2e2;color:var(--rojo)}
 
     /* ── INGREDIENTES DE RECETA ── */
-    .ing-lista{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+    .ing-lista{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
     .ing-row{display:flex;gap:8px;align-items:center}
     .ing-row input{flex:1}
     .ing-row .btn-xs{flex-shrink:0}
@@ -120,38 +138,47 @@
     }
     .modal-overlay.abierto{display:flex}
     .modal-box{
-      background:white;border-radius:20px 20px 0 0;padding:20px 16px 32px;
+      background:var(--bg-color);border-radius:24px 24px 0 0;padding:20px 18px 32px;
       width:100%;max-width:520px;max-height:90vh;overflow-y:auto;
+      box-shadow:0 -10px 30px rgba(0,0,0,0.15);
     }
-    .modal-titulo{font-size:1.1rem;font-weight:900;margin-bottom:16px;
+    .modal-titulo{font-size:1.1rem;font-weight:900;margin-bottom:16px;color:#000;
                   display:flex;justify-content:space-between;align-items:center}
-    .btn-modal-cerrar{background:var(--gris-claro);border:none;border-radius:50%;
-                      width:32px;height:32px;cursor:pointer;font-size:1rem}
+    .btn-modal-cerrar{background:var(--bg-color);border:none;border-radius:50%;
+                      width:34px;height:34px;cursor:pointer;font-size:1rem;
+                      box-shadow:3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)}
 
-    /* ── CHIP DE CATEGORÍA ── */
-    .chip{display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.72rem;
-          font-weight:700;margin-right:4px;margin-bottom:4px;cursor:pointer;
-          background:var(--gris-claro);color:var(--gris);transition:all 0.15s}
-    .chip.activo{background:var(--verde);color:white}
+    /* ── CHIPS ── */
+    .chip{display:inline-block;padding:6px 14px;border-radius:20px;font-size:0.75rem;
+          font-weight:700;margin-right:6px;margin-bottom:6px;cursor:pointer;
+          background:var(--bg-color);color:var(--gris);
+          box-shadow:3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light);
+          transition:all 0.15s}
+    .chip.activo{background:#000;color:#fff;
+          box-shadow:inset 2px 2px 4px rgba(0,0,0,0.4)}
 
     /* ── ESTADO VACÍO ── */
     .estado-vacio{text-align:center;padding:40px 20px;color:var(--gris)}
-    .estado-vacio-icon{font-size:3rem;margin-bottom:12px}
+    .estado-vacio-icon{font-size:3rem;margin-bottom:12px;opacity:0.6}
 
-    /* ── IA SUGERENCIA ── */
+    /* ── LOADING ── */
     .ia-loading{text-align:center;padding:30px;color:var(--gris)}
     .ia-dot{display:inline-block;width:8px;height:8px;border-radius:50%;
-            background:var(--verde);margin:0 3px;animation:bounce 1.2s infinite}
+            background:var(--acento);margin:0 3px;animation:bounce 1.2s infinite}
     .ia-dot:nth-child(2){animation-delay:0.2s}
     .ia-dot:nth-child(3){animation-delay:0.4s}
     @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-  </style>
+</style>
 </head>
 <body>
 
+  
 <div class="app-header">
-  <h1>🍽️ ¿Qué Como Hoy?</h1>
-  <p>Sugerencias basadas en tu despensa y metas calóricas</p>
+  <button class="btn-back" onclick="window.location.href='index.html'">←</button>
+  <div>
+    <h1>🍽️ ¿Qué Como Hoy?</h1>
+    <p>Sugerencias basadas en tu despensa y metas calóricas</p>
+  </div>
 </div>
 
 <!-- TABS -->
