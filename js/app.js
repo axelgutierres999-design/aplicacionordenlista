@@ -352,22 +352,32 @@ if (tieneInstagram || tieneFacebook || fotosRedes.length > 0 || postsInstagram.l
         </div>
     `).join('');
 
-     // Generación dinámica de las 3 publicaciones interactivas (método oficial, auto-ajustable)
+     // Generación de tarjetas minimalistas y cuadradas para las publicaciones destacadas
     let carruselPublicacionesHTML = '';
     if (postsInstagram.length > 0) {
-        const bloquesHTML = postsInstagram.map(link => {
-            // Limpieza de parámetros de rastreo de URL (?utm_source=...)
-            let linkLimpio = link.split('?')[0]; 
+        const handleCorto = tieneInstagram
+            ? (res.instagram.startsWith('http') ? 'Instagram' : `@${res.instagram.replace('@','').trim()}`)
+            : 'Instagram';
+
+        const tarjetasHTML = postsInstagram.map(post => {
+            const p = (typeof post === 'string') ? { link: post, foto: '' } : post;
+            let linkLimpio = p.link.split('?')[0];
             if (!linkLimpio.endsWith('/')) linkLimpio += '/';
+            const fotoPost = p.foto || 'https://via.placeholder.com/300?text=Ver+en+Instagram';
 
             return `
-                <div style="flex: 0 0 auto; width: 328px; scroll-snap-align: center; margin-right: 16px;">
-                    <blockquote class="instagram-media" data-instgrm-permalink="${linkLimpio}" data-instgrm-version="14"
-                        style="background:#FFF; border-radius:14px; border:1px solid #e6e6e6; margin:0; max-width:328px; min-width:328px; box-shadow:0 6px 16px rgba(0,0,0,0.08); overflow:hidden;">
-                        <div style="padding:16px;">
-                            <a href="${linkLimpio}" target="_blank" rel="noopener" style="text-decoration:none; color:#000;">Ver esta publicación en Instagram</a>
-                        </div>
-                    </blockquote>
+                <div onclick="window.open('${linkLimpio}','_blank')" style="flex:0 0 auto; width:170px; scroll-snap-align:center; margin-right:14px; cursor:pointer; background:#fff; border:1px solid #eee; border-radius:16px; overflow:hidden; box-shadow:0 4px 14px rgba(0,0,0,0.06);">
+                    <div style="display:flex; align-items:center; gap:6px; padding:8px 10px;">
+                        <div style="width:20px; height:20px; border-radius:50%; background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888); flex-shrink:0;"></div>
+                        <span style="font-size:11px; font-weight:600; color:#333; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${handleCorto}</span>
+                    </div>
+                    <div style="width:100%; aspect-ratio:1/1; background:#f2f2f2;">
+                        <img src="${fotoPost}" style="width:100%; height:100%; object-fit:cover; display:block;">
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px; padding:8px 10px; color:#555; font-size:14px;">
+                        <span>♡</span><span>💬</span><span>↗</span>
+                        <span style="margin-left:auto;">🔖</span>
+                    </div>
                 </div>
             `;
         }).join('');
@@ -375,8 +385,8 @@ if (tieneInstagram || tieneFacebook || fotosRedes.length > 0 || postsInstagram.l
         carruselPublicacionesHTML = `
             <div style="margin-top: 22px;">
                 <h4 style="margin: 0 0 12px; font-weight: 800; font-size: 14px; color: #333;">Publicaciones Destacadas</h4>
-                <div style="display: flex; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; padding: 4px 4px 16px 4px; margin: 0 -4px;">
-                    ${bloquesHTML}
+                <div style="display: flex; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; padding: 4px 4px 10px 4px; margin: 0 -4px;">
+                    ${tarjetasHTML}
                 </div>
             </div>
         `;
@@ -519,31 +529,7 @@ ${redesHTML}
   
 setTimeout(() => {
    cargarPlanoEsteticoCliente(res.id);
-   if (postsInstagram.length > 0) {
-       cargarEmbedsInstagram();
-   }
 }, 300);}
-
-// --- 📲 PROCESAR Y REDIMENSIONAR EMBEDS DE INSTAGRAM (método oficial) ---
-function cargarEmbedsInstagram() {
-    // Si el script ya está cargado, solo le pedimos que reprocese los nuevos bloques
-    if (window.instgrm && window.instgrm.Embeds) {
-        window.instgrm.Embeds.process();
-        return;
-    }
-    // Si ya se está cargando el script, no lo dupliques
-    if (document.getElementById('ig-embed-script')) return;
-
-    const script = document.createElement('script');
-    script.id = 'ig-embed-script';
-    script.async = true;
-    script.src = 'https://www.instagram.com/embed.js';
-    script.onload = () => {
-        if (window.instgrm && window.instgrm.Embeds) window.instgrm.Embeds.process();
-    };
-    document.body.appendChild(script);
-}
-
 // --- 9. RENDERIZAR PLANO ESTÉTICO (CLIENTES) ---
 // --- 9. RENDERIZAR PLANO ESTÉTICO (CLIENTES) ---
 async function cargarPlanoEsteticoCliente(restauranteId) {
