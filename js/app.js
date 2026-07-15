@@ -455,26 +455,6 @@ info.innerHTML = `
     </div>
 ${redesHTML}
 
-    <div class="mesa-status-card" style="display: flex; align-items: center; justify-content: space-around; padding: 15px; text-align: center;">
-        <div>
-            <span style="font-size: 20px;">🟢</span>
-            <h3 style="margin: 5px 0 0;">${res.mesas_libres}</h3>
-            <p style="font-size: 10px; color: #666; text-transform: uppercase;">Libres</p>
-        </div>
-        <div style="width: 1px; height: 30px; background: #ddd;"></div>
-        <div>
-            <span style="font-size: 20px;">🔴</span>
-            <h3 style="margin: 5px 0 0;">${mesasOcupadas}</h3>
-            <p style="font-size: 10px; color: #666; text-transform: uppercase;">Ocupadas</p>
-        </div>
-        <div style="width: 1px; height: 30px; background: #ddd;"></div>
-        <div>
-            <span style="font-size: 20px;">📊</span>
-            <h3 style="margin: 5px 0 0;">${res.mesas_total}</h3>
-            <p style="font-size: 10px; color: #666; text-transform: uppercase;">Total</p>
-        </div>
-    </div>
-
     <div style="width: 100%; height: 6px; background: #eee; border-radius: 10px; margin: 15px 0 25px; overflow: hidden;">
         <div style="width: ${porcentajeOcupado}%; height: 100%; background: ${porcentajeOcupado > 80 ? '#F44336' : '#000'}; transition: width 0.5s;"></div>
     </div>
